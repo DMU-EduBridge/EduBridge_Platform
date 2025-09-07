@@ -1,0 +1,7 @@
+.next
+node_modules
+out
+dist
+coverage
+public/output.css
+public/uploads
