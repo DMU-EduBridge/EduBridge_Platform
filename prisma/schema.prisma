@@ -1,0 +1,157 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Enums are not supported in SQLite, using String instead
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String // TEACHER, STUDENT, ADMIN
+  avatar    String?
+  bio       String?
+  grade     String? // 학년 (1학년, 2학년 등)
+  status    String  @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 관계
+  preferences   UserPreferences?
+  progress      StudentProgress[]
+  reports       AnalysisReport[]
+  counseling    CareerCounseling[]
+
+  @@map("users")
+}
+
+model UserPreferences {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 학습 설정
+  preferredDifficulty String @default("MEDIUM") // EASY, MEDIUM, HARD, EXPERT
+  learningStyle       String // visual, auditory, kinesthetic (JSON string)
+  studyTime           Int?     // 분 단위
+  interests           String // JSON string
+  
+  // 알림 설정
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(true)
+  weeklyReport       Boolean @default(true)
+  
+  @@map("user_preferences")
+}
+
+
+model LearningMaterial {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  content     String
+  subject     String   // 과목명 (수학, 과학 등)
+  difficulty  String   // EASY, MEDIUM, HARD, EXPERT
+  estimatedTime Int?   // 분 단위
+  files       String?  // JSON string - 업로드된 파일들
+  status      String   // DRAFT, PUBLISHED, ARCHIVED
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("learning_materials")
+}
+
+model Problem {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  content     String
+  type        String // MULTIPLE_CHOICE, SHORT_ANSWER, ESSAY, CODING, MATH
+  difficulty  String // EASY, MEDIUM, HARD, EXPERT
+  subject     String // 과목명 (수학, 과학 등)
+  
+  // 문제 세부사항
+  options     String?   // 객관식 선택지 (JSON string)
+  correctAnswer String
+  explanation String?
+  hints       String?  // JSON string
+  tags        String?  // JSON string
+  
+  // 메타데이터
+  points      Int         @default(1)
+  timeLimit   Int?        // 초 단위
+  isActive    Boolean     @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("problems")
+}
+
+model StudentProgress {
+  id        String        @id @default(cuid())
+  studentId String
+  student   User          @relation(fields: [studentId], references: [id])
+  problemId String?
+  
+  status    String @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED, REVIEW_NEEDED
+  score     Int?    @default(0)
+  timeSpent Int     @default(0) // 분 단위
+  attempts  Int     @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("student_progress")
+}
+
+
+model AnalysisReport {
+  id        String   @id @default(cuid())
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id])
+  
+  type      String   // MONTHLY, INDIVIDUAL, SUBJECT, WEEKLY
+  title     String
+  period    String   // 기간 (예: "2024년 1월")
+  insights  String?  // AI 생성 인사이트 (JSON string)
+  recommendations String? // 개선 권장사항 (JSON string)
+  strengths String?  // JSON string
+  weaknesses String? // JSON string
+  status    String   @default("COMPLETED") // COMPLETED, IN_PROGRESS, PENDING
+  
+  createdAt DateTime @default(now())
+
+  @@map("analysis_reports")
+}
+
+model CareerCounseling {
+  id        String        @id @default(cuid())
+  studentId String
+  student   User          @relation(fields: [studentId], references: [id])
+  
+  type      String // ACADEMIC, CAREER, PERSONAL, UNIVERSITY_GUIDANCE
+  title     String
+  content   String
+  
+  // AI 분석 결과
+  careerSuggestions  String? // JSON string
+  universityRecommendations String? // JSON string
+  skillGaps         String? // JSON string
+  status            String  @default("COMPLETED") // COMPLETED, IN_PROGRESS, PENDING
+  
+  createdAt DateTime @default(now())
+
+  @@map("career_counseling")
+}
+

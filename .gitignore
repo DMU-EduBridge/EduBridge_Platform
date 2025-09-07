@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+.vercel/
+
+# Build artifacts
+coverage/
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# Public build outputs
+public/output.css
+public/uploads/
+
+# Turbo/Cache
+.turbo/
