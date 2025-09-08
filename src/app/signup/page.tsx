@@ -14,7 +14,6 @@ import {
   Phone,
   MapPin,
   GraduationCap,
-  CheckCircle,
   AlertCircle,
   Eye,
   EyeOff,

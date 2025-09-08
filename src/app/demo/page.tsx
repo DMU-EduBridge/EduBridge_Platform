@@ -10,7 +10,6 @@ import {
   Pause,
   RotateCcw,
   CheckCircle,
-  XCircle,
   Clock,
   Brain,
   Users,

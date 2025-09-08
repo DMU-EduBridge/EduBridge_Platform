@@ -55,12 +55,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
       {/* 사이드바 */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:flex lg:flex-col`}
+        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:flex lg:flex-col lg:h-full`}
       >
         <div className="flex justify-between items-center px-6 h-16 border-b border-gray-200">
           <Link href="/dashboard" className="flex items-center space-x-2">
@@ -118,10 +118,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* 메인 콘텐츠 */}
-      <div className="flex flex-col flex-1 lg:ml-0">
+      <div className="flex flex-col flex-1 lg:ml-0 h-screen">
         {/* 상단 헤더 */}
-        <header className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm">
-          <div className="flex justify-between items-center px-4 h-16 sm:px-6 lg:px-8">
+        <header className="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm h-16">
+          <div className="flex justify-between items-center px-4 h-full sm:px-6 lg:px-8">
             <Button
               variant="ghost"
               size="sm"
@@ -148,7 +148,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* 페이지 콘텐츠 */}
-        <main className="overflow-auto flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
 
       {/* 모바일 오버레이 */}

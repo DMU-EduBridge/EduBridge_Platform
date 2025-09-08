@@ -14,12 +14,11 @@ import {
   BookOpen,
   MessageCircle,
   Mail,
-  Phone,
   Calendar,
   Award,
-  AlertCircle,
 } from "lucide-react";
 import { useStudents } from "@/hooks/use-api";
+import { Student } from "@/lib/api-services";
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
@@ -216,7 +215,7 @@ export default function StudentsPage() {
             </Card>
           </div>
         ) : (
-          students.map((student: any) => (
+          students.map((student: Student) => (
             <Card key={student.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -278,7 +277,7 @@ export default function StudentsPage() {
                 <div>
                   <span className="text-sm font-medium text-gray-700">수강 과목:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {student.subjects.map((subject: any) => (
+                    {student.subjects.map((subject: string) => (
                       <Badge key={subject} variant="secondary" className="text-xs">
                         {subject}
                       </Badge>
