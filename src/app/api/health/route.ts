@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { AdvancedHealthChecker } from '@/lib/monitoring';
-import { securityMiddleware } from '@/lib/security';
 import { performanceMiddleware } from '@/lib/performance';
+import { securityMiddleware } from '@/lib/security';
+import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
 // 고급 헬스 체크 엔드포인트
 export const GET = performanceMiddleware(async (request: NextRequest) => {

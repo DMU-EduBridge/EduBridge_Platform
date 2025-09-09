@@ -1,23 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/core/prisma';
-import { z } from 'zod';
 import { parseJsonBody } from '@/lib/config/validation';
+import { prisma } from '@/lib/core/prisma';
+import { ValidationError, logger, withErrorHandler } from '@/lib/utils/error-handler';
+import { serializeArray } from '@/lib/utils/json';
+import { CreateProblemSchema } from '@/types/api';
 import { Prisma } from '@prisma/client';
-import { withErrorHandler, ValidationError, logger } from '@/lib/utils/error-handler';
+import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
 // 문제 생성 스키마
-const createProblemSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
-  content: z.string().min(1),
-  subject: z.string().min(1),
-  type: z.string().min(1),
-  difficulty: z.string().min(1),
-  options: z.array(z.string()).optional(),
-  correctAnswer: z.string().min(1),
-  hints: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
-});
+const createProblemSchema = CreateProblemSchema;
 
 // 문제 목록 조회
 async function getProblems(request: NextRequest) {
@@ -54,15 +45,18 @@ async function getProblems(request: NextRequest) {
 
   logger.info('Problems fetched successfully', { count: problems.length, page, limit });
 
-  return NextResponse.json({
-    problems,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
+  return NextResponse.json(
+    {
+      problems,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     },
-  });
+    { headers: { 'Cache-Control': 'private, max-age=60' } },
+  );
 }
 
 // 새 문제 생성
@@ -95,10 +89,10 @@ async function createProblem(request: NextRequest) {
       subject,
       type,
       difficulty,
-      options: JSON.stringify(options || []),
+      options: serializeArray(options),
       correctAnswer,
-      hints: JSON.stringify(hints || []),
-      tags: JSON.stringify(tags || []),
+      hints: serializeArray(hints),
+      tags: serializeArray(tags),
       isActive: true,
     },
   });

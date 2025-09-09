@@ -1,5 +1,5 @@
 import { api } from '@/lib/core/api';
-import type { LMSStudent } from '@/types/lms';
+import type { LMSStudent } from '@/types/student';
 
 export const studentsService = {
   getStudents: (params?: {

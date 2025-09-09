@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 // 환경변수 스키마 정의
+const isDev = process.env.NODE_ENV !== 'production';
 const envSchema = z.object({
   // Node.js 환경
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -9,8 +10,12 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL이 필요합니다'),
 
   // NextAuth
-  NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET은 최소 32자 이상이어야 합니다'),
-  NEXTAUTH_URL: z.string().url('올바른 URL 형식이어야 합니다'),
+  NEXTAUTH_SECRET: isDev
+    ? z.string().min(1).default('dev-secret-change-me')
+    : z.string().min(32, 'NEXTAUTH_SECRET은 최소 32자 이상이어야 합니다'),
+  NEXTAUTH_URL: isDev
+    ? z.string().url().default('http://localhost:3000')
+    : z.string().url('올바른 URL 형식이어야 합니다'),
 
   // API 설정
   NEXT_PUBLIC_API_URL: z.string().url().optional(),

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 // API 응답 타입 정의
 export interface ApiResponse<T> {
   data: T;
@@ -20,6 +21,63 @@ export interface ApiError {
   success: false;
   statusCode?: number;
 }
+
+// Attempts
+export interface AttemptItem {
+  id: string;
+  selected: string;
+  isCorrect: boolean;
+  createdAt: string;
+}
+
+export type AttemptsResponse = AttemptItem[];
+
+export interface AttemptPostBody {
+  selected: string;
+}
+
+// Solution
+export interface SolutionResponse {
+  correctAnswer: string;
+  explanation: string | null;
+  hints: string[];
+}
+
+// Zod Schemas (공유 DTO)
+export const AttemptPostSchema = z.object({ selected: z.string().min(1) });
+export type AttemptPostDto = z.infer<typeof AttemptPostSchema>;
+
+export const SolutionResponseSchema = z.object({
+  correctAnswer: z.string(),
+  explanation: z.string().nullable(),
+  hints: z.array(z.string()),
+});
+
+export const AttemptsResponseSchema = z.array(
+  z.object({
+    id: z.string(),
+    selected: z.string(),
+    isCorrect: z.boolean(),
+    createdAt: z.string(),
+  }),
+);
+
+export const AttemptPostResponseSchema = z.object({ correct: z.boolean() });
+export type AttemptPostResponse = z.infer<typeof AttemptPostResponseSchema>;
+
+export const CreateProblemSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  content: z.string().min(1),
+  subject: z.string().min(1),
+  type: z.string().min(1),
+  difficulty: z.string().min(1),
+  options: z.array(z.string()).optional(),
+  correctAnswer: z.string().min(1),
+  hints: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+});
+export type CreateProblemDto = z.infer<typeof CreateProblemSchema>;
 
 // 통계 응답 타입
 export interface StatsResponse {

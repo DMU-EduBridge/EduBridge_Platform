@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
 import fs from 'fs';
+import { writeFile } from 'fs/promises';
+import { NextRequest, NextResponse } from 'next/server';
+import { join } from 'path';
+export const dynamic = 'force-dynamic';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/gif', 'application/pdf']);
@@ -46,13 +47,16 @@ export async function POST(request: NextRequest) {
 
     await writeFile(path, buffer);
 
-    return NextResponse.json({
-      success: true,
-      filename,
-      url: `/uploads/${filename}`,
-      size: file.size,
-      type: file.type,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        filename,
+        url: `/uploads/${filename}`,
+        size: file.size,
+        type: file.type,
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch (error) {
     console.error('Error uploading file:', error);
     return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });

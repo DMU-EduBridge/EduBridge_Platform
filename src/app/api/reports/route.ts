@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/core/prisma';
-import { z } from 'zod';
 import { parseJsonBody } from '@/lib/config/validation';
+import { prisma } from '@/lib/core/prisma';
+import { ValidationError, logger, withErrorHandler } from '@/lib/utils/error-handler';
+import { serializeArray } from '@/lib/utils/json';
 import { Prisma } from '@prisma/client';
-import { withErrorHandler, ValidationError, logger } from '@/lib/utils/error-handler';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+export const dynamic = 'force-dynamic';
 
 const createReportSchema = z.object({
   studentId: z.string().min(1),
@@ -82,15 +84,18 @@ async function getReports(request: NextRequest) {
 
   logger.info('Reports fetched successfully', { count: reports.length, page, limit });
 
-  return NextResponse.json({
-    reports,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
+  return NextResponse.json(
+    {
+      reports,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     },
-  });
+    { headers: { 'Cache-Control': 'private, max-age=60' } },
+  );
 }
 
 // 새 리포트 생성
@@ -111,10 +116,10 @@ async function createReport(request: NextRequest) {
       type,
       title,
       period,
-      insights: JSON.stringify(insights || []),
-      recommendations: JSON.stringify(recommendations || []),
-      strengths: JSON.stringify(strengths || []),
-      weaknesses: JSON.stringify(weaknesses || []),
+      insights: serializeArray(insights),
+      recommendations: serializeArray(recommendations),
+      strengths: serializeArray(strengths),
+      weaknesses: serializeArray(weaknesses),
       status: 'COMPLETED',
     },
     include: {

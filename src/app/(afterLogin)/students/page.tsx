@@ -1,24 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { useStudents } from '@/hooks/students';
+import { LMSStudent } from '@/types/student';
 import {
+  Award,
+  BookOpen,
+  Calendar,
+  Clock,
+  Mail,
+  MessageCircle,
   Plus,
   Search,
-  Users,
   TrendingUp,
-  Clock,
-  BookOpen,
-  MessageCircle,
-  Mail,
-  Calendar,
-  Award,
+  Users,
 } from 'lucide-react';
-import { useStudents } from '@/hooks/use-api';
-import { LMSStudent } from '@/types/lms/student';
+import { useState } from 'react';
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 

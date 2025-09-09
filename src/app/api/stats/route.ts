@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/core/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
 // 문제 통계
 export async function GET(request: NextRequest) {
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    return NextResponse.json(stats);
+    return NextResponse.json(stats, { headers: { 'Cache-Control': 'private, max-age=60' } });
   } catch (error) {
     console.error('Error fetching stats:', error);
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });

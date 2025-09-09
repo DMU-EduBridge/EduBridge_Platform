@@ -44,6 +44,7 @@ model User {
   reports       AnalysisReport[]
   counseling    CareerCounseling[]
   reviewedProblems Problem[] @relation("ProblemReviewer")
+  attempts      Attempt[]
 
   @@index([role])
   @@index([status])
@@ -137,6 +138,7 @@ model Problem {
   // 관계
   progress   StudentProgress[]
   materialProblems LearningMaterialProblem[]
+  attempts  Attempt[]
 
   @@index([subject])
   @@index([difficulty])
@@ -320,5 +322,20 @@ model ReportRecommendation {
 
   @@index([reportId])
   @@map("report_recommendations")
+}
+
+// 학생 시도 기록
+model Attempt {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId  String
+  problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  selected   String
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
+
+  @@index([userId, problemId])
+  @@map("attempts")
 }
 

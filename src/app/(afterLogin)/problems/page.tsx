@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, FileText, Clock, Users, TrendingUp, Edit, Trash2, Eye } from 'lucide-react';
-import { useProblems } from '@/hooks/use-api';
-import { LMSProblem } from '@/types/lms/problem';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { useProblems } from '@/hooks/problems';
+import { LMSProblem } from '@/types/problem';
+import { Clock, Edit, Eye, FileText, Plus, Search, Trash2, TrendingUp, Users } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
@@ -241,10 +242,12 @@ export default function ProblemsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Eye className="mr-1 h-4 w-4" />
-                      보기
-                    </Button>
+                    <Link href={`/problems/${problem.id}`} prefetch>
+                      <Button variant="outline" size="sm">
+                        <Eye className="mr-1 h-4 w-4" />
+                        보기
+                      </Button>
+                    </Link>
                     <Button variant="outline" size="sm">
                       <Edit className="mr-1 h-4 w-4" />
                       수정

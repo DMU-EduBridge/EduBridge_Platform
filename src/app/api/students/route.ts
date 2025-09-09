@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/core/prisma';
-import { z } from 'zod';
 import { parseJsonBody } from '@/lib/config/validation';
+import { prisma } from '@/lib/core/prisma';
+import { ValidationError, logger, withErrorHandler } from '@/lib/utils/error-handler';
+import { serializeArray } from '@/lib/utils/json';
 import { Prisma } from '@prisma/client';
-import { withErrorHandler, ValidationError, logger } from '@/lib/utils/error-handler';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+export const dynamic = 'force-dynamic';
 
 const createStudentSchema = z.object({
   name: z.string().min(1),
@@ -89,15 +91,18 @@ async function getStudents(request: NextRequest) {
 
   logger.info('Students fetched successfully', { count: students.length, page, limit });
 
-  return NextResponse.json({
-    students,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
+  return NextResponse.json(
+    {
+      students,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     },
-  });
+    { headers: { 'Cache-Control': 'private, max-age=60' } },
+  );
 }
 
 // 새 학생 생성
@@ -120,8 +125,8 @@ async function createStudent(request: NextRequest) {
       status: 'ACTIVE',
       preferences: {
         create: {
-          learningStyle: JSON.stringify(learningStyle || []),
-          interests: JSON.stringify(interests || []),
+          learningStyle: serializeArray(learningStyle) ?? '[]',
+          interests: serializeArray(interests) ?? '[]',
           preferredDifficulty: 'MEDIUM',
         },
       },

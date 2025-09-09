@@ -10,5 +10,24 @@
     "react/no-unescaped-entities": "off",
     "@next/next/no-img-element": "error",
     "@next/next/no-html-link-for-pages": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/services/client/**/*.{ts,tsx}", "src/client/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/server/*"],
+                "message": "클라이언트 코드에서 서버 모듈을 import 할 수 없습니다."
+              },
+              { "group": ["@/lib/core/prisma"], "message": "Prisma는 서버 전용입니다." }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

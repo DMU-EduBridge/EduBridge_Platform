@@ -1,5 +1,5 @@
 import { api } from '@/lib/core/api';
-import type { LMSReport } from '@/types/lms';
+import type { LMSReport } from '@/types/report';
 
 export const reportsService = {
   getReports: (params?: { type?: string; status?: string; page?: number; limit?: number }) =>

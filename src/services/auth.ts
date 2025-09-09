@@ -1,5 +1,5 @@
 import { api } from '@/lib/core/api';
-import type { LMSUser } from '@/types/lms';
+import type { LMSUser } from '@/types/user';
 
 export const authService = {
   login: (email: string, password: string) => api.post('/auth/login', { email, password }),
