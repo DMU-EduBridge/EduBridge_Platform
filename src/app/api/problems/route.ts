@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/core/prisma";
-import { z } from "zod";
-import { parseJsonBody } from "@/lib/config/validation";
-import { Prisma } from "@prisma/client";
-import { withErrorHandler, ValidationError, logger } from "@/lib/utils/error-handler";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/core/prisma';
+import { z } from 'zod';
+import { parseJsonBody } from '@/lib/config/validation';
+import { Prisma } from '@prisma/client';
+import { withErrorHandler, ValidationError, logger } from '@/lib/utils/error-handler';
 
 // 문제 생성 스키마
 const createProblemSchema = z.object({
@@ -22,11 +22,11 @@ const createProblemSchema = z.object({
 // 문제 목록 조회
 async function getProblems(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get("search");
-  const subject = searchParams.get("subject");
-  const difficulty = searchParams.get("difficulty");
-  const page = parseInt(searchParams.get("page") || "1");
-  const limit = parseInt(searchParams.get("limit") || "10");
+  const search = searchParams.get('search');
+  const subject = searchParams.get('subject');
+  const difficulty = searchParams.get('difficulty');
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '10');
 
   const where: Prisma.ProblemWhereInput = {};
 
@@ -34,11 +34,11 @@ async function getProblems(request: NextRequest) {
     where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
   }
 
-  if (subject && subject !== "all") {
+  if (subject && subject !== 'all') {
     where.subject = subject;
   }
 
-  if (difficulty && difficulty !== "all") {
+  if (difficulty && difficulty !== 'all') {
     where.difficulty = difficulty;
   }
 
@@ -47,12 +47,12 @@ async function getProblems(request: NextRequest) {
       where,
       skip: (page - 1) * limit,
       take: limit,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     }),
     prisma.problem.count({ where }),
   ]);
 
-  logger.info("Problems fetched successfully", { count: problems.length, page, limit });
+  logger.info('Problems fetched successfully', { count: problems.length, page, limit });
 
   return NextResponse.json({
     problems,
@@ -69,9 +69,9 @@ async function getProblems(request: NextRequest) {
 async function createProblem(request: NextRequest) {
   const raw = await request.json();
   const parsed = parseJsonBody(raw, createProblemSchema);
-  
+
   if (!parsed.success) {
-    throw new ValidationError("잘못된 요청 데이터입니다.");
+    throw new ValidationError('잘못된 요청 데이터입니다.');
   }
 
   const {
@@ -103,7 +103,7 @@ async function createProblem(request: NextRequest) {
     },
   });
 
-  logger.info("Problem created successfully", { problemId: problem.id });
+  logger.info('Problem created successfully', { problemId: problem.id });
 
   return NextResponse.json(problem, { status: 201 });
 }

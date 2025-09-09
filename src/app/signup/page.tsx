@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   User,
   Mail,
@@ -17,19 +17,19 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-} from "lucide-react";
+} from 'lucide-react';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
-    school: "",
-    department: "",
-    role: "TEACHER",
-    location: "",
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    school: '',
+    department: '',
+    role: 'TEACHER',
+    location: '',
     agreeTerms: false,
     agreePrivacy: false,
   });
@@ -44,14 +44,14 @@ export default function SignupPage() {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
 
     // 에러 메시지 제거
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
-        [name]: "",
+        [name]: '',
       }));
     }
   };
@@ -60,35 +60,35 @@ export default function SignupPage() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "이름을 입력해주세요";
+      newErrors.name = '이름을 입력해주세요';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "이메일을 입력해주세요";
+      newErrors.email = '이메일을 입력해주세요';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "올바른 이메일 형식이 아닙니다";
+      newErrors.email = '올바른 이메일 형식이 아닙니다';
     }
 
     if (!formData.password) {
-      newErrors.password = "비밀번호를 입력해주세요";
+      newErrors.password = '비밀번호를 입력해주세요';
     } else if (formData.password.length < 8) {
-      newErrors.password = "비밀번호는 8자 이상이어야 합니다";
+      newErrors.password = '비밀번호는 8자 이상이어야 합니다';
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "비밀번호가 일치하지 않습니다";
+      newErrors.confirmPassword = '비밀번호가 일치하지 않습니다';
     }
 
     if (!formData.school.trim()) {
-      newErrors.school = "학교명을 입력해주세요";
+      newErrors.school = '학교명을 입력해주세요';
     }
 
     if (!formData.agreeTerms) {
-      newErrors.agreeTerms = "이용약관에 동의해주세요";
+      newErrors.agreeTerms = '이용약관에 동의해주세요';
     }
 
     if (!formData.agreePrivacy) {
-      newErrors.agreePrivacy = "개인정보처리방침에 동의해주세요";
+      newErrors.agreePrivacy = '개인정보처리방침에 동의해주세요';
     }
 
     setErrors(newErrors);
@@ -107,27 +107,27 @@ export default function SignupPage() {
     try {
       // 실제로는 API 호출
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("회원가입 성공:", formData);
+      console.log('회원가입 성공:', formData);
       // 성공 후 로그인 페이지로 리다이렉트
     } catch (error) {
-      console.error("회원가입 실패:", error);
+      console.error('회원가입 실패:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="w-full max-w-2xl">
-        <div className="text-center mb-8">
+        <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">E</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-purple-600">
+              <span className="text-sm font-bold text-white">E</span>
             </div>
             <span className="text-2xl font-bold text-gray-900">EduBridge</span>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-4">회원가입</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="mt-4 text-3xl font-bold text-gray-900">회원가입</h1>
+          <p className="mt-2 text-gray-600">
             AI 교육 플랫폼에 가입하여 혁신적인 학습 환경을 경험해보세요
           </p>
         </div>
@@ -142,45 +142,45 @@ export default function SignupPage() {
               {/* 역할 선택 */}
               <div>
                 <Label>계정 유형</Label>
-                <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="mt-2 grid grid-cols-2 gap-4">
                   <label
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      formData.role === "TEACHER"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
+                    className={`cursor-pointer rounded-lg border p-4 transition-colors ${
+                      formData.role === 'TEACHER'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
                     <input
                       type="radio"
                       name="role"
                       value="TEACHER"
-                      checked={formData.role === "TEACHER"}
+                      checked={formData.role === 'TEACHER'}
                       onChange={handleInputChange}
                       className="sr-only"
                     />
                     <div className="text-center">
-                      <GraduationCap className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                      <GraduationCap className="mx-auto mb-2 h-8 w-8 text-blue-600" />
                       <div className="font-medium">선생님</div>
                       <div className="text-sm text-gray-600">교육자 계정</div>
                     </div>
                   </label>
                   <label
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      formData.role === "STUDENT"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
+                    className={`cursor-pointer rounded-lg border p-4 transition-colors ${
+                      formData.role === 'STUDENT'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
                     }`}
                   >
                     <input
                       type="radio"
                       name="role"
                       value="STUDENT"
-                      checked={formData.role === "STUDENT"}
+                      checked={formData.role === 'STUDENT'}
                       onChange={handleInputChange}
                       className="sr-only"
                     />
                     <div className="text-center">
-                      <User className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                      <User className="mx-auto mb-2 h-8 w-8 text-blue-600" />
                       <div className="font-medium">학생</div>
                       <div className="text-sm text-gray-600">학습자 계정</div>
                     </div>
@@ -189,11 +189,11 @@ export default function SignupPage() {
               </div>
 
               {/* 기본 정보 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="name">이름 *</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                     <Input
                       id="name"
                       name="name"
@@ -214,7 +214,7 @@ export default function SignupPage() {
                 <div>
                   <Label htmlFor="email">이메일 *</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                     <Input
                       id="email"
                       name="email"
@@ -235,15 +235,15 @@ export default function SignupPage() {
               </div>
 
               {/* 비밀번호 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="password">비밀번호 *</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                     <Input
                       id="password"
                       name="password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={handleInputChange}
                       className="pl-10 pr-10"
@@ -252,9 +252,9 @@ export default function SignupPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 transform"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                   {errors.password && (
@@ -268,11 +268,11 @@ export default function SignupPage() {
                 <div>
                   <Label htmlFor="confirmPassword">비밀번호 확인 *</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                     <Input
                       id="confirmPassword"
                       name="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={showConfirmPassword ? 'text' : 'password'}
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
                       className="pl-10 pr-10"
@@ -281,12 +281,12 @@ export default function SignupPage() {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 transform"
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="w-4 h-4" />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="w-4 h-4" />
+                        <Eye className="h-4 w-4" />
                       )}
                     </button>
                   </div>
@@ -300,11 +300,11 @@ export default function SignupPage() {
               </div>
 
               {/* 추가 정보 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="phone">전화번호</Label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                     <Input
                       id="phone"
                       name="phone"
@@ -318,17 +318,17 @@ export default function SignupPage() {
 
                 <div>
                   <Label htmlFor="school">
-                    {formData.role === "TEACHER" ? "학교명" : "학교"} *
+                    {formData.role === 'TEACHER' ? '학교명' : '학교'} *
                   </Label>
                   <div className="relative">
-                    <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <GraduationCap className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                     <Input
                       id="school"
                       name="school"
                       value={formData.school}
                       onChange={handleInputChange}
                       className="pl-10"
-                      placeholder={formData.role === "TEACHER" ? "서울고등학교" : "서울고등학교"}
+                      placeholder={formData.role === 'TEACHER' ? '서울고등학교' : '서울고등학교'}
                     />
                   </div>
                   {errors.school && (
@@ -340,7 +340,7 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {formData.role === "TEACHER" && (
+              {formData.role === 'TEACHER' && (
                 <div>
                   <Label htmlFor="department">학과/부서</Label>
                   <Input
@@ -356,7 +356,7 @@ export default function SignupPage() {
               <div>
                 <Label htmlFor="location">위치</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                   <Input
                     id="location"
                     name="location"
@@ -418,7 +418,7 @@ export default function SignupPage() {
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "가입 중..." : "회원가입"}
+                {isLoading ? '가입 중...' : '회원가입'}
               </Button>
 
               <div className="text-center">

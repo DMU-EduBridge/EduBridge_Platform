@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/core/prisma";
-import { PerformanceMetrics } from "./performance";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/core/prisma';
+import { PerformanceMetrics } from './performance';
 
 // ============================================================================
 // 기본 모니터링 기능
@@ -19,69 +19,75 @@ export enum LogLevel {
 export class StructuredLogger {
   private static instance: StructuredLogger;
   private logLevel: LogLevel;
-  
+
   constructor() {
     this.logLevel = this.getLogLevelFromEnv();
   }
-  
+
   static getInstance(): StructuredLogger {
     if (!StructuredLogger.instance) {
       StructuredLogger.instance = new StructuredLogger();
     }
     return StructuredLogger.instance;
   }
-  
+
   private getLogLevelFromEnv(): LogLevel {
     const level = process.env.LOG_LEVEL?.toUpperCase();
     switch (level) {
-      case "INFO": return LogLevel.INFO;
-      case "WARN": return LogLevel.WARN;
-      case "ERROR": return LogLevel.ERROR;
-      default: return LogLevel.INFO;
+      case 'INFO':
+        return LogLevel.INFO;
+      case 'WARN':
+        return LogLevel.WARN;
+      case 'ERROR':
+        return LogLevel.ERROR;
+      default:
+        return LogLevel.INFO;
     }
   }
-  
+
   private shouldLog(level: LogLevel): boolean {
     return level >= this.logLevel;
   }
-  
+
   private formatLog(level: string, message: string, meta?: any): string {
     const timestamp = new Date().toISOString();
     const logEntry = {
       timestamp,
       level,
       message,
-      service: "edubridge-api", // cspell:disable-line
+      service: 'edubridge-api', // cspell:disable-line
       environment: process.env.NODE_ENV,
       ...meta,
     };
-    
+
     return JSON.stringify(logEntry);
   }
-  
+
   info(message: string, meta?: any) {
     if (this.shouldLog(LogLevel.INFO)) {
-      console.info(this.formatLog("INFO", message, meta));
+      console.info(this.formatLog('INFO', message, meta));
     }
   }
-  
+
   warn(message: string, meta?: any) {
     if (this.shouldLog(LogLevel.WARN)) {
-      console.warn(this.formatLog("WARN", message, meta));
+      console.warn(this.formatLog('WARN', message, meta));
     }
   }
-  
+
   error(message: string, error?: Error, meta?: any) {
     if (this.shouldLog(LogLevel.ERROR)) {
       const errorMeta = {
         ...meta,
-        error: error ? {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-        } : undefined,
+        error: error
+          ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : undefined,
       };
-      console.error(this.formatLog("ERROR", message, errorMeta));
+      console.error(this.formatLog('ERROR', message, errorMeta));
     }
   }
 }
@@ -90,21 +96,21 @@ export class StructuredLogger {
 export class RequestLogger {
   static async logRequest(request: NextRequest, response: NextResponse, duration: number) {
     const logger = StructuredLogger.getInstance();
-    
+
     const logData = {
       method: request.method,
       url: request.url,
       status: response.status,
       duration: `${duration}ms`,
-      userAgent: request.headers.get("user-agent"),
-      ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip"),
-      contentLength: response.headers.get("content-length"),
+      userAgent: request.headers.get('user-agent'),
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+      contentLength: response.headers.get('content-length'),
     };
-    
+
     if (response.status >= 400) {
-      logger.error("API Request Error", undefined, logData);
+      logger.error('API Request Error', undefined, logData);
     } else {
-      logger.info("API Request", logData);
+      logger.info('API Request', logData);
     }
   }
 }
@@ -112,42 +118,42 @@ export class RequestLogger {
 // 성능 모니터링
 export class PerformanceMonitor {
   private static metrics = new Map<string, number[]>();
-  
+
   static startTimer(label: string): () => void {
     const start = performance.now();
-    
+
     return () => {
       const duration = performance.now() - start;
       this.recordMetric(label, duration);
-      
+
       const logger = StructuredLogger.getInstance();
       logger.info(`Performance: ${label}`, { duration: `${duration.toFixed(2)}ms` });
     };
   }
-  
+
   static recordMetric(name: string, value: number) {
     if (!this.metrics.has(name)) {
       this.metrics.set(name, []);
     }
-    
+
     const values = this.metrics.get(name)!;
     values.push(value);
-    
+
     // 최근 1000개 값만 유지
     if (values.length > 1000) {
       values.shift();
     }
   }
-  
+
   static getMetrics(): Record<string, any> {
     const result: Record<string, any> = {};
-    
+
     this.metrics.forEach((values, name) => {
       if (values.length === 0) return;
-      
+
       const sorted = [...values].sort((a: number, b: number) => a - b);
       const sum = values.reduce((a: number, b: number) => a + b, 0);
-      
+
       result[name] = {
         count: values.length,
         min: sorted[0],
@@ -158,7 +164,7 @@ export class PerformanceMonitor {
         p99: sorted[Math.floor(sorted.length * 0.99)],
       };
     });
-    
+
     return result;
   }
 }
@@ -166,19 +172,19 @@ export class PerformanceMonitor {
 // 에러 추적
 export class ErrorTracker {
   private static errors = new Map<string, number>();
-  
+
   static trackError(error: Error, context?: any) {
     const errorKey = `${error.name}:${error.message}`;
     const count = this.errors.get(errorKey) || 0;
     this.errors.set(errorKey, count + 1);
-    
+
     const logger = StructuredLogger.getInstance();
-    logger.error("Error tracked", error, {
+    logger.error('Error tracked', error, {
       context,
       errorCount: count + 1,
     });
   }
-  
+
   static getErrorStats(): Record<string, number> {
     const result: Record<string, number> = {};
     this.errors.forEach((count, key) => {
@@ -192,11 +198,11 @@ export class ErrorTracker {
 export class SystemMonitor {
   static async getSystemStatus() {
     const logger = StructuredLogger.getInstance();
-    
+
     try {
       const memoryUsage = process.memoryUsage();
       const uptime = process.uptime();
-      
+
       const status = {
         uptime: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`,
         memory: {
@@ -210,11 +216,11 @@ export class SystemMonitor {
         arch: process.arch,
         environment: process.env.NODE_ENV,
       };
-      
-      logger.info("System status", status);
+
+      logger.info('System status', status);
       return status;
     } catch (error) {
-      logger.error("Failed to get system status", error as Error);
+      logger.error('Failed to get system status', error as Error);
       throw error;
     }
   }
@@ -223,45 +229,45 @@ export class SystemMonitor {
 // 헬스 체크 엔드포인트용 데이터
 export class HealthChecker {
   static async checkDatabase(): Promise<{ status: string; responseTime: number }> {
-    const timer = PerformanceMonitor.startTimer("database-health-check");
-    
+    const timer = PerformanceMonitor.startTimer('database-health-check');
+
     try {
       await prisma.$queryRaw`SELECT 1`;
       timer();
-      return { status: "healthy", responseTime: 0 };
+      return { status: 'healthy', responseTime: 0 };
     } catch (error) {
       timer();
-      throw new Error("Database connection failed");
+      throw new Error('Database connection failed');
     }
   }
-  
+
   static async checkExternalServices(): Promise<Record<string, any>> {
     const results: Record<string, any> = {};
-    
+
     // AI 서비스 체크 (향후 구현)
     if (process.env.OPENAI_API_KEY) {
-      results.openai = { status: "configured" };
+      results.openai = { status: 'configured' };
     }
-    
+
     if (process.env.ANTHROPIC_API_KEY) {
-      results.anthropic = { status: "configured" };
+      results.anthropic = { status: 'configured' };
     }
-    
+
     return results;
   }
-  
+
   static async getHealthStatus() {
     const logger = StructuredLogger.getInstance();
-    
+
     try {
       const [database, externalServices, systemStatus] = await Promise.all([
         this.checkDatabase(),
         this.checkExternalServices(),
         SystemMonitor.getSystemStatus(),
       ]);
-      
+
       const healthStatus = {
-        status: "healthy",
+        status: 'healthy',
         timestamp: new Date().toISOString(),
         services: {
           database,
@@ -271,13 +277,13 @@ export class HealthChecker {
         performance: PerformanceMonitor.getMetrics(),
         errors: ErrorTracker.getErrorStats(),
       };
-      
-      logger.info("Health check completed", healthStatus);
+
+      logger.info('Health check completed', healthStatus);
       return healthStatus;
     } catch (error) {
-      logger.error("Health check failed", error as Error);
+      logger.error('Health check failed', error as Error);
       return {
-        status: "unhealthy",
+        status: 'unhealthy',
         timestamp: new Date().toISOString(),
         error: (error as Error).message,
       };
@@ -289,31 +295,31 @@ export class HealthChecker {
 export class LogCollector {
   private static logs: any[] = [];
   private static maxLogs = 1000;
-  
+
   static addLog(log: any) {
     this.logs.push({
       ...log,
       timestamp: new Date().toISOString(),
     });
-    
+
     if (this.logs.length > this.maxLogs) {
       this.logs.shift();
     }
   }
-  
+
   static getLogs(limit: number = 100): any[] {
     return this.logs.slice(-limit);
   }
-  
+
   static clearLogs() {
     this.logs = [];
   }
-  
+
   // 향후 외부 로깅 서비스로 전송
   static async sendToExternalService() {
     // Sentry, LogRocket, DataDog 등으로 전송
     const logger = StructuredLogger.getInstance();
-    logger.info("Sending logs to external service", { count: this.logs.length });
+    logger.info('Sending logs to external service', { count: this.logs.length });
   }
 }
 
@@ -336,10 +342,10 @@ export class AlertManager {
 
   static async checkAlerts() {
     const metrics = PerformanceMetrics.getAllMetrics();
-    
+
     this.alerts.forEach((config, alertId) => {
       const value = this.getMetricValue(metrics, config.metric);
-      
+
       if (this.shouldTriggerAlert(value, config)) {
         this.sendAlert(alertId, config, value).catch(console.error);
       }
@@ -349,11 +355,11 @@ export class AlertManager {
   private static getMetricValue(metrics: any, metricPath: string): number {
     const parts = metricPath.split('.');
     let value = metrics;
-    
+
     for (const part of parts) {
       value = value?.[part];
     }
-    
+
     return typeof value === 'number' ? value : 0;
   }
 
@@ -378,7 +384,7 @@ export class AlertManager {
       severity: config.severity,
       timestamp: new Date().toISOString(),
       value,
-      threshold: config.threshold
+      threshold: config.threshold,
     };
 
     // 모든 알림 채널로 전송
@@ -418,22 +424,24 @@ export class SlackNotificationChannel implements NotificationChannel {
   async send(alert: any): Promise<void> {
     const message = {
       text: `🚨 *${alert.title}*`,
-      attachments: [{
-        color: this.getColor(alert.severity),
-        fields: [
-          { title: 'Message', value: alert.message, short: false },
-          { title: 'Severity', value: alert.severity, short: true },
-          { title: 'Value', value: alert.value.toString(), short: true },
-          { title: 'Threshold', value: alert.threshold.toString(), short: true },
-          { title: 'Time', value: alert.timestamp, short: true }
-        ]
-      }]
+      attachments: [
+        {
+          color: this.getColor(alert.severity),
+          fields: [
+            { title: 'Message', value: alert.message, short: false },
+            { title: 'Severity', value: alert.severity, short: true },
+            { title: 'Value', value: alert.value.toString(), short: true },
+            { title: 'Threshold', value: alert.threshold.toString(), short: true },
+            { title: 'Time', value: alert.timestamp, short: true },
+          ],
+        },
+      ],
     };
 
     await fetch(this.webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(message)
+      body: JSON.stringify(message),
     });
   }
 
@@ -442,7 +450,7 @@ export class SlackNotificationChannel implements NotificationChannel {
       low: '#36a64f',
       medium: '#ff9500',
       high: '#ff0000',
-      critical: '#8b0000'
+      critical: '#8b0000',
     };
     return colors[severity as keyof typeof colors] || '#36a64f';
   }
@@ -467,32 +475,26 @@ export class EmailNotificationChannel implements NotificationChannel {
 // 실시간 대시보드 데이터
 export class DashboardDataProvider {
   static async getSystemOverview() {
-    const [
-      userCount,
-      problemCount,
-      studentCount,
-      reportCount,
-      recentActivity,
-      performanceMetrics
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.problem.count(),
-      prisma.user.count({ where: { role: 'STUDENT' } }), // 학생 수 계산
-      prisma.analysisReport.count(),
-      this.getRecentActivity(),
-      PerformanceMetrics.getAllMetrics()
-    ]);
+    const [userCount, problemCount, studentCount, reportCount, recentActivity, performanceMetrics] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.problem.count(),
+        prisma.user.count({ where: { role: 'STUDENT' } }), // 학생 수 계산
+        prisma.analysisReport.count(),
+        this.getRecentActivity(),
+        PerformanceMetrics.getAllMetrics(),
+      ]);
 
     return {
       counts: {
         users: userCount,
         problems: problemCount,
         students: studentCount,
-        reports: reportCount
+        reports: reportCount,
       },
       recentActivity,
       performance: performanceMetrics,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -504,17 +506,17 @@ export class DashboardDataProvider {
         type: 'user_login',
         message: '사용자가 로그인했습니다',
         timestamp: new Date().toISOString(),
-        userId: 'user1'
+        userId: 'user1',
       },
       {
         id: '2',
         type: 'problem_created',
         message: '새로운 문제가 생성되었습니다',
         timestamp: new Date().toISOString(),
-        problemId: 'problem1'
-      }
+        problemId: 'problem1',
+      },
     ];
-    
+
     return activities.slice(0, limit);
   }
 
@@ -526,16 +528,16 @@ export class DashboardDataProvider {
     return {
       requestCount: Array.from({ length: hours }, (_, i) => ({
         time: new Date(startTime.getTime() + i * 60 * 60 * 1000).toISOString(),
-        count: Math.floor(Math.random() * 100)
+        count: Math.floor(Math.random() * 100),
       })),
       responseTime: Array.from({ length: hours }, (_, i) => ({
         time: new Date(startTime.getTime() + i * 60 * 60 * 1000).toISOString(),
-        avgTime: Math.floor(Math.random() * 200) + 50
+        avgTime: Math.floor(Math.random() * 200) + 50,
       })),
       errorRate: Array.from({ length: hours }, (_, i) => ({
         time: new Date(startTime.getTime() + i * 60 * 60 * 1000).toISOString(),
-        rate: Math.random() * 5
-      }))
+        rate: Math.random() * 5,
+      })),
     };
   }
 }
@@ -545,14 +547,14 @@ export class LogAnalyzer {
   static async analyzeLogs(timeRange: { start: Date; end: Date }) {
     // 실제 구현에서는 ELK Stack, Fluentd 등 사용
     const logs = await this.getLogs(timeRange);
-    
+
     return {
       totalLogs: logs.length,
-      errorLogs: logs.filter(log => log.level === 'error').length,
-      warningLogs: logs.filter(log => log.level === 'warn').length,
-      infoLogs: logs.filter(log => log.level === 'info').length,
+      errorLogs: logs.filter((log) => log.level === 'error').length,
+      warningLogs: logs.filter((log) => log.level === 'warn').length,
+      infoLogs: logs.filter((log) => log.level === 'info').length,
       topErrors: this.getTopErrors(logs),
-      logTrends: this.getLogTrends(logs)
+      logTrends: this.getLogTrends(logs),
     };
   }
 
@@ -561,21 +563,19 @@ export class LogAnalyzer {
     const logs = [
       { level: 'info', message: 'User login', timestamp: new Date() },
       { level: 'error', message: 'Database connection failed', timestamp: new Date() },
-      { level: 'warn', message: 'High memory usage', timestamp: new Date() }
+      { level: 'warn', message: 'High memory usage', timestamp: new Date() },
     ];
-    
+
     // timeRange에 따라 필터링 (실제 구현에서는 데이터베이스 쿼리 사용)
-    return logs.filter(log => 
-      log.timestamp >= timeRange.start && log.timestamp <= timeRange.end
-    );
+    return logs.filter((log) => log.timestamp >= timeRange.start && log.timestamp <= timeRange.end);
   }
 
   private static getTopErrors(logs: any[]): Array<{ error: string; count: number }> {
     const errorCounts = new Map<string, number>();
-    
+
     logs
-      .filter(log => log.level === 'error')
-      .forEach(log => {
+      .filter((log) => log.level === 'error')
+      .forEach((log) => {
         const count = errorCounts.get(log.message) || 0;
         errorCounts.set(log.message, count + 1);
       });
@@ -588,8 +588,8 @@ export class LogAnalyzer {
 
   private static getLogTrends(logs: any[]) {
     const trends = new Map<string, number>();
-    
-    logs.forEach(log => {
+
+    logs.forEach((log) => {
       const hour = new Date(log.timestamp).getHours();
       const key = `${hour}:00`;
       trends.set(key, (trends.get(key) || 0) + 1);
@@ -608,21 +608,21 @@ export class AdvancedHealthChecker {
       this.checkDatabase(),
       this.checkMemory(),
       this.checkDiskSpace(),
-      this.checkExternalServices()
+      this.checkExternalServices(),
     ]);
 
     const results = checks.map((result, index) => ({
       name: ['database', 'memory', 'disk', 'external'][index],
       status: result.status === 'fulfilled' ? 'healthy' : 'unhealthy',
-      details: result.status === 'fulfilled' ? result.value : result.reason
+      details: result.status === 'fulfilled' ? result.value : result.reason,
     }));
 
-    const overallStatus = results.every(r => r.status === 'healthy') ? 'healthy' : 'unhealthy';
+    const overallStatus = results.every((r) => r.status === 'healthy') ? 'healthy' : 'unhealthy';
 
     return {
       status: overallStatus,
       timestamp: new Date().toISOString(),
-      checks: results
+      checks: results,
     };
   }
 
@@ -648,7 +648,7 @@ export class AdvancedHealthChecker {
     return {
       heapUsed: `${heapUsedMB.toFixed(2)}MB`,
       heapTotal: `${heapTotalMB.toFixed(2)}MB`,
-      usagePercent: `${usagePercent.toFixed(2)}%`
+      usagePercent: `${usagePercent.toFixed(2)}%`,
     };
   }
 
@@ -672,7 +672,7 @@ export function initializeMonitoring() {
     metric: 'request_duration.avg',
     condition: 'greater_than',
     threshold: 1000, // 1초
-    severity: 'high'
+    severity: 'high',
   });
 
   AlertManager.registerAlert('high_error_rate', {
@@ -681,7 +681,7 @@ export function initializeMonitoring() {
     metric: 'request_error.count',
     condition: 'greater_than',
     threshold: 10,
-    severity: 'critical'
+    severity: 'critical',
   });
 
   AlertManager.registerAlert('high_memory_usage', {
@@ -690,18 +690,21 @@ export function initializeMonitoring() {
     metric: 'memory_usage.avg',
     condition: 'greater_than',
     threshold: 500 * 1024 * 1024, // 500MB
-    severity: 'medium'
+    severity: 'medium',
   });
 
   // 알림 채널 설정 (환경변수에서)
   if (process.env.SLACK_WEBHOOK_URL) {
     AlertManager.addNotificationChannel(
-      new SlackNotificationChannel(process.env.SLACK_WEBHOOK_URL)
+      new SlackNotificationChannel(process.env.SLACK_WEBHOOK_URL),
     );
   }
 
   // 주기적 알림 체크 (5분마다)
-  setInterval(() => {
-    AlertManager.checkAlerts().catch(console.error);
-  }, 5 * 60 * 1000);
+  setInterval(
+    () => {
+      AlertManager.checkAlerts().catch(console.error);
+    },
+    5 * 60 * 1000,
+  );
 }

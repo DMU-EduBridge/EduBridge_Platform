@@ -1,10 +1,10 @@
-import { api } from "@/lib/core/api";
+import { api } from '@/lib/core/api';
 
 export interface LearningMaterialPayload {
   title: string;
   subject: string;
   content: string;
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 }
 
 export const learningService = {
@@ -14,16 +14,16 @@ export const learningService = {
     status?: string;
     page?: number;
     limit?: number;
-  }) => api.get("/learning-materials", { params }),
+  }) => api.get('/learning-materials', { params }),
 
   getMaterial: (id: string) => api.get(`/learning-materials/${id}`),
 
-  createMaterial: (data: LearningMaterialPayload) => api.post("/learning-materials", data),
+  createMaterial: (data: LearningMaterialPayload) => api.post('/learning-materials', data),
 
   updateMaterial: (id: string, data: Partial<LearningMaterialPayload>) =>
     api.put(`/learning-materials/${id}`, data),
 
   deleteMaterial: (id: string) => api.delete(`/learning-materials/${id}`),
 
-  getMaterialStats: () => api.get("/learning-materials/stats"),
+  getMaterialStats: () => api.get('/learning-materials/stats'),
 };

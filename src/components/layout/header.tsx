@@ -1,57 +1,57 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Menu, X, User, LogIn } from "lucide-react";
+import { useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Menu, X, User, LogIn } from 'lucide-react';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           {/* 로고 */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">E</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-purple-600">
+                <span className="text-sm font-bold text-white">E</span>
               </div>
               <span className="text-xl font-bold text-gray-900">EduBridge</span>
             </Link>
           </div>
 
           {/* 데스크톱 네비게이션 */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/features" className="text-gray-700 hover:text-blue-600 transition-colors">
+          <nav className="hidden items-center space-x-8 md:flex">
+            <Link href="/features" className="text-gray-700 transition-colors hover:text-blue-600">
               기능
             </Link>
             <Link
               href="/how-it-works"
-              className="text-gray-700 hover:text-blue-600 transition-colors"
+              className="text-gray-700 transition-colors hover:text-blue-600"
             >
               작동 방식
             </Link>
-            <Link href="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link href="/pricing" className="text-gray-700 transition-colors hover:text-blue-600">
               요금제
             </Link>
-            <Link href="/about" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link href="/about" className="text-gray-700 transition-colors hover:text-blue-600">
               소개
             </Link>
           </nav>
 
           {/* 액션 버튼들 */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden items-center space-x-4 md:flex">
             <Button variant="ghost" asChild>
               <Link href="/login">
-                <LogIn className="w-4 h-4 mr-2" />
+                <LogIn className="mr-2 h-4 w-4" />
                 로그인
               </Link>
             </Button>
             <Button asChild>
               <Link href="/signup">
-                <User className="w-4 h-4 mr-2" />
+                <User className="mr-2 h-4 w-4" />
                 시작하기
               </Link>
             </Button>
@@ -60,43 +60,43 @@ export function Header() {
           {/* 모바일 메뉴 버튼 */}
           <div className="md:hidden">
             <Button variant="ghost" size="sm" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
 
         {/* 모바일 메뉴 */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 py-4">
+          <div className="border-t border-gray-200 py-4 md:hidden">
             <nav className="flex flex-col space-y-4">
               <Link
                 href="/features"
-                className="text-gray-700 hover:text-blue-600 transition-colors"
+                className="text-gray-700 transition-colors hover:text-blue-600"
               >
                 기능
               </Link>
               <Link
                 href="/how-it-works"
-                className="text-gray-700 hover:text-blue-600 transition-colors"
+                className="text-gray-700 transition-colors hover:text-blue-600"
               >
                 작동 방식
               </Link>
-              <Link href="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors">
+              <Link href="/pricing" className="text-gray-700 transition-colors hover:text-blue-600">
                 요금제
               </Link>
-              <Link href="/about" className="text-gray-700 hover:text-blue-600 transition-colors">
+              <Link href="/about" className="text-gray-700 transition-colors hover:text-blue-600">
                 소개
               </Link>
-              <div className="pt-4 border-t border-gray-200 space-y-2">
+              <div className="space-y-2 border-t border-gray-200 pt-4">
                 <Button variant="ghost" className="w-full justify-start" asChild>
                   <Link href="/login">
-                    <LogIn className="w-4 h-4 mr-2" />
+                    <LogIn className="mr-2 h-4 w-4" />
                     로그인
                   </Link>
                 </Button>
                 <Button className="w-full" asChild>
                   <Link href="/signup">
-                    <User className="w-4 h-4 mr-2" />
+                    <User className="mr-2 h-4 w-4" />
                     시작하기
                   </Link>
                 </Button>

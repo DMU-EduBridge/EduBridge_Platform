@@ -1,14 +1,14 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 export function Footer() {
   return (
-    <footer className="text-white bg-gray-900">
-      <div className="px-4 py-12 mx-auto max-w-7xl sm:px-6 lg:px-8">
+    <footer className="bg-gray-900 text-white">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* 로고 및 설명 */}
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center mb-4 space-x-2">
-              <div className="flex justify-center items-center w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+            <div className="mb-4 flex items-center space-x-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-purple-600">
                 <span className="text-sm font-bold text-white">E</span>
               </div>
               <span className="text-xl font-bold">EduBridge</span>
@@ -74,9 +74,9 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="flex flex-col justify-between items-center pt-8 mt-8 border-t border-gray-800 md:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-between border-t border-gray-800 pt-8 md:flex-row">
           <p className="text-sm text-gray-400">© 2025 EduBridge. All rights reserved.</p>
-          <div className="flex mt-4 space-x-6 md:mt-0">
+          <div className="mt-4 flex space-x-6 md:mt-0">
             <Link
               href="/privacy"
               className="text-sm text-gray-400 transition-colors hover:text-white"

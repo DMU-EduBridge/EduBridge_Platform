@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/core/prisma";
-import { z } from "zod";
-import { parseJsonBody } from "@/lib/config/validation";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/core/prisma';
+import { z } from 'zod';
+import { parseJsonBody } from '@/lib/config/validation';
 
 // 문제 업데이트 스키마 (부분 업데이트 고려 시 partial 가능, 여기선 필수 유지)
 const updateProblemSchema = z.object({
@@ -25,13 +25,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     });
 
     if (!problem) {
-      return NextResponse.json({ error: "Problem not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
     }
 
     return NextResponse.json(problem);
   } catch (error) {
-    console.error("Error fetching problem:", error);
-    return NextResponse.json({ error: "Failed to fetch problem" }, { status: 500 });
+    console.error('Error fetching problem:', error);
+    return NextResponse.json({ error: 'Failed to fetch problem' }, { status: 500 });
   }
 }
 
@@ -71,8 +71,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json(problem);
   } catch (error) {
-    console.error("Error updating problem:", error);
-    return NextResponse.json({ error: "Failed to update problem" }, { status: 500 });
+    console.error('Error updating problem:', error);
+    return NextResponse.json({ error: 'Failed to update problem' }, { status: 500 });
   }
 }
 
@@ -82,9 +82,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       where: { id: params.id },
     });
 
-    return NextResponse.json({ message: "Problem deleted successfully" });
+    return NextResponse.json({ message: 'Problem deleted successfully' });
   } catch (error) {
-    console.error("Error deleting problem:", error);
-    return NextResponse.json({ error: "Failed to delete problem" }, { status: 500 });
+    console.error('Error deleting problem:', error);
+    return NextResponse.json({ error: 'Failed to delete problem' }, { status: 500 });
   }
 }

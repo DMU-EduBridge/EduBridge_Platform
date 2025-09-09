@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/core/prisma";
-import { Prisma } from "@prisma/client";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/core/prisma';
+import { Prisma } from '@prisma/client';
 
 // 학습 자료 목록 조회
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search");
-    const subject = searchParams.get("subject");
-    const status = searchParams.get("status");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get('search');
+    const subject = searchParams.get('subject');
+    const status = searchParams.get('status');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
 
     const where: Prisma.LearningMaterialWhereInput = {};
 
@@ -18,11 +18,11 @@ export async function GET(request: NextRequest) {
       where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
     }
 
-    if (subject && subject !== "all") {
+    if (subject && subject !== 'all') {
       where.subject = subject;
     }
 
-    if (status && status !== "all") {
+    if (status && status !== 'all') {
       where.status = status;
     }
 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
       }),
       prisma.learningMaterial.count({ where }),
     ]);
@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching learning materials:", error);
-    return NextResponse.json({ error: "Failed to fetch learning materials" }, { status: 500 });
+    console.error('Error fetching learning materials:', error);
+    return NextResponse.json({ error: 'Failed to fetch learning materials' }, { status: 500 });
   }
 }
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       estimatedTime,
       content,
       files,
-      status = "DRAFT",
+      status = 'DRAFT',
     } = body;
 
     const material = await prisma.learningMaterial.create({
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(material, { status: 201 });
   } catch (error) {
-    console.error("Error creating learning material:", error);
-    return NextResponse.json({ error: "Failed to create learning material" }, { status: 500 });
+    console.error('Error creating learning material:', error);
+    return NextResponse.json({ error: 'Failed to create learning material' }, { status: 500 });
   }
 }

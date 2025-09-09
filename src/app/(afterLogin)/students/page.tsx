@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Plus,
   Search,
@@ -16,34 +16,34 @@ import {
   Mail,
   Calendar,
   Award,
-} from "lucide-react";
-import { useStudents } from "@/hooks/use-api";
-import { LMSStudent } from "@/types/lms/student";
+} from 'lucide-react';
+import { useStudents } from '@/hooks/use-api';
+import { LMSStudent } from '@/types/lms/student';
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
 const statusColors = {
-  ACTIVE: "bg-green-100 text-green-800",
-  INACTIVE: "bg-gray-100 text-gray-800",
-  SUSPENDED: "bg-red-100 text-red-800",
+  ACTIVE: 'bg-green-100 text-green-800',
+  INACTIVE: 'bg-gray-100 text-gray-800',
+  SUSPENDED: 'bg-red-100 text-red-800',
 };
 
 const statusLabels = {
-  ACTIVE: "활성",
-  INACTIVE: "비활성",
-  SUSPENDED: "정지",
+  ACTIVE: '활성',
+  INACTIVE: '비활성',
+  SUSPENDED: '정지',
 };
 
 const progressColors = {
-  high: "bg-green-500",
-  medium: "bg-yellow-500",
-  low: "bg-red-500",
+  high: 'bg-green-500',
+  medium: 'bg-yellow-500',
+  low: 'bg-red-500',
 };
 
 export default function StudentsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedGrade, setSelectedGrade] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
 
   // TanStack Query 훅 사용
   const {
@@ -52,8 +52,8 @@ export default function StudentsPage() {
     // sendMessage: sendMessageMutation,
   } = useStudents({
     search: searchTerm || undefined,
-    grade: selectedGrade !== "all" ? selectedGrade : undefined,
-    status: selectedStatus !== "all" ? selectedStatus : undefined,
+    grade: selectedGrade !== 'all' ? selectedGrade : undefined,
+    status: selectedStatus !== 'all' ? selectedStatus : undefined,
   });
 
   const students = studentsQuery.data?.students || [];
@@ -72,27 +72,27 @@ export default function StudentsPage() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">학생 관리</h1>
-          <p className="text-gray-600 mt-2">
+          <p className="mt-2 text-gray-600">
             학생들의 학습 진도를 확인하고 개별 상담을 진행하세요.
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
-            <Mail className="w-4 h-4 mr-2" />
+            <Mail className="mr-2 h-4 w-4" />
             일괄 메일 발송
           </Button>
           <Button>
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             학생 초대
           </Button>
         </div>
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">총 학생 수</CardTitle>
@@ -100,10 +100,10 @@ export default function StudentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? "..." : stats?.totalStudents || 0}
+              {statsQuery.isLoading ? '...' : stats?.totalStudents || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats?.weeklyChange ? `+${stats.weeklyChange} 이번 주` : "로딩 중..."}
+              {stats?.weeklyChange ? `+${stats.weeklyChange} 이번 주` : '로딩 중...'}
             </p>
           </CardContent>
         </Card>
@@ -114,10 +114,10 @@ export default function StudentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? "..." : stats?.activeStudents || 0}
+              {statsQuery.isLoading ? '...' : stats?.activeStudents || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats?.activeRate ? `${stats.activeRate}% 활성율` : "로딩 중..."}
+              {stats?.activeRate ? `${stats.activeRate}% 활성율` : '로딩 중...'}
             </p>
           </CardContent>
         </Card>
@@ -128,10 +128,10 @@ export default function StudentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? "..." : `${stats?.averageProgress || 0}%`}
+              {statsQuery.isLoading ? '...' : `${stats?.averageProgress || 0}%`}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats?.progressChange ? `+${stats.progressChange}% 이번 주` : "로딩 중..."}
+              {stats?.progressChange ? `+${stats.progressChange}% 이번 주` : '로딩 중...'}
             </p>
           </CardContent>
         </Card>
@@ -142,10 +142,10 @@ export default function StudentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? "..." : `${stats?.averageScore || 0}점`}
+              {statsQuery.isLoading ? '...' : `${stats?.averageScore || 0}점`}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats?.scoreChange ? `+${stats.scoreChange}점 이번 주` : "로딩 중..."}
+              {stats?.scoreChange ? `+${stats.scoreChange}점 이번 주` : '로딩 중...'}
             </p>
           </CardContent>
         </Card>
@@ -157,10 +157,10 @@ export default function StudentsPage() {
           <CardTitle>학생 검색 및 필터</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-4 md:flex-row">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <Input
                   placeholder="학생 이름 또는 이메일로 검색..."
                   value={searchTerm}
@@ -173,7 +173,7 @@ export default function StudentsPage() {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm"
               >
                 <option value="all">모든 학년</option>
                 <option value="1학년">1학년</option>
@@ -183,7 +183,7 @@ export default function StudentsPage() {
               <select
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm"
               >
                 <option value="all">모든 상태</option>
                 <option value="ACTIVE">활성</option>
@@ -196,12 +196,12 @@ export default function StudentsPage() {
       </Card>
 
       {/* 학생 목록 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {studentsQuery.isLoading ? (
           <div className="col-span-2">
             <Card>
               <CardContent className="p-12 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
                 <p className="text-gray-600">학생 목록을 불러오는 중...</p>
               </CardContent>
             </Card>
@@ -216,9 +216,9 @@ export default function StudentsPage() {
           </div>
         ) : (
           students.map((student: LMSStudent) => (
-            <Card key={student.id} className="hover:shadow-md transition-shadow">
+            <Card key={student.id} className="transition-shadow hover:shadow-md">
               <CardHeader>
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-lg">{student.name}</CardTitle>
                     <CardDescription>{student.grade}</CardDescription>
@@ -232,26 +232,26 @@ export default function StudentsPage() {
                 {/* 기본 정보 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail className="w-4 h-4" />
+                    <Mail className="h-4 w-4" />
                     <span>{student.email}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
+                    <Calendar className="h-4 w-4" />
                     <span>가입일: {student.joinDate}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="w-4 h-4" />
+                    <Clock className="h-4 w-4" />
                     <span>마지막 활동: {student.lastActivity}</span>
                   </div>
                 </div>
 
                 {/* 학습 진도 */}
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">학습 진도</span>
                     <span className="text-sm text-gray-600">{student.progress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="h-2 w-full rounded-full bg-gray-200">
                     <div
                       className={`h-2 rounded-full ${getProgressColor(student.progress)}`}
                       style={{ width: `${student.progress}%` }}
@@ -261,13 +261,13 @@ export default function StudentsPage() {
 
                 {/* 학습 통계 */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="text-center p-2 bg-gray-50 rounded">
+                  <div className="rounded bg-gray-50 p-2 text-center">
                     <div className="font-semibold text-gray-900">
                       {student.completedProblems}/{student.totalProblems}
                     </div>
                     <div className="text-gray-600">완료 문제</div>
                   </div>
-                  <div className="text-center p-2 bg-gray-50 rounded">
+                  <div className="rounded bg-gray-50 p-2 text-center">
                     <div className="font-semibold text-gray-900">{student.averageScore}점</div>
                     <div className="text-gray-600">평균 점수</div>
                   </div>
@@ -276,7 +276,7 @@ export default function StudentsPage() {
                 {/* 수강 과목 */}
                 <div>
                   <span className="text-sm font-medium text-gray-700">수강 과목:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
+                  <div className="mt-1 flex flex-wrap gap-1">
                     {student.subjects.map((subject: string) => (
                       <Badge key={subject} variant="secondary" className="text-xs">
                         {subject}
@@ -288,15 +288,15 @@ export default function StudentsPage() {
                 {/* 액션 버튼 */}
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" size="sm" className="flex-1">
-                    <MessageCircle className="w-4 h-4 mr-1" />
+                    <MessageCircle className="mr-1 h-4 w-4" />
                     상담
                   </Button>
                   <Button variant="outline" size="sm" className="flex-1">
-                    <TrendingUp className="w-4 h-4 mr-1" />
+                    <TrendingUp className="mr-1 h-4 w-4" />
                     진도 확인
                   </Button>
                   <Button variant="outline" size="sm" className="flex-1">
-                    <Mail className="w-4 h-4 mr-1" />
+                    <Mail className="mr-1 h-4 w-4" />
                     메일
                   </Button>
                 </div>
@@ -309,11 +309,11 @@ export default function StudentsPage() {
       {!studentsQuery.isLoading && !studentsQuery.error && students.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">학생을 찾을 수 없습니다</h3>
-            <p className="text-gray-600 mb-4">검색 조건에 맞는 학생이 없습니다.</p>
+            <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">학생을 찾을 수 없습니다</h3>
+            <p className="mb-4 text-gray-600">검색 조건에 맞는 학생이 없습니다.</p>
             <Button>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               학생 초대하기
             </Button>
           </CardContent>

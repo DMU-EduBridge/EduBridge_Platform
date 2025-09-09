@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileUpload } from "@/components/ui/file-upload";
-import { ArrowLeft, Save } from "lucide-react";
-import Link from "next/link";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileUpload } from '@/components/ui/file-upload';
+import { ArrowLeft, Save } from 'lucide-react';
+import Link from 'next/link';
 
 export default function NewLearningMaterialPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    subject: "",
-    difficulty: "MEDIUM",
-    estimatedTime: "",
-    content: "",
+    title: '',
+    description: '',
+    subject: '',
+    difficulty: 'MEDIUM',
+    estimatedTime: '',
+    content: '',
   });
   const [uploadedFiles, setUploadedFiles] = useState<
     Array<{
@@ -59,44 +59,44 @@ export default function NewLearningMaterialPage() {
 
     try {
       // 실제 API 호출로 대체
-      const response = await fetch("/api/learning-materials", {
-        method: "POST",
+      const response = await fetch('/api/learning-materials', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...formData,
           files: uploadedFiles,
-          status: "DRAFT",
+          status: 'DRAFT',
         }),
       });
 
       if (response.ok) {
-        router.push("/projects");
+        router.push('/projects');
       } else {
-        throw new Error("Failed to create learning material");
+        throw new Error('Failed to create learning material');
       }
     } catch (error) {
-      console.error("Error creating learning material:", error);
-      alert("학습 자료 생성에 실패했습니다.");
+      console.error('Error creating learning material:', error);
+      alert('학습 자료 생성에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       {/* 헤더 */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" asChild>
           <Link href="/projects">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             뒤로가기
           </Link>
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-gray-900">새 학습 자료</h1>
-          <p className="text-gray-600 mt-2">학생들을 위한 새로운 학습 자료를 생성하세요</p>
+          <p className="mt-2 text-gray-600">학생들을 위한 새로운 학습 자료를 생성하세요</p>
         </div>
       </div>
 
@@ -128,12 +128,12 @@ export default function NewLearningMaterialPage() {
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="학습 자료에 대한 간단한 설명을 입력하세요"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 rows={3}
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <Label htmlFor="subject">과목 *</Label>
                 <select
@@ -141,7 +141,7 @@ export default function NewLearningMaterialPage() {
                   name="subject"
                   value={formData.subject}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">과목 선택</option>
@@ -161,7 +161,7 @@ export default function NewLearningMaterialPage() {
                   name="difficulty"
                   value={formData.difficulty}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="EASY">쉬움</option>
                   <option value="MEDIUM">보통</option>
@@ -205,7 +205,7 @@ export default function NewLearningMaterialPage() {
                 {uploadedFiles.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                    className="flex items-center justify-between rounded bg-gray-50 p-2"
                   >
                     <span className="text-sm text-gray-600">{file.filename}</span>
                     <Button
@@ -235,7 +235,7 @@ export default function NewLearningMaterialPage() {
               value={formData.content}
               onChange={handleInputChange}
               placeholder="학습 내용을 상세히 작성하세요..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
               rows={10}
             />
           </CardContent>
@@ -249,12 +249,12 @@ export default function NewLearningMaterialPage() {
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
                 저장 중...
               </>
             ) : (
               <>
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="mr-2 h-4 w-4" />
                 저장
               </>
             )}

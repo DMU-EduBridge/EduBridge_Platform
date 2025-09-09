@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: "PROFESSOR" | "STUDENT" | "ADMIN";
+  role: 'PROFESSOR' | 'STUDENT' | 'ADMIN';
   avatar?: string;
   bio?: string;
   department?: string;
@@ -21,13 +21,13 @@ export interface Project {
   title: string;
   description: string;
   status:
-    | "DRAFT"
-    | "SUBMITTED"
-    | "REVIEWED"
-    | "ACCEPTED"
-    | "REJECTED"
-    | "IN_PROGRESS"
-    | "COMPLETED";
+    | 'DRAFT'
+    | 'SUBMITTED'
+    | 'REVIEWED'
+    | 'ACCEPTED'
+    | 'REJECTED'
+    | 'IN_PROGRESS'
+    | 'COMPLETED';
   professorId: string;
   professor: User;
   researchArea: string;
@@ -50,7 +50,7 @@ export interface Application {
   project: Project;
   studentId: string;
   student: User;
-  status: "PENDING" | "ACCEPTED" | "REJECTED" | "EXPIRED";
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
   message?: string;
   resume?: string;
   portfolio: string[];

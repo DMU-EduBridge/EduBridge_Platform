@@ -1,37 +1,37 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/core/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/core/prisma';
 
 // 문제 통계
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type");
+    const type = searchParams.get('type');
 
     // 조건부 쿼리 설정
     const getWhereCondition = () => {
-      if (type === "problems") {
+      if (type === 'problems') {
         return { isActive: true };
-      } else if (type === "students") {
-        return { role: "STUDENT", status: "ACTIVE" };
-      } else if (type === "reports") {
-        return { status: "COMPLETED" };
+      } else if (type === 'students') {
+        return { role: 'STUDENT', status: 'ACTIVE' };
+      } else if (type === 'reports') {
+        return { status: 'COMPLETED' };
       }
       return {};
     };
 
     let stats;
 
-    if (type === "problems") {
+    if (type === 'problems') {
       const whereCondition = getWhereCondition();
       const [totalProblems, activeProblems, bySubject, byDifficulty] = await Promise.all([
         prisma.problem.count(),
         prisma.problem.count({ where: whereCondition }),
         prisma.problem.groupBy({
-          by: ["subject"],
+          by: ['subject'],
           _count: { subject: true },
         }),
         prisma.problem.groupBy({
-          by: ["difficulty"],
+          by: ['difficulty'],
           _count: { difficulty: true },
         }),
       ]);
@@ -54,17 +54,17 @@ export async function GET(request: NextRequest) {
           {} as Record<string, number>,
         ),
       };
-    } else if (type === "students") {
+    } else if (type === 'students') {
       const [totalStudents, activeStudents, byGrade, allStudentsWithProgress] = await Promise.all([
-        prisma.user.count({ where: { role: "STUDENT" } }),
-        prisma.user.count({ where: { role: "STUDENT", status: "ACTIVE" } }),
+        prisma.user.count({ where: { role: 'STUDENT' } }),
+        prisma.user.count({ where: { role: 'STUDENT', status: 'ACTIVE' } }),
         prisma.user.groupBy({
-          by: ["grade"],
-          where: { role: "STUDENT" },
+          by: ['grade'],
+          where: { role: 'STUDENT' },
           _count: { grade: true },
         }),
         prisma.user.findMany({
-          where: { role: "STUDENT" },
+          where: { role: 'STUDENT' },
           include: { progress: true },
         }),
       ]);
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
       allStudentsWithProgress.forEach((student) => {
         if (student.progress.length > 0) {
-          const completedProblems = student.progress.filter((p) => p.status === "COMPLETED").length;
+          const completedProblems = student.progress.filter((p) => p.status === 'COMPLETED').length;
           const progress = Math.round((completedProblems / student.progress.length) * 100);
           const avgScore = Math.round(
             student.progress.reduce((sum, p) => sum + (p.score || 0), 0) / student.progress.length,
@@ -112,12 +112,12 @@ export async function GET(request: NextRequest) {
           {} as Record<string, number>,
         ),
       };
-    } else if (type === "reports") {
+    } else if (type === 'reports') {
       const [totalReports, completedReports, byType] = await Promise.all([
         prisma.analysisReport.count(),
-        prisma.analysisReport.count({ where: { status: "COMPLETED" } }),
+        prisma.analysisReport.count({ where: { status: 'COMPLETED' } }),
         prisma.analysisReport.groupBy({
-          by: ["type"],
+          by: ['type'],
           _count: { type: true },
         }),
       ]);
@@ -140,9 +140,9 @@ export async function GET(request: NextRequest) {
       // 전체 통계
       const [totalProblems, totalStudents, totalReports, activeStudents] = await Promise.all([
         prisma.problem.count({ where: { isActive: true } }),
-        prisma.user.count({ where: { role: "STUDENT" } }),
+        prisma.user.count({ where: { role: 'STUDENT' } }),
         prisma.analysisReport.count(),
-        prisma.user.count({ where: { role: "STUDENT", status: "ACTIVE" } }),
+        prisma.user.count({ where: { role: 'STUDENT', status: 'ACTIVE' } }),
       ]);
 
       stats = {
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(stats);
   } catch (error) {
-    console.error("Error fetching stats:", error);
-    return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
+    console.error('Error fetching stats:', error);
+    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
   }
 }

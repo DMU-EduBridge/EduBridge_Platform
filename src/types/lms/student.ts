@@ -9,6 +9,6 @@ export interface LMSStudent {
   totalProblems: number;
   completedProblems: number;
   averageScore: number;
-  status: "ACTIVE" | "INACTIVE" | "SUSPENDED";
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   joinDate: string;
 }

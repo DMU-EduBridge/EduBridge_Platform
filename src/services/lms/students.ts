@@ -1,5 +1,5 @@
-import { api } from "@/lib/core/api";
-import type { LMSStudent } from "@/types/lms";
+import { api } from '@/lib/core/api';
+import type { LMSStudent } from '@/types/lms';
 
 export const studentsService = {
   getStudents: (params?: {
@@ -8,7 +8,7 @@ export const studentsService = {
     status?: string;
     page?: number;
     limit?: number;
-  }) => api.get<{ students: LMSStudent[]; total: number }>("/students", { params }),
+  }) => api.get<{ students: LMSStudent[]; total: number }>('/students', { params }),
 
   getStudent: (id: string) => api.get<LMSStudent>(`/students/${id}`),
 
@@ -19,5 +19,5 @@ export const studentsService = {
 
   sendMessage: (id: string, message: string) => api.post(`/students/${id}/message`, { message }),
 
-  getStudentStats: () => api.get("/students/stats"),
+  getStudentStats: () => api.get('/students/stats'),
 };

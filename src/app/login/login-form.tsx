@@ -1,43 +1,43 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useState } from 'react';
+import Link from 'next/link';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError('');
 
     try {
-      const result = await signIn("credentials", {
+      const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
       } else {
-        router.push("/dashboard");
+        router.push('/dashboard');
       }
     } catch (error) {
-      setError("로그인 중 오류가 발생했습니다.");
+      setError('로그인 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -46,9 +46,9 @@ export function LoginForm() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/dashboard" });
+      await signIn('google', { callbackUrl: '/dashboard' });
     } catch (error) {
-      setError("Google 로그인 중 오류가 발생했습니다.");
+      setError('Google 로그인 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -59,10 +59,10 @@ export function LoginForm() {
       <CardHeader className="text-center">
         <Link
           href="/"
-          className="flex items-center justify-center space-x-2 mb-4 hover:opacity-80 transition-opacity"
+          className="mb-4 flex items-center justify-center space-x-2 transition-opacity hover:opacity-80"
         >
-          <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">E</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-purple-600">
+            <span className="text-sm font-bold text-white">E</span>
           </div>
           <span className="text-xl font-bold text-gray-900">EduBridge</span>
         </Link>
@@ -80,7 +80,7 @@ export function LoginForm() {
           <div className="space-y-2">
             <Label htmlFor="email">이메일</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="email"
                 type="email"
@@ -97,10 +97,10 @@ export function LoginForm() {
           <div className="space-y-2">
             <Label htmlFor="password">비밀번호</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
               <Input
                 id="password"
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="비밀번호를 입력하세요"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -111,10 +111,10 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 transform text-gray-400 hover:text-gray-600"
                 disabled={isLoading}
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -126,7 +126,7 @@ export function LoginForm() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "로그인 중..." : "로그인"}
+            {isLoading ? '로그인 중...' : '로그인'}
           </Button>
         </form>
 
@@ -135,7 +135,7 @@ export function LoginForm() {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">또는</span>
+            <span className="bg-white px-2 text-gray-500">또는</span>
           </div>
         </div>
 
@@ -145,7 +145,7 @@ export function LoginForm() {
           onClick={handleGoogleSignIn}
           disabled={isLoading}
         >
-          <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               fill="currentColor"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -168,7 +168,7 @@ export function LoginForm() {
 
         <div className="text-center">
           <span className="text-sm text-gray-600">계정이 없으신가요? </span>
-          <Link href="/signup" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+          <Link href="/signup" className="text-sm font-medium text-blue-600 hover:text-blue-700">
             회원가입
           </Link>
         </div>

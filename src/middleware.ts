@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
-const protectedPaths = ["/dashboard", "/profile", "/projects", "/applications", "/(afterLogin)"];
-const adminPaths = ["/admin"];
+const protectedPaths = ['/dashboard', '/profile', '/projects', '/applications', '/(afterLogin)'];
+const adminPaths = ['/admin'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,14 +18,14 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
   if (!token) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname + request.nextUrl.search);
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAdminPath && token.role !== "ADMIN") {
-    const dashboardUrl = new URL("/dashboard", request.url);
-    dashboardUrl.searchParams.set("error", "forbidden");
+  if (isAdminPath && token.role !== 'ADMIN') {
+    const dashboardUrl = new URL('/dashboard', request.url);
+    dashboardUrl.searchParams.set('error', 'forbidden');
     return NextResponse.redirect(dashboardUrl);
   }
 
@@ -35,6 +35,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // protect all but public assets and api route; keep _next and favicon free
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

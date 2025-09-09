@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { ZodSchema, ZodError } from "zod";
+import { NextResponse } from 'next/server';
+import { ZodSchema, ZodError } from 'zod';
 
 export type ParseResult<T> =
   | { success: true; data: T }
@@ -15,20 +15,20 @@ export function parseJsonBody<T>(body: unknown, schema: ZodSchema<T>): ParseResu
   } catch (error) {
     return {
       success: false,
-      response: NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 }),
+      response: NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 }),
     };
   }
 }
 
 export function zodErrorResponse(error: ZodError) {
   const issues = error.errors.map((e) => ({
-    path: e.path.join("."),
+    path: e.path.join('.'),
     message: e.message,
     code: e.code,
   }));
   return NextResponse.json(
     {
-      error: "ValidationError",
+      error: 'ValidationError',
       issues,
     },
     { status: 400 },

@@ -18,6 +18,7 @@
 EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사와 학생 간의 효율적인 학습 환경을 제공하며, 개인화된 학습 경험과 데이터 기반 인사이트를 통해 교육의 질을 향상시킵니다.
 
 ### 🎯 핵심 가치
+
 - **개인화된 학습**: AI 기반 맞춤형 문제 추천 및 학습 경로 제공
 - **데이터 기반 인사이트**: 학습 패턴 분석을 통한 효과적인 교육 전략 수립
 - **통합 관리**: 문제, 학습자료, 학생 관리, 리포트 생성의 원스톱 솔루션
@@ -26,42 +27,49 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 ## ✨ 주요 기능
 
 ### 🤖 AI 튜터 시스템
+
 - **개인화 문제 추천**: 학생의 학습 수준과 관심사 기반 맞춤형 문제 제공
 - **학습 경로 가이드**: AI가 분석한 최적 학습 순서 제안
 - **실시간 피드백**: 문제 풀이 과정에서 즉시 피드백 및 힌트 제공
 - **약점 분석**: 학습 패턴 분석을 통한 개선점 도출
 
 ### 📊 대시보드 & 분석
+
 - **실시간 학습 현황**: 학생별 진행률, 완료율, 평균 점수 시각화
 - **통계 카드**: 전체 문제 수, 활성 학생 수, 완료된 리포트 수 등 핵심 지표
 - **최근 활동**: 최신 학습 활동 및 성과 추적
 - **빠른 액션**: 자주 사용하는 기능에 대한 원클릭 접근
 
 ### 📝 문제 & 학습자료 관리
+
 - **문제 생성/수정**: 다양한 유형의 문제 생성 (객관식, 주관식, 서술형, 코딩, 수학)
 - **학습자료 관리**: PDF, 이미지, 동영상 등 다양한 형태의 학습자료 업로드
 - **검색 & 필터링**: 과목, 난이도, 유형별 문제 검색
 - **품질 관리**: AI 생성 문제의 품질 점수 및 검토 시스템
 
 ### 👥 학생 관리
+
 - **학생 프로필**: 개인정보, 학습 스타일, 관심사 관리
 - **진행률 추적**: 문제별 완료 상태, 점수, 시도 횟수 기록
 - **성과 분석**: 평균 점수, 완료율, 학습 시간 분석
 - **개인화 설정**: 선호 난이도, 학습 스타일, 관심 과목 설정
 
 ### 📈 리포트 & 분석
+
 - **학습 분석 리포트**: 개별 학생의 학습 패턴 및 성과 분석
 - **클래스 리포트**: 전체 학생의 학습 현황 및 트렌드 분석
 - **AI 인사이트**: 학습 데이터 기반 개선 권장사항 제공
 - **진로 상담**: 학습 성과 기반 진로 및 대학 추천
 
 ### 🔐 인증 & 권한 관리
+
 - **다중 인증**: 이메일/비밀번호, Google OAuth 지원
 - **역할 기반 접근 제어**: 교사, 학생, 관리자 권한 분리
 - **라우트 보호**: 미들웨어를 통한 페이지 접근 제어
 - **세션 관리**: 안전한 사용자 세션 및 자동 로그아웃
 
 ### 📁 파일 관리
+
 - **안전한 업로드**: 파일 크기, MIME 타입 검증
 - **파일명 정규화**: 보안을 위한 파일명 정리
 - **다양한 형식 지원**: 이미지, PDF, 문서 파일 업로드
@@ -69,6 +77,7 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 ## 🛠️ 기술 스택
 
 ### Frontend
+
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript 5.3
 - **Styling**: Tailwind CSS 3.4
@@ -78,6 +87,7 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **Charts**: Recharts
 
 ### Backend
+
 - **Runtime**: Node.js
 - **Framework**: Next.js API Routes
 - **Database**: SQLite (개발) / PostgreSQL (프로덕션)
@@ -86,6 +96,7 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **File Upload**: Next.js built-in API
 
 ### Development Tools
+
 - **Build Tool**: Turbopack (개발)
 - **Linting**: ESLint + TypeScript ESLint
 - **Formatting**: Prettier
@@ -93,6 +104,7 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **Package Manager**: npm
 
 ### AI & Analytics
+
 - **AI Integration**: OpenAI, Anthropic, Google AI (확장 가능)
 - **Data Analysis**: Prisma + Custom analytics
 - **Logging**: Custom logger with structured logging
@@ -100,17 +112,20 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 ## 🚀 빠른 시작
 
 ### 1. 저장소 클론
+
 ```bash
 git clone <repository-url>
 cd EduBridge
 ```
 
 ### 2. 의존성 설치
+
 ```bash
 npm install
 ```
 
 ### 3. 환경변수 설정
+
 ```bash
 # 환경변수 파일 생성
 cp .env.example .env.local
@@ -141,12 +156,14 @@ ANTHROPIC_API_KEY=your-anthropic-api-key
 LOG_LEVEL=info
 ```
 
-> ⚠️ **보안 주의사항**: 
+> ⚠️ **보안 주의사항**:
+>
 > - `.env.local` 파일은 절대 Git에 커밋하지 마세요
 > - 프로덕션 환경에서는 강력한 비밀키를 사용하세요
 > - API 키는 해당 서비스의 보안 정책을 따르세요
 
 ### 4. 데이터베이스 설정
+
 ```bash
 # Prisma 클라이언트 생성
 npm run db:generate
@@ -159,6 +176,7 @@ npm run db:seed
 ```
 
 ### 5. 개발 서버 실행
+
 ```bash
 npm run dev
 ```
@@ -166,6 +184,7 @@ npm run dev
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인하세요.
 
 ### 6. 프로덕션 빌드
+
 ```bash
 # 타입 체크
 npm run type-check
@@ -475,6 +494,7 @@ erDiagram
 ## 🎮 사용자 시나리오
 
 ### 👨‍🏫 교사 사용 시나리오
+
 1. **로그인** → 대시보드에서 전체 학습 현황 확인
 2. **문제 생성** → 과목별, 난이도별 문제 생성 및 관리
 3. **학생 관리** → 개별 학생의 진행률 및 성과 모니터링
@@ -483,6 +503,7 @@ erDiagram
 6. **피드백 제공** → 학생별 맞춤형 학습 가이드 제공
 
 ### 👨‍🎓 학생 사용 시나리오
+
 1. **로그인** → 개인화된 학습 대시보드 접근
 2. **문제 풀이** → AI 추천 문제 풀이 및 실시간 피드백
 3. **학습자료 확인** → 교사가 제공한 자료 학습
@@ -493,6 +514,7 @@ erDiagram
 ## 🛠️ 개발 스크립트
 
 ### 기본 명령어
+
 ```bash
 npm run dev              # 개발 서버 실행 (Turbopack 사용)
 npm run build            # 프로덕션 빌드
@@ -500,6 +522,7 @@ npm start                # 프로덕션 서버 실행
 ```
 
 ### 코드 품질 관리
+
 ```bash
 npm run lint             # ESLint 검사
 npm run lint:fix         # ESLint 자동 수정
@@ -509,6 +532,7 @@ npm run type-check       # TypeScript 타입 검사
 ```
 
 ### 데이터베이스 관리
+
 ```bash
 npm run db:generate      # Prisma 클라이언트 생성
 npm run db:migrate       # 데이터베이스 마이그레이션
@@ -519,6 +543,7 @@ npm run db:studio        # Prisma Studio 실행
 ```
 
 ### 분석 및 디버깅
+
 ```bash
 npm run analyze          # 번들 분석 (webpack-bundle-analyzer)
 ```
@@ -526,22 +551,26 @@ npm run analyze          # 번들 분석 (webpack-bundle-analyzer)
 ## 🔒 보안 및 환경 관리
 
 ### 환경변수 보안
+
 - **`.env.local` 파일**: 실제 환경변수 값 저장 (Git에 커밋 금지)
 - **`.env.example` 파일**: 환경변수 템플릿 제공 (Git에 커밋)
 - **Zod 검증**: 런타임 환경변수 유효성 검사
 - **민감한 정보**: API 키, 비밀키는 예시 값만 README에 포함
 
 ### 파일 업로드 보안
+
 - 파일 크기 제한 (기본 10MB)
 - MIME 타입 검증
 - 파일명 정규화로 보안 강화
 
 ### 데이터베이스 보안
+
 - Prisma를 통한 SQL Injection 방지
 - 소프트 삭제로 데이터 복구 가능
 - 역할 기반 접근 제어
 
 ### 보안 체크리스트
+
 - [ ] `.env.local` 파일이 `.gitignore`에 포함되어 있는지 확인
 - [ ] 프로덕션 환경에서 강력한 비밀키 사용
 - [ ] API 키는 해당 서비스의 보안 정책 준수
@@ -552,6 +581,7 @@ npm run analyze          # 번들 분석 (webpack-bundle-analyzer)
 ### 프로덕션 환경 설정
 
 1. **환경변수 설정**
+
 ```env
 NODE_ENV=production
 DATABASE_URL="postgresql://user:password@host:port/database"
@@ -560,17 +590,20 @@ NEXTAUTH_SECRET="your-production-secret-key"
 ```
 
 2. **데이터베이스 마이그레이션**
+
 ```bash
 npm run db:deploy
 ```
 
 3. **빌드 및 배포**
+
 ```bash
 npm run build
 npm start
 ```
 
 ### 권장 배포 플랫폼
+
 - **Vercel**: Next.js 최적화, 자동 배포
 - **Railway**: 데이터베이스 포함 풀스택 배포
 - **AWS**: 확장성과 안정성
@@ -579,12 +612,14 @@ npm start
 ## 📊 성능 최적화
 
 ### 프론트엔드 최적화
+
 - **서버 컴포넌트**: 초기 로딩 성능 향상
 - **이미지 최적화**: WebP, AVIF 포맷 지원
 - **번들 최적화**: 패키지 임포트 최적화
 - **캐싱 전략**: React Query를 통한 스마트 캐싱
 
 ### 백엔드 최적화
+
 - **데이터베이스 인덱스**: 쿼리 성능 최적화
 - **연결 풀**: Prisma 클라이언트 최적화
 - **에러 핸들링**: 통합 에러 처리 시스템
@@ -592,18 +627,21 @@ npm start
 ## 🔮 향후 계획
 
 ### 단기 계획 (1-3개월)
+
 - [ ] AI 문제 생성 기능 구현
 - [ ] 실시간 채팅 시스템
 - [ ] 모바일 앱 개발
 - [ ] 다국어 지원
 
 ### 중기 계획 (3-6개월)
+
 - [ ] 고급 분석 대시보드
 - [ ] 게임화 요소 추가
 - [ ] 부모 모니터링 기능
 - [ ] API 문서화
 
 ### 장기 계획 (6개월+)
+
 - [ ] 머신러닝 기반 개인화
 - [ ] VR/AR 학습 콘텐츠
 - [ ] 글로벌 확장
@@ -620,6 +658,7 @@ npm start
 5. **Pull Request** 생성
 
 ### 개발 가이드라인
+
 - TypeScript strict mode 사용
 - ESLint 규칙 준수
 - Prettier 포맷팅 적용
@@ -641,6 +680,5 @@ npm start
 <div align="center">
 
 **EduBridge Platform** - AI로 교육의 미래를 만들어갑니다 🚀
-
 
 </div>
