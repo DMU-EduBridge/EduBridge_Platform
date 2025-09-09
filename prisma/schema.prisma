@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 // Enums are not supported in SQLite, using String instead
@@ -23,13 +24,18 @@ model User {
   status    String  @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // 소프트 삭제 필드
 
   // 관계
   preferences   UserPreferences?
   progress      StudentProgress[]
   reports       AnalysisReport[]
   counseling    CareerCounseling[]
+  reviewedProblems Problem[] @relation("ProblemReviewer")
 
+  @@index([role])
+  @@index([status])
+  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
   @@map("users")
 }
 
@@ -40,15 +46,16 @@ model UserPreferences {
   
   // 학습 설정
   preferredDifficulty String @default("MEDIUM") // EASY, MEDIUM, HARD, EXPERT
-  learningStyle       String // visual, auditory, kinesthetic (JSON string)
+  learningStyle       String // visual, auditory, kinesthetic (JSON string - 애플리케이션에서 객체로 처리)
   studyTime           Int?     // 분 단위
-  interests           String // JSON string
+  interests           String // JSON string - 애플리케이션에서 배열로 처리
   
   // 알림 설정
   emailNotifications Boolean @default(true)
   pushNotifications  Boolean @default(true)
   weeklyReport       Boolean @default(true)
   
+  @@index([userId])
   @@map("user_preferences")
 }
 
@@ -61,13 +68,20 @@ model LearningMaterial {
   subject     String   // 과목명 (수학, 과학 등)
   difficulty  String   // EASY, MEDIUM, HARD, EXPERT
   estimatedTime Int?   // 분 단위
-  files       String?  // JSON string - 업로드된 파일들
+  files       String?  // JSON string - 업로드된 파일들 (애플리케이션에서 배열로 처리)
   status      String   // DRAFT, PUBLISHED, ARCHIVED
   isActive    Boolean  @default(true)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // 소프트 삭제 필드
 
+  // 관계
+  materialProblems LearningMaterialProblem[]
+
+  @@index([subject, difficulty, isActive]) // 조회 패턴별 복합 인덱스
+  @@index([status, createdAt]) // 상태별 최신순 조회 최적화
+  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
   @@map("learning_materials")
 }
 
@@ -81,20 +95,45 @@ model Problem {
   subject     String // 과목명 (수학, 과학 등)
   
   // 문제 세부사항
-  options     String?   // 객관식 선택지 (JSON string)
+  options     String?   // 객관식 선택지 (JSON string - 애플리케이션에서 배열로 처리)
   correctAnswer String
   explanation String?
-  hints       String?  // JSON string
-  tags        String?  // JSON string
+  hints       String?  // JSON string - 애플리케이션에서 배열로 처리
+  tags        String?  // JSON string - 애플리케이션에서 배열로 처리
   
   // 메타데이터
   points      Int         @default(1)
   timeLimit   Int?        // 초 단위
   isActive    Boolean     @default(true)
   
+  // AI 생성 관련
+  isAIGenerated Boolean @default(false)
+  aiGenerationId String?
+  aiGeneration   AIGeneration? @relation(fields: [aiGenerationId], references: [id])
+  
+  // 품질 관리
+  qualityScore   Float?   // AI 평가 점수
+  reviewStatus   String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewedBy     String?  // 검토자 ID
+  reviewer       User?    @relation("ProblemReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull) // 리뷰어 삭제 시 NULL 처리
+  reviewedAt     DateTime?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // 소프트 삭제 필드
 
+  // 관계
+  progress   StudentProgress[]
+  materialProblems LearningMaterialProblem[]
+
+  @@index([subject])
+  @@index([difficulty])
+  @@index([isAIGenerated])
+  @@index([reviewStatus])
+  @@index([type])
+  @@index([aiGenerationId])
+  @@index([reviewedBy])
+  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
   @@map("problems")
 }
 
@@ -103,6 +142,7 @@ model StudentProgress {
   studentId String
   student   User          @relation(fields: [studentId], references: [id])
   problemId String?
+  problem   Problem?      @relation(fields: [problemId], references: [id])
   
   status    String @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED, REVIEW_NEEDED
   score     Int?    @default(0)
@@ -112,6 +152,10 @@ model StudentProgress {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([studentId, problemId]) // 중복 진행 방지 제약
+  @@index([studentId])
+  @@index([problemId])
+  @@index([status])
   @@map("student_progress")
 }
 
@@ -124,14 +168,29 @@ model AnalysisReport {
   type      String   // MONTHLY, INDIVIDUAL, SUBJECT, WEEKLY
   title     String
   period    String   // 기간 (예: "2024년 1월")
-  insights  String?  // AI 생성 인사이트 (JSON string)
-  recommendations String? // 개선 권장사항 (JSON string)
-  strengths String?  // JSON string
-  weaknesses String? // JSON string
+  insights  String?  // AI 생성 인사이트 (JSON string - 레거시 호환용, 애플리케이션에서 배열로 처리)
+  recommendations String? // 개선 권장사항 (JSON string - 레거시 호환용, 애플리케이션에서 배열로 처리)
+  strengths String?  // JSON string - 애플리케이션에서 배열로 처리
+  weaknesses String? // JSON string - 애플리케이션에서 배열로 처리
   status    String   @default("COMPLETED") // COMPLETED, IN_PROGRESS, PENDING
   
+  // AI 생성 메타데이터
+  aiGenerationId String?
+  aiGeneration   AIGeneration? @relation(fields: [aiGenerationId], references: [id])
+  
   createdAt DateTime @default(now())
+  deletedAt DateTime? // 소프트 삭제 필드
+  
+  // 정규화된 관계
+  reportInsights       ReportInsight[]
+  reportRecommendations ReportRecommendation[]
 
+  @@index([studentId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([aiGenerationId])
+  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
   @@map("analysis_reports")
 }
 
@@ -145,13 +204,109 @@ model CareerCounseling {
   content   String
   
   // AI 분석 결과
-  careerSuggestions  String? // JSON string
-  universityRecommendations String? // JSON string
-  skillGaps         String? // JSON string
+  careerSuggestions  String? // JSON string - 애플리케이션에서 배열로 처리
+  universityRecommendations String? // JSON string - 애플리케이션에서 배열로 처리
+  skillGaps         String? // JSON string - 애플리케이션에서 배열로 처리
   status            String  @default("COMPLETED") // COMPLETED, IN_PROGRESS, PENDING
+  
+  // AI 생성 메타데이터
+  aiGenerationId String?
+  aiGeneration   AIGeneration? @relation(fields: [aiGenerationId], references: [id])
+  
+  createdAt DateTime @default(now())
+  deletedAt DateTime? // 소프트 삭제 필드
+
+  @@index([studentId])
+  @@index([type])
+  @@index([status])
+  @@index([aiGenerationId])
+  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
+  @@map("career_counseling")
+}
+
+// 학습자료 ↔ 문제 관계 중간 테이블
+model LearningMaterialProblem {
+  id                String          @id @default(cuid())
+  learningMaterialId String
+  learningMaterial  LearningMaterial @relation(fields: [learningMaterialId], references: [id], onDelete: Cascade)
+  problemId         String
+  problem           Problem         @relation(fields: [problemId], references: [id], onDelete: Cascade)
   
   createdAt DateTime @default(now())
 
-  @@map("career_counseling")
+  @@unique([learningMaterialId, problemId]) // 중복 관계 방지
+  @@index([learningMaterialId])
+  @@index([problemId])
+  @@map("learning_material_problems")
+}
+
+// AI 모델 관리
+model AIModel {
+  id          String   @id @default(cuid())
+  name        String   // "gpt-4", "claude-3", "gemini-pro"
+  version     String   // "1.0", "2024-01"
+  provider    String   // "openai", "anthropic", "google"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  
+  generations AIGeneration[]
+
+  @@map("ai_models")
+}
+
+// AI 생성 이력 추적
+model AIGeneration {
+  id          String   @id @default(cuid())
+  modelId     String
+  model       AIModel  @relation(fields: [modelId], references: [id])
+  
+  prompt      String   // 사용된 프롬프트
+  response    String   // AI 응답
+  tokensUsed  Int?     // 사용된 토큰 수
+  cost        Float?   // 비용
+  duration    Int?     // 생성 시간(ms)
+  
+  createdAt   DateTime @default(now())
+  
+  // 관계
+  problems    Problem[]
+  reports     AnalysisReport[]
+  counseling  CareerCounseling[]
+
+  @@index([modelId])
+  @@index([createdAt])
+  @@map("ai_generations")
+}
+
+// 리포트 인사이트 정규화
+model ReportInsight {
+  id       String @id @default(cuid())
+  reportId String
+  report   AnalysisReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  category String // "학습패턴", "성취도", "약점분석"
+  content  String
+  priority String // "HIGH", "MEDIUM", "LOW"
+  
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@map("report_insights")
+}
+
+// 리포트 권장사항 정규화
+model ReportRecommendation {
+  id       String @id @default(cuid())
+  reportId String
+  report   AnalysisReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  type     String // "학습방법", "과목추천", "시간관리"
+  content  String
+  priority String // "HIGH", "MEDIUM", "LOW"
+  
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+  @@map("report_recommendations")
 }
 

@@ -1,16 +1,34 @@
 {
-  "extends": [
-    "next/core-web-vitals",
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
+  "extends": ["next/core-web-vitals", "@typescript-eslint/recommended", "prettier"],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "@typescript-eslint/no-unused-vars": [
-      "warn",
-      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
-    ]
-  }
+    // TypeScript 관련 규칙
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/prefer-const": "error",
+    "@typescript-eslint/no-non-null-assertion": "warn",
+
+    // React 관련 규칙
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-unescaped-entities": "off",
+
+    // 일반적인 규칙
+    "prefer-const": "error",
+    "no-var": "error",
+    "no-console": "warn",
+    "no-debugger": "error",
+
+    // Next.js 관련 규칙
+    "@next/next/no-img-element": "error",
+    "@next/next/no-html-link-for-pages": "error"
+  },
+  "overrides": [
+    {
+      "files": ["*.js", "*.jsx"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    }
+  ]
 }
