@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/core/prisma";
 
 // 문제 통계
 export async function GET(request: NextRequest) {
@@ -8,22 +7,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
 
-    let where: Prisma.ProblemWhereInput | Prisma.UserWhereInput | Prisma.AnalysisReportWhereInput =
-      {};
-    if (type === "problems") {
-      where = { isActive: true };
-    } else if (type === "students") {
-      where = { role: "STUDENT", status: "ACTIVE" };
-    } else if (type === "reports") {
-      where = { status: "COMPLETED" };
-    }
+    // 조건부 쿼리 설정
+    const getWhereCondition = () => {
+      if (type === "problems") {
+        return { isActive: true };
+      } else if (type === "students") {
+        return { role: "STUDENT", status: "ACTIVE" };
+      } else if (type === "reports") {
+        return { status: "COMPLETED" };
+      }
+      return {};
+    };
 
     let stats;
 
     if (type === "problems") {
+      const whereCondition = getWhereCondition();
       const [totalProblems, activeProblems, bySubject, byDifficulty] = await Promise.all([
         prisma.problem.count(),
-        prisma.problem.count({ where: { isActive: true } }),
+        prisma.problem.count({ where: whereCondition }),
         prisma.problem.groupBy({
           by: ["subject"],
           _count: { subject: true },

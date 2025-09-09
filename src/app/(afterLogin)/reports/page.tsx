@@ -16,7 +16,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useReports } from "@/hooks/use-api";
-import { Report } from "@/lib/api-services";
+import { LMSReport } from "@/types/lms/report";
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
@@ -185,7 +185,7 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
         ) : (
-          reports.map((report: Report) => (
+          reports.map((report: LMSReport) => (
             <Card key={report.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">

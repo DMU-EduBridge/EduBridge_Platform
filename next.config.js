@@ -6,12 +6,23 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   
   // 실험적 기능
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', '@tanstack/react-query'],
     serverComponentsExternalPackages: ['@prisma/client'],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
   
   // 컴파일러 설정 (Turbopack 호환성을 위해 조건부 적용)
@@ -42,6 +53,33 @@ const nextConfig = {
   // TypeScript 설정
   typescript: {
     ignoreBuildErrors: false, // 빌드 시 TypeScript 오류 체크 활성화
+  },
+  
+  // 성능 최적화
+  poweredByHeader: false,
+  compress: true,
+  
+  // 보안 헤더
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+        ],
+      },
+    ];
   },
 };
 

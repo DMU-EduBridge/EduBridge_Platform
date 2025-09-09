@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core/prisma";
 import { z } from "zod";
-import { parseJsonBody } from "@/lib/validation";
+import { parseJsonBody } from "@/lib/config/validation";
 
 // 문제 업데이트 스키마 (부분 업데이트 고려 시 partial 가능, 여기선 필수 유지)
 const updateProblemSchema = z.object({

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core/prisma";
 import { z } from "zod";
-import { parseJsonBody } from "@/lib/validation";
+import { parseJsonBody } from "@/lib/config/validation";
 import { Prisma } from "@prisma/client";
+import { withErrorHandler, ValidationError, logger } from "@/lib/utils/error-handler";
 
 const createStudentSchema = z.object({
   name: z.string().min(1),
@@ -14,8 +15,7 @@ const createStudentSchema = z.object({
 });
 
 // 학생 목록 조회
-export async function GET(request: NextRequest) {
-  try {
+async function getStudents(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const grade = searchParams.get("grade");
@@ -89,28 +89,29 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({
-      students,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching students:", error);
-    return NextResponse.json({ error: "Failed to fetch students" }, { status: 500 });
-  }
+  logger.info("Students fetched successfully", { count: students.length, page, limit });
+
+  return NextResponse.json({
+    students,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
 }
 
 // 새 학생 생성
-export async function POST(request: NextRequest) {
-  try {
-    const raw = await request.json();
-    const parsed = parseJsonBody(raw, createStudentSchema);
-    if (!parsed.success) return parsed.response;
-    const { name, email, grade, subjects, learningStyle, interests } = parsed.data;
+async function createStudent(request: NextRequest) {
+  const raw = await request.json();
+  const parsed = parseJsonBody(raw, createStudentSchema);
+  
+  if (!parsed.success) {
+    throw new ValidationError("잘못된 요청 데이터입니다.");
+  }
+  
+  const { name, email, grade, learningStyle, interests } = parsed.data;
 
     const student = await prisma.user.create({
       data: {
@@ -132,9 +133,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(student, { status: 201 });
-  } catch (error) {
-    console.error("Error creating student:", error);
-    return NextResponse.json({ error: "Failed to create student" }, { status: 500 });
-  }
+  logger.info("Student created successfully", { studentId: student.id });
+
+  return NextResponse.json(student, { status: 201 });
 }
+
+export const GET = withErrorHandler(getStudents);
+export const POST = withErrorHandler(createStudent);

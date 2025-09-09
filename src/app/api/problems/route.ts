@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core/prisma";
 import { z } from "zod";
-import { parseJsonBody } from "@/lib/validation";
+import { parseJsonBody } from "@/lib/config/validation";
 import { Prisma } from "@prisma/client";
-import { withErrorHandler, ValidationError, logger } from "@/lib/error-handler";
+import { withErrorHandler, ValidationError, logger } from "@/lib/utils/error-handler";
 
 // 문제 생성 스키마
 const createProblemSchema = z.object({

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, Users, BarChart3 } from "lucide-react";
 
 const quickActions = [

@@ -2,10 +2,10 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, X, FileText, Image, File } from "lucide-react";
+import { Upload, X, FileText, Image as ImageIcon, File } from "lucide-react";
 
 interface FileUploadProps {
-  onUpload: (file: { url: string; filename: string; size: number; type: string }) => void;
+  onUpload: (file: { url: string; filename: string; size: number; type: string }) => void; // eslint-disable-line no-unused-vars
   accept?: string;
   maxSize?: number; // MB
   className?: string;
@@ -65,9 +65,9 @@ export function FileUpload({ onUpload, accept, maxSize = 10, className }: FileUp
   };
 
   const getFileIcon = (type: string) => {
-    if (type.startsWith("image/")) return <Image className="w-4 h-4" />;
-    if (type.includes("pdf")) return <FileText className="w-4 h-4" />;
-    return <File className="w-4 h-4" />;
+    if (type.startsWith("image/")) return <ImageIcon className="w-4 h-4" aria-hidden="true" />;
+    if (type.includes("pdf")) return <FileText className="w-4 h-4" aria-hidden="true" />;
+    return <File className="w-4 h-4" aria-hidden="true" />;
   };
 
   const formatFileSize = (bytes: number) => {

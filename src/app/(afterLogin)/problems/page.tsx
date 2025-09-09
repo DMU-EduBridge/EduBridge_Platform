@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, FileText, Clock, Users, TrendingUp, Edit, Trash2, Eye } from "lucide-react";
 import { useProblems } from "@/hooks/use-api";
-import { Problem } from "@/lib/api-services";
+import { LMSProblem } from "@/types/lms/problem";
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
@@ -205,7 +205,7 @@ export default function ProblemsPage() {
             </CardContent>
           </Card>
         ) : (
-          problems.map((problem: Problem) => (
+          problems.map((problem: LMSProblem) => (
             <Card key={problem.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start">

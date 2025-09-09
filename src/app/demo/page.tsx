@@ -76,7 +76,7 @@ const demoSteps = [
 export default function DemoPage() {
   const [currentScenario, setCurrentScenario] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [, setCurrentStep] = useState(0);
 
   const startDemo = () => {
     setIsPlaying(true);
@@ -244,7 +244,7 @@ export default function DemoPage() {
                 <div className="mt-6">
                   <h4 className="font-semibold text-gray-900 mb-4">진행 단계</h4>
                   <div className="space-y-3">
-                    {demoSteps.map((step, index) => (
+                    {demoSteps.map((step) => (
                       <div key={step.step} className="flex items-center gap-3">
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center ${

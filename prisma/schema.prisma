@@ -12,16 +12,28 @@ datasource db {
 }
 
 // Enums are not supported in SQLite, using String instead
+// When migrating to PostgreSQL, these can be converted to proper enums
+
+// User roles - enum UserRole { TEACHER, STUDENT, ADMIN }
+// User status - enum UserStatus { ACTIVE, INACTIVE, SUSPENDED }
+// Problem difficulty levels - enum DifficultyLevel { EASY, MEDIUM, HARD, EXPERT }
+// Problem types - enum ProblemType { MULTIPLE_CHOICE, SHORT_ANSWER, ESSAY, CODING, MATH }
+// Problem review status - enum ReviewStatus { PENDING, APPROVED, REJECTED }
+// Learning material status - enum MaterialStatus { DRAFT, PUBLISHED, ARCHIVED }
+// Report types - enum ReportType { MONTHLY, INDIVIDUAL, SUBJECT, WEEKLY }
+// Report status - enum ReportStatus { COMPLETED, IN_PROGRESS, PENDING }
+// Progress status - enum ProgressStatus { NOT_STARTED, IN_PROGRESS, COMPLETED, FAILED }
+// Priority levels - enum Priority { HIGH, MEDIUM, LOW }
 
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String
-  role      String // TEACHER, STUDENT, ADMIN
+  role      String // UserRole enum: TEACHER, STUDENT, ADMIN
   avatar    String?
   bio       String?
   grade     String? // 학년 (1학년, 2학년 등)
-  status    String  @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  status    String  @default("ACTIVE") // UserStatus enum: ACTIVE, INACTIVE, SUSPENDED
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime? // 소프트 삭제 필드
@@ -45,7 +57,7 @@ model UserPreferences {
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // 학습 설정
-  preferredDifficulty String @default("MEDIUM") // EASY, MEDIUM, HARD, EXPERT
+  preferredDifficulty String @default("MEDIUM") // DifficultyLevel enum: EASY, MEDIUM, HARD, EXPERT
   learningStyle       String // visual, auditory, kinesthetic (JSON string - 애플리케이션에서 객체로 처리)
   studyTime           Int?     // 분 단위
   interests           String // JSON string - 애플리케이션에서 배열로 처리
@@ -66,10 +78,10 @@ model LearningMaterial {
   description String?
   content     String
   subject     String   // 과목명 (수학, 과학 등)
-  difficulty  String   // EASY, MEDIUM, HARD, EXPERT
+  difficulty  String   // DifficultyLevel enum: EASY, MEDIUM, HARD, EXPERT
   estimatedTime Int?   // 분 단위
   files       String?  // JSON string - 업로드된 파일들 (애플리케이션에서 배열로 처리)
-  status      String   // DRAFT, PUBLISHED, ARCHIVED
+  status      String   // MaterialStatus enum: DRAFT, PUBLISHED, ARCHIVED
   isActive    Boolean  @default(true)
   
   createdAt DateTime @default(now())
@@ -90,8 +102,8 @@ model Problem {
   title       String
   description String?
   content     String
-  type        String // MULTIPLE_CHOICE, SHORT_ANSWER, ESSAY, CODING, MATH
-  difficulty  String // EASY, MEDIUM, HARD, EXPERT
+  type        String // ProblemType enum: MULTIPLE_CHOICE, SHORT_ANSWER, ESSAY, CODING, MATH
+  difficulty  String // DifficultyLevel enum: EASY, MEDIUM, HARD, EXPERT
   subject     String // 과목명 (수학, 과학 등)
   
   // 문제 세부사항
@@ -113,7 +125,7 @@ model Problem {
   
   // 품질 관리
   qualityScore   Float?   // AI 평가 점수
-  reviewStatus   String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  reviewStatus   String   @default("PENDING") // ReviewStatus enum: PENDING, APPROVED, REJECTED
   reviewedBy     String?  // 검토자 ID
   reviewer       User?    @relation("ProblemReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull) // 리뷰어 삭제 시 NULL 처리
   reviewedAt     DateTime?
@@ -144,7 +156,7 @@ model StudentProgress {
   problemId String?
   problem   Problem?      @relation(fields: [problemId], references: [id])
   
-  status    String @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED, REVIEW_NEEDED
+  status    String @default("NOT_STARTED") // ProgressStatus enum: NOT_STARTED, IN_PROGRESS, COMPLETED, FAILED
   score     Int?    @default(0)
   timeSpent Int     @default(0) // 분 단위
   attempts  Int     @default(0)
@@ -165,14 +177,14 @@ model AnalysisReport {
   studentId String
   student   User     @relation(fields: [studentId], references: [id])
   
-  type      String   // MONTHLY, INDIVIDUAL, SUBJECT, WEEKLY
+  type      String   // ReportType enum: MONTHLY, INDIVIDUAL, SUBJECT, WEEKLY
   title     String
   period    String   // 기간 (예: "2024년 1월")
   insights  String?  // AI 생성 인사이트 (JSON string - 레거시 호환용, 애플리케이션에서 배열로 처리)
   recommendations String? // 개선 권장사항 (JSON string - 레거시 호환용, 애플리케이션에서 배열로 처리)
   strengths String?  // JSON string - 애플리케이션에서 배열로 처리
   weaknesses String? // JSON string - 애플리케이션에서 배열로 처리
-  status    String   @default("COMPLETED") // COMPLETED, IN_PROGRESS, PENDING
+  status    String   @default("COMPLETED") // ReportStatus enum: COMPLETED, IN_PROGRESS, PENDING
   
   // AI 생성 메타데이터
   aiGenerationId String?
@@ -286,7 +298,7 @@ model ReportInsight {
   
   category String // "학습패턴", "성취도", "약점분석"
   content  String
-  priority String // "HIGH", "MEDIUM", "LOW"
+  priority String // Priority enum: HIGH, MEDIUM, LOW
   
   createdAt DateTime @default(now())
 
@@ -302,7 +314,7 @@ model ReportRecommendation {
   
   type     String // "학습방법", "과목추천", "시간관리"
   content  String
-  priority String // "HIGH", "MEDIUM", "LOW"
+  priority String // Priority enum: HIGH, MEDIUM, LOW
   
   createdAt DateTime @default(now())
 

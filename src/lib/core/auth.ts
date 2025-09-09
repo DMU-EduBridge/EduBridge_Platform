@@ -1,7 +1,6 @@
-import { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma";
+import { NextAuthOptions } from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,10 +9,10 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     CredentialsProvider({
-      name: "credentials",
+      name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -22,12 +21,12 @@ export const authOptions: NextAuthOptions = {
 
         // 실제 구현에서는 데이터베이스에서 사용자를 찾고 비밀번호를 검증합니다
         // 현재는 데모용으로 간단한 검증만 수행
-        if (credentials.email === "demo@example.com" && credentials.password === "demo123") {
+        if (credentials.email === 'demo@example.com' && credentials.password === 'demo123') {
           return {
-            id: "1",
+            id: '1',
             email: credentials.email,
-            name: "Demo User",
-            role: "PROFESSOR",
+            name: 'Demo User',
+            role: 'PROFESSOR',
           };
         }
 
@@ -36,33 +35,33 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   cookies: {
     sessionToken: {
       name: `next-auth.session-token`,
       options: {
         httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
       },
     },
     callbackUrl: {
       name: `next-auth.callback-url`,
       options: {
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
       },
     },
     csrfToken: {
       name: `next-auth.csrf-token`,
       options: {
         httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
       },
     },
   },
@@ -82,6 +81,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/login",
+    signIn: '/login',
   },
 };

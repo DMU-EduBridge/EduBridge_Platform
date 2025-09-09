@@ -18,7 +18,7 @@ import {
   Award,
 } from "lucide-react";
 import { useStudents } from "@/hooks/use-api";
-import { Student } from "@/lib/api-services";
+import { LMSStudent } from "@/types/lms/student";
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
@@ -215,7 +215,7 @@ export default function StudentsPage() {
             </Card>
           </div>
         ) : (
-          students.map((student: Student) => (
+          students.map((student: LMSStudent) => (
             <Card key={student.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex justify-between items-start">

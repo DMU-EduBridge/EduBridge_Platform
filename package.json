@@ -17,7 +17,11 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "test": "echo \"No tests specified\" && exit 0",
+    "test:watch": "echo \"No tests specified\" && exit 0",
+    "clean": "rm -rf .next node_modules/.cache",
+    "precommit": "npm run lint:fix && npm run format && npm run type-check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

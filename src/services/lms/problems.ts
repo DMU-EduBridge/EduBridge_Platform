@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api } from "@/lib/core/api";
 import type { LMSProblem } from "@/types/lms";
 
 export const problemsService = {

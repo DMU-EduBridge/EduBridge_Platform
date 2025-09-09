@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/core/prisma";
 import { z } from "zod";
-import { parseJsonBody } from "@/lib/validation";
+import { parseJsonBody } from "@/lib/config/validation";
 import { Prisma } from "@prisma/client";
+import { withErrorHandler, ValidationError, logger } from "@/lib/utils/error-handler";
 
 const createReportSchema = z.object({
   studentId: z.string().min(1),
@@ -16,8 +17,7 @@ const createReportSchema = z.object({
 });
 
 // 리포트 목록 조회
-export async function GET(request: NextRequest) {
-  try {
+async function getReports(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const status = searchParams.get("status");
@@ -80,29 +80,30 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({
-      reports,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching reports:", error);
-    return NextResponse.json({ error: "Failed to fetch reports" }, { status: 500 });
-  }
+  logger.info("Reports fetched successfully", { count: reports.length, page, limit });
+
+  return NextResponse.json({
+    reports,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
 }
 
 // 새 리포트 생성
-export async function POST(request: NextRequest) {
-  try {
-    const raw = await request.json();
-    const parsed = parseJsonBody(raw, createReportSchema);
-    if (!parsed.success) return parsed.response;
-    const { studentId, type, title, period, insights, recommendations, strengths, weaknesses } =
-      parsed.data;
+async function createReport(request: NextRequest) {
+  const raw = await request.json();
+  const parsed = parseJsonBody(raw, createReportSchema);
+  
+  if (!parsed.success) {
+    throw new ValidationError("잘못된 요청 데이터입니다.");
+  }
+  
+  const { studentId, type, title, period, insights, recommendations, strengths, weaknesses } =
+    parsed.data;
 
     const report = await prisma.analysisReport.create({
       data: {
@@ -121,9 +122,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(report, { status: 201 });
-  } catch (error) {
-    console.error("Error creating report:", error);
-    return NextResponse.json({ error: "Failed to create report" }, { status: 500 });
-  }
+  logger.info("Report created successfully", { reportId: report.id });
+
+  return NextResponse.json(report, { status: 201 });
 }
+
+export const GET = withErrorHandler(getReports);
+export const POST = withErrorHandler(createReport);
