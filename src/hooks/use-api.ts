@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi, problemsApi, studentsApi, reportsApi, learningApi } from "../lib/api-services";
-import type { User, Problem, Student, Report } from "../lib/api-services";
+import { LMSProblem, LMSStudent } from "@/types/lms";
 
 // Query Keys
 export const queryKeys = {
@@ -9,26 +9,45 @@ export const queryKeys = {
   },
   problems: {
     all: ["problems"] as const,
-    list: (params?: any) => ["problems", "list", params] as const,
+    list: (params?: {
+      search?: string;
+      subject?: string;
+      difficulty?: string;
+      page?: number;
+      limit?: number;
+    }) => ["problems", "list", params] as const,
     detail: (id: string) => ["problems", "detail", id] as const,
     stats: ["problems", "stats"] as const,
   },
   students: {
     all: ["students"] as const,
-    list: (params?: any) => ["students", "list", params] as const,
+    list: (params?: {
+      search?: string;
+      grade?: string;
+      status?: string;
+      page?: number;
+      limit?: number;
+    }) => ["students", "list", params] as const,
     detail: (id: string) => ["students", "detail", id] as const,
     progress: (id: string) => ["students", "progress", id] as const,
     stats: ["students", "stats"] as const,
   },
   reports: {
     all: ["reports"] as const,
-    list: (params?: any) => ["reports", "list", params] as const,
+    list: (params?: { type?: string; status?: string; page?: number; limit?: number }) =>
+      ["reports", "list", params] as const,
     detail: (id: string) => ["reports", "detail", id] as const,
     stats: ["reports", "stats"] as const,
   },
   learning: {
     all: ["learning-materials"] as const,
-    list: (params?: any) => ["learning-materials", "list", params] as const,
+    list: (params?: {
+      search?: string;
+      subject?: string;
+      status?: string;
+      page?: number;
+      limit?: number;
+    }) => ["learning-materials", "list", params] as const,
     detail: (id: string) => ["learning-materials", "detail", id] as const,
     stats: ["learning-materials", "stats"] as const,
   },
@@ -40,14 +59,14 @@ export const useAuth = () => {
 
   const profileQuery = useQuery({
     queryKey: queryKeys.auth.profile,
-    queryFn: () => authApi.getProfile().then((res: any) => res.data),
+    queryFn: () => authApi.getProfile().then((res) => res.data),
     enabled: false, // 수동으로 호출
   });
 
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       authApi.login(email, password),
-    onSuccess: (response: any) => {
+    onSuccess: (response) => {
       // 토큰 저장
       if (typeof window !== "undefined") {
         localStorage.setItem("auth-token", response.data.token);
@@ -91,24 +110,30 @@ export const useAuth = () => {
 };
 
 // 문제 관리 훅
-export const useProblems = (params?: any) => {
+export const useProblems = (params?: {
+  search?: string;
+  subject?: string;
+  difficulty?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const queryClient = useQueryClient();
 
   const problemsQuery = useQuery({
     queryKey: queryKeys.problems.list(params),
-    queryFn: () => problemsApi.getProblems(params).then((res: any) => res.data),
+    queryFn: () => problemsApi.getProblems(params).then((res) => res.data),
   });
 
-  const problemQuery = (id: string) =>
+  const useProblem = (id: string) =>
     useQuery({
       queryKey: queryKeys.problems.detail(id),
-      queryFn: () => problemsApi.getProblem(id).then((res: any) => res.data),
+      queryFn: () => problemsApi.getProblem(id).then((res) => res.data),
       enabled: !!id,
     });
 
   const statsQuery = useQuery({
     queryKey: queryKeys.problems.stats,
-    queryFn: () => problemsApi.getProblemStats().then((res: any) => res.data),
+    queryFn: () => problemsApi.getProblemStats().then((res) => res.data),
   });
 
   const createMutation = useMutation({
@@ -119,7 +144,7 @@ export const useProblems = (params?: any) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Problem> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<LMSProblem> }) =>
       problemsApi.updateProblem(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.problems.detail(id) });
@@ -136,7 +161,7 @@ export const useProblems = (params?: any) => {
 
   return {
     problems: problemsQuery,
-    problem: problemQuery,
+    problem: useProblem,
     stats: statsQuery,
     create: createMutation,
     update: updateMutation,
@@ -145,35 +170,41 @@ export const useProblems = (params?: any) => {
 };
 
 // 학생 관리 훅
-export const useStudents = (params?: any) => {
+export const useStudents = (params?: {
+  search?: string;
+  grade?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const queryClient = useQueryClient();
 
   const studentsQuery = useQuery({
     queryKey: queryKeys.students.list(params),
-    queryFn: () => studentsApi.getStudents(params).then((res: any) => res.data),
+    queryFn: () => studentsApi.getStudents(params).then((res) => res.data),
   });
 
-  const studentQuery = (id: string) =>
+  const useStudent = (id: string) =>
     useQuery({
       queryKey: queryKeys.students.detail(id),
-      queryFn: () => studentsApi.getStudent(id).then((res: any) => res.data),
+      queryFn: () => studentsApi.getStudent(id).then((res) => res.data),
       enabled: !!id,
     });
 
-  const progressQuery = (id: string) =>
+  const useStudentProgress = (id: string) =>
     useQuery({
       queryKey: queryKeys.students.progress(id),
-      queryFn: () => studentsApi.getStudentProgress(id).then((res: any) => res.data),
+      queryFn: () => studentsApi.getStudentProgress(id).then((res) => res.data),
       enabled: !!id,
     });
 
   const statsQuery = useQuery({
     queryKey: queryKeys.students.stats,
-    queryFn: () => studentsApi.getStudentStats().then((res: any) => res.data),
+    queryFn: () => studentsApi.getStudentStats().then((res) => res.data),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Student> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<LMSStudent> }) =>
       studentsApi.updateStudent(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(id) });
@@ -191,8 +222,8 @@ export const useStudents = (params?: any) => {
 
   return {
     students: studentsQuery,
-    student: studentQuery,
-    progress: progressQuery,
+    student: useStudent,
+    progress: useStudentProgress,
     stats: statsQuery,
     update: updateMutation,
     sendMessage: sendMessageMutation,
@@ -200,24 +231,29 @@ export const useStudents = (params?: any) => {
 };
 
 // 리포트 훅
-export const useReports = (params?: any) => {
+export const useReports = (params?: {
+  type?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const queryClient = useQueryClient();
 
   const reportsQuery = useQuery({
     queryKey: queryKeys.reports.list(params),
-    queryFn: () => reportsApi.getReports(params).then((res: any) => res.data),
+    queryFn: () => reportsApi.getReports(params).then((res) => res.data),
   });
 
-  const reportQuery = (id: string) =>
+  const useReport = (id: string) =>
     useQuery({
       queryKey: queryKeys.reports.detail(id),
-      queryFn: () => reportsApi.getReport(id).then((res: any) => res.data),
+      queryFn: () => reportsApi.getReport(id).then((res) => res.data),
       enabled: !!id,
     });
 
   const statsQuery = useQuery({
     queryKey: queryKeys.reports.stats,
-    queryFn: () => reportsApi.getReportStats().then((res: any) => res.data),
+    queryFn: () => reportsApi.getReportStats().then((res) => res.data),
   });
 
   const createMutation = useMutation({
@@ -233,7 +269,7 @@ export const useReports = (params?: any) => {
 
   return {
     reports: reportsQuery,
-    report: reportQuery,
+    report: useReport,
     stats: statsQuery,
     create: createMutation,
     download: downloadMutation,
@@ -241,7 +277,13 @@ export const useReports = (params?: any) => {
 };
 
 // 학습 자료 훅
-export const useLearningMaterials = (params?: any) => {
+export const useLearningMaterials = (params?: {
+  search?: string;
+  subject?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
   const queryClient = useQueryClient();
 
   const materialsQuery = useQuery({
@@ -249,7 +291,7 @@ export const useLearningMaterials = (params?: any) => {
     queryFn: () => learningApi.getMaterials(params).then((res) => res.data),
   });
 
-  const materialQuery = (id: string) =>
+  const useMaterial = (id: string) =>
     useQuery({
       queryKey: queryKeys.learning.detail(id),
       queryFn: () => learningApi.getMaterial(id).then((res) => res.data),
@@ -269,7 +311,8 @@ export const useLearningMaterials = (params?: any) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => learningApi.updateMaterial(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      learningApi.updateMaterial(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.learning.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.learning.all });
@@ -285,7 +328,7 @@ export const useLearningMaterials = (params?: any) => {
 
   return {
     materials: materialsQuery,
-    material: materialQuery,
+    material: useMaterial,
     stats: statsQuery,
     create: createMutation,
     update: updateMutation,

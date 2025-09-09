@@ -49,7 +49,7 @@ export default function StudentsPage() {
   const {
     students: studentsQuery,
     stats: statsQuery,
-    sendMessage: sendMessageMutation,
+    // sendMessage: sendMessageMutation,
   } = useStudents({
     search: searchTerm || undefined,
     grade: selectedGrade !== "all" ? selectedGrade : undefined,
@@ -59,9 +59,9 @@ export default function StudentsPage() {
   const students = studentsQuery.data?.students || [];
   const stats = statsQuery.data;
 
-  const handleSendMessage = (studentId: string, message: string) => {
-    sendMessageMutation.mutate({ id: studentId, message });
-  };
+  // const handleSendMessage = (studentId: string, message: string) => {
+  //   sendMessageMutation.mutate({ id: studentId, message });
+  // };
 
   const getProgressColor = (progress: number) => {
     if (progress >= 80) return progressColors.high;

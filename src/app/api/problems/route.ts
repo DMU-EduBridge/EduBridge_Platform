@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { parseJsonBody } from "@/lib/validation";
+import { Prisma } from "@prisma/client";
+import { withErrorHandler, ValidationError, logger } from "@/lib/error-handler";
 
 // 문제 생성 스키마
 const createProblemSchema = z.object({
@@ -18,92 +20,93 @@ const createProblemSchema = z.object({
 });
 
 // 문제 목록 조회
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search");
-    const subject = searchParams.get("subject");
-    const difficulty = searchParams.get("difficulty");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+async function getProblems(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get("search");
+  const subject = searchParams.get("subject");
+  const difficulty = searchParams.get("difficulty");
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "10");
 
-    const where: any = {};
+  const where: Prisma.ProblemWhereInput = {};
 
-    if (search) {
-      where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
-    }
-
-    if (subject && subject !== "all") {
-      where.subject = subject;
-    }
-
-    if (difficulty && difficulty !== "all") {
-      where.difficulty = difficulty;
-    }
-
-    const [problems, total] = await Promise.all([
-      prisma.problem.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.problem.count({ where }),
-    ]);
-
-    return NextResponse.json({
-      problems,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching problems:", error);
-    return NextResponse.json({ error: "Failed to fetch problems" }, { status: 500 });
+  if (search) {
+    where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
   }
+
+  if (subject && subject !== "all") {
+    where.subject = subject;
+  }
+
+  if (difficulty && difficulty !== "all") {
+    where.difficulty = difficulty;
+  }
+
+  const [problems, total] = await Promise.all([
+    prisma.problem.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.problem.count({ where }),
+  ]);
+
+  logger.info("Problems fetched successfully", { count: problems.length, page, limit });
+
+  return NextResponse.json({
+    problems,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
 }
 
 // 새 문제 생성
-export async function POST(request: NextRequest) {
-  try {
-    const raw = await request.json();
-    const parsed = parseJsonBody(raw, createProblemSchema);
-    if (!parsed.success) return parsed.response;
-    const {
+async function createProblem(request: NextRequest) {
+  const raw = await request.json();
+  const parsed = parseJsonBody(raw, createProblemSchema);
+  
+  if (!parsed.success) {
+    throw new ValidationError("잘못된 요청 데이터입니다.");
+  }
+
+  const {
+    title,
+    description,
+    content,
+    subject,
+    type,
+    difficulty,
+    options,
+    correctAnswer,
+    hints,
+    tags,
+  } = parsed.data;
+
+  const problem = await prisma.problem.create({
+    data: {
       title,
       description,
       content,
       subject,
       type,
       difficulty,
-      options,
+      options: JSON.stringify(options || []),
       correctAnswer,
-      hints,
-      tags,
-    } = parsed.data;
+      hints: JSON.stringify(hints || []),
+      tags: JSON.stringify(tags || []),
+      isActive: true,
+    },
+  });
 
-    const problem = await prisma.problem.create({
-      data: {
-        title,
-        description,
-        content,
-        subject,
-        type,
-        difficulty,
-        options: JSON.stringify(options || []),
-        correctAnswer,
-        hints: JSON.stringify(hints || []),
-        tags: JSON.stringify(tags || []),
-        isActive: true,
-      },
-    });
+  logger.info("Problem created successfully", { problemId: problem.id });
 
-    return NextResponse.json(problem, { status: 201 });
-  } catch (error) {
-    console.error("Error creating problem:", error);
-    return NextResponse.json({ error: "Failed to create problem" }, { status: 500 });
-  }
+  return NextResponse.json(problem, { status: 201 });
 }
+
+export const GET = withErrorHandler(getProblems);
+export const POST = withErrorHandler(createProblem);

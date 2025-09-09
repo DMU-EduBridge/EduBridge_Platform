@@ -63,7 +63,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:flex lg:flex-col lg:h-full`}
       >
         <div className="flex justify-between items-center px-6 h-16 border-b border-gray-200">
-          <Link href="/dashboard" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
             <div className="flex justify-center items-center w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
               <span className="text-sm font-bold text-white">E</span>
             </div>

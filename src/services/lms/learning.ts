@@ -1,0 +1,29 @@
+import { api } from "@/lib/api";
+
+export interface LearningMaterialPayload {
+  title: string;
+  subject: string;
+  content: string;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+}
+
+export const learningService = {
+  getMaterials: (params?: {
+    search?: string;
+    subject?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get("/learning-materials", { params }),
+
+  getMaterial: (id: string) => api.get(`/learning-materials/${id}`),
+
+  createMaterial: (data: LearningMaterialPayload) => api.post("/learning-materials", data),
+
+  updateMaterial: (id: string, data: Partial<LearningMaterialPayload>) =>
+    api.put(`/learning-materials/${id}`, data),
+
+  deleteMaterial: (id: string) => api.delete(`/learning-materials/${id}`),
+
+  getMaterialStats: () => api.get("/learning-materials/stats"),
+};

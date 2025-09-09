@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { parseJsonBody } from "@/lib/validation";
+import { Prisma } from "@prisma/client";
 
 const createReportSchema = z.object({
   studentId: z.string().min(1),
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
-    const where: any = {};
+    const where: Prisma.AnalysisReportWhereInput = {};
 
     if (type && type !== "all") {
       where.type = type;

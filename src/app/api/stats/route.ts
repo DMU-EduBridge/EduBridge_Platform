@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 // 문제 통계
 export async function GET(request: NextRequest) {
@@ -7,7 +8,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
 
-    let where: any = {};
+    let where: Prisma.ProblemWhereInput | Prisma.UserWhereInput | Prisma.AnalysisReportWhereInput =
+      {};
     if (type === "problems") {
       where = { isActive: true };
     } else if (type === "students") {
@@ -35,14 +37,20 @@ export async function GET(request: NextRequest) {
       stats = {
         totalProblems,
         activeProblems,
-        bySubject: bySubject.reduce((acc, item) => {
-          acc[item.subject] = item._count.subject;
-          return acc;
-        }, {} as Record<string, number>),
-        byDifficulty: byDifficulty.reduce((acc, item) => {
-          acc[item.difficulty] = item._count.difficulty;
-          return acc;
-        }, {} as Record<string, number>),
+        bySubject: bySubject.reduce(
+          (acc, item) => {
+            acc[item.subject] = item._count.subject;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+        byDifficulty: byDifficulty.reduce(
+          (acc, item) => {
+            acc[item.difficulty] = item._count.difficulty;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
       };
     } else if (type === "students") {
       const [totalStudents, activeStudents, byGrade, allStudentsWithProgress] = await Promise.all([
@@ -69,7 +77,7 @@ export async function GET(request: NextRequest) {
           const completedProblems = student.progress.filter((p) => p.status === "COMPLETED").length;
           const progress = Math.round((completedProblems / student.progress.length) * 100);
           const avgScore = Math.round(
-            student.progress.reduce((sum, p) => sum + (p.score || 0), 0) / student.progress.length
+            student.progress.reduce((sum, p) => sum + (p.score || 0), 0) / student.progress.length,
           );
 
           totalProgress += progress;
@@ -92,12 +100,15 @@ export async function GET(request: NextRequest) {
         weeklyChange: 2, // 임시 값
         progressChange: 5, // 임시 값
         scoreChange: 3, // 임시 값
-        byGrade: byGrade.reduce((acc, item) => {
-          if (item.grade) {
-            acc[item.grade] = item._count.grade;
-          }
-          return acc;
-        }, {} as Record<string, number>),
+        byGrade: byGrade.reduce(
+          (acc, item) => {
+            if (item.grade) {
+              acc[item.grade] = item._count.grade;
+            }
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
       };
     } else if (type === "reports") {
       const [totalReports, completedReports, byType] = await Promise.all([
@@ -115,10 +126,13 @@ export async function GET(request: NextRequest) {
         completionRate: totalReports > 0 ? Math.round((completedReports / totalReports) * 100) : 0,
         weeklyChange: 3, // 임시 값
         monthlyChange: 8, // 임시 값
-        byType: byType.reduce((acc, item) => {
-          acc[item.type] = item._count.type;
-          return acc;
-        }, {} as Record<string, number>),
+        byType: byType.reduce(
+          (acc, item) => {
+            acc[item.type] = item._count.type;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
       };
     } else {
       // 전체 통계
