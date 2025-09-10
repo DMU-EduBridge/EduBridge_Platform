@@ -665,17 +665,7 @@ npm start
 - 의미있는 커밋 메시지 작성
 - 테스트 코드 작성 권장
 
-## 📄 라이선스
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
-
-## 📞 문의 및 지원
-
-- **이슈 리포트**: [GitHub Issues](https://github.com/your-repo/issues)
-- **기능 요청**: [GitHub Discussions](https://github.com/your-repo/discussions)
-- **이메일**: support@edubridge.com
-
----
 
 <div align="center">
 
