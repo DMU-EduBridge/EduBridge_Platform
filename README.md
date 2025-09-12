@@ -552,8 +552,6 @@ npm run analyze          # 번들 분석 (webpack-bundle-analyzer)
 
 ### 환경변수 보안
 
-- **`.env.local` 파일**: 실제 환경변수 값 저장 (Git에 커밋 금지)
-- **`.env.example` 파일**: 환경변수 템플릿 제공 (Git에 커밋)
 - **Zod 검증**: 런타임 환경변수 유효성 검사
 - **민감한 정보**: API 키, 비밀키는 예시 값만 README에 포함
 
