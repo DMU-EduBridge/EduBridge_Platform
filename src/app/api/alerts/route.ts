@@ -1,6 +1,12 @@
-import { AlertManager, SlackNotificationChannel } from '@/lib/monitoring';
 import { performanceMiddleware } from '@/lib/performance';
 import { securityMiddleware } from '@/lib/security';
+import { getRequestId } from '@/lib/utils/request-context';
+import {
+  AlertPostBodySchema,
+  AlertStatusResponseSchema,
+  AlertTestResponseSchema,
+} from '@/server/dto/alert';
+import { alertService } from '@/server/services/alert.service';
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
@@ -10,53 +16,20 @@ export const GET = performanceMiddleware(async (request: NextRequest) => {
     const url = new URL(request.url);
     const action = url.searchParams.get('action') || 'status';
 
-    let data;
-
-    switch (action) {
-      case 'status':
-        data = {
-          alerts: Array.from(AlertManager['alerts'].entries()).map(([id, config]) => ({
-            id,
-            ...config,
-          })),
-          channels: AlertManager['notificationChannels'].map((channel) => ({
-            name: channel.name,
-            status: 'active',
-          })),
-          timestamp: new Date().toISOString(),
-        };
-        break;
-      case 'test':
-        // 테스트 알림 전송
-        const testAlert = {
-          id: 'test-alert',
-          title: 'Test Alert',
-          message: 'This is a test alert',
-          severity: 'low',
-          timestamp: new Date().toISOString(),
-          value: 0,
-          threshold: 0,
-        };
-
-        // 모든 채널로 테스트 알림 전송
-        for (const channel of AlertManager['notificationChannels']) {
-          try {
-            await channel.send(testAlert);
-          } catch (error) {
-            console.error(`Test alert failed for ${channel.name}:`, error);
-          }
-        }
-
-        data = {
-          message: 'Test alerts sent',
-          timestamp: new Date().toISOString(),
-        };
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    let data: any;
+    if (action === 'status') {
+      data = alertService.status();
+      AlertStatusResponseSchema.parse(data);
+    } else if (action === 'test') {
+      data = await alertService.testAll();
+      AlertTestResponseSchema.parse(data);
+    } else {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    const response = NextResponse.json(data);
+    const response = NextResponse.json(data, {
+      headers: { 'X-Request-Id': getRequestId(request) },
+    });
 
     // 보안 헤더 적용
     const securedResponse = securityMiddleware(request);
@@ -79,37 +52,32 @@ export const GET = performanceMiddleware(async (request: NextRequest) => {
 // 알림 설정 업데이트
 export const POST = performanceMiddleware(async (request: NextRequest) => {
   try {
-    const body = await request.json();
-    const { action, alertId, config, channelConfig } = body;
+    const raw = await request.json();
+    const parsed = AlertPostBodySchema.safeParse(raw);
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
+    const { action, alertId, config, channelConfig } = parsed.data as any;
 
     switch (action) {
       case 'register_alert':
-        if (!alertId || !config) {
+        if (!alertId || !config)
           return NextResponse.json({ error: 'Missing alertId or config' }, { status: 400 });
-        }
-        AlertManager.registerAlert(alertId, config);
+        alertService.registerAlert(alertId, config);
         break;
 
       case 'add_channel':
-        if (!channelConfig) {
+        if (!channelConfig)
           return NextResponse.json({ error: 'Missing channel config' }, { status: 400 });
-        }
-
-        if (channelConfig.type === 'slack' && channelConfig.webhookUrl) {
-          AlertManager.addNotificationChannel(
-            new SlackNotificationChannel(channelConfig.webhookUrl),
-          );
-        }
+        alertService.addChannel(channelConfig);
         break;
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    const response = NextResponse.json({
-      message: 'Alert configuration updated',
-      timestamp: new Date().toISOString(),
-    });
+    const response = NextResponse.json(
+      { message: 'Alert configuration updated', timestamp: new Date().toISOString() },
+      { headers: { 'X-Request-Id': getRequestId(request) } },
+    );
 
     // 보안 헤더 적용
     const securedResponse = securityMiddleware(request);

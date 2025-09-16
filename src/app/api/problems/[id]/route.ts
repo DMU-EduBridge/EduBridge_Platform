@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/core/prisma';
-import { z } from 'zod';
 import { parseJsonBody } from '@/lib/config/validation';
+import { getRequestId } from '@/lib/utils/request-context';
+import { ProblemDetailResponseSchema } from '@/server/dto/problem';
+import { problemService } from '@/server/services/problem.service';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 // 문제 업데이트 스키마 (부분 업데이트 고려 시 partial 가능, 여기선 필수 유지)
 const updateProblemSchema = z.object({
@@ -20,15 +22,14 @@ const updateProblemSchema = z.object({
 // 개별 문제 조회, 수정, 삭제
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const problem = await prisma.problem.findUnique({
-      where: { id: params.id },
-    });
+    const problem = await problemService.detail(params.id);
 
     if (!problem) {
       return NextResponse.json({ error: 'Problem not found' }, { status: 404 });
     }
 
-    return NextResponse.json(problem);
+    if (problem) ProblemDetailResponseSchema.parse(problem as any);
+    return NextResponse.json(problem, { headers: { 'X-Request-Id': getRequestId(request) } });
   } catch (error) {
     console.error('Error fetching problem:', error);
     return NextResponse.json({ error: 'Failed to fetch problem' }, { status: 500 });
@@ -53,20 +54,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       isActive,
     } = parsed.data;
 
-    const problem = await prisma.problem.update({
-      where: { id: params.id },
-      data: {
-        title,
-        description,
-        subject,
-        type,
-        difficulty,
-        options: JSON.stringify(options || []),
-        correctAnswer,
-        hints: JSON.stringify(hints || []),
-        tags: JSON.stringify(tags || []),
-        isActive,
-      },
+    const problem = await problemService.update(params.id, {
+      title,
+      description,
+      subject,
+      type,
+      difficulty,
+      options,
+      correctAnswer,
+      hints,
+      tags,
+      isActive,
     });
 
     return NextResponse.json(problem);
@@ -78,9 +76,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await prisma.problem.delete({
-      where: { id: params.id },
-    });
+    await problemService.remove(params.id);
 
     return NextResponse.json({ message: 'Problem deleted successfully' });
   } catch (error) {

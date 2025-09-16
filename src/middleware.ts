@@ -1,14 +1,35 @@
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
-const protectedPaths = ['/dashboard', '/profile', '/projects', '/applications', '/(afterLogin)'];
+const protectedPaths = [
+  '/dashboard',
+  '/profile',
+  '/projects',
+  '/applications',
+  '/(afterLogin)',
+  '/problems',
+  '/reports',
+  '/students',
+  '/learning-materials',
+  '/my',
+];
 const adminPaths = ['/admin'];
+const teacherOnlyPaths = [
+  '/students',
+  '/projects',
+  '/reports',
+  '/problems/new',
+  '/learning-materials',
+];
+const studentOnlyPaths = ['/my'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
   const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
+  const isTeacherOnlyPath = teacherOnlyPaths.some((path) => pathname.startsWith(path));
+  const isStudentOnlyPath = studentOnlyPaths.some((path) => pathname.startsWith(path));
 
   // 공통 보안 헤더 적용
   const applySecurityHeaders = (res: NextResponse) => {
@@ -50,6 +71,20 @@ export async function middleware(request: NextRequest) {
     const dashboardUrl = new URL('/dashboard', request.url);
     dashboardUrl.searchParams.set('error', 'forbidden');
     return applySecurityHeaders(NextResponse.redirect(dashboardUrl));
+  }
+
+  // 학생 역할은 교사용 경로 접근 제한
+  if (isTeacherOnlyPath && token.role === 'STUDENT') {
+    const redirectUrl = new URL('/problems', request.url);
+    redirectUrl.searchParams.set('error', 'forbidden');
+    return applySecurityHeaders(NextResponse.redirect(redirectUrl));
+  }
+
+  // 교사/관리자 역할은 학생 전용 경로 접근 제한
+  if (isStudentOnlyPath && (token.role === 'TEACHER' || token.role === 'ADMIN')) {
+    const redirectUrl = new URL('/dashboard', request.url);
+    redirectUrl.searchParams.set('error', 'forbidden');
+    return applySecurityHeaders(NextResponse.redirect(redirectUrl));
   }
 
   return applySecurityHeaders(NextResponse.next());

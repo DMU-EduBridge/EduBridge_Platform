@@ -1,28 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import {
-  LayoutDashboard,
-  Users,
-  FolderOpen,
-  FileText,
-  Calendar,
-  Settings,
-  LogOut,
   Bell,
+  Calendar,
+  FileText,
+  FolderOpen,
+  LayoutDashboard,
+  LogOut,
   Search,
+  Settings,
+  Shield,
   User,
+  Users,
 } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -44,14 +45,33 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
-  const navigation = [
+  const role = useMemo(() => session?.user?.role, [session?.user?.role]);
+
+  // 로딩 중이면 로딩 표시
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg">로딩 중...</div>
+      </div>
+    );
+  }
+
+  const baseNav = [
     { name: '대시보드', href: '/dashboard', icon: LayoutDashboard },
+    { name: '문제', href: '/problems', icon: FileText },
+    { name: '프로필', href: '/profile', icon: User },
+  ];
+
+  const teacherNav = [
     { name: '학습 관리', href: '/projects', icon: FolderOpen },
-    { name: '문제 관리', href: '/problems', icon: FileText },
     { name: '학생 관리', href: '/students', icon: Users },
     { name: '분석 리포트', href: '/reports', icon: Calendar },
-    { name: '프로필', href: '/profile', icon: User },
-    { name: '설정', href: '/settings', icon: Settings },
+  ];
+
+  const adminNav = [
+    { name: '관리자 대시보드', href: '/admin', icon: Shield },
+    { name: '사용자 관리', href: '/admin/users', icon: Users },
+    { name: '시스템 설정', href: '/admin/settings', icon: Settings },
   ];
 
   return (
@@ -81,7 +101,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <nav className="mt-6 flex-1 px-3">
           <div className="space-y-1">
-            {navigation.map((item) => (
+            {/* 기본 메뉴 */}
+            {baseNav.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
@@ -91,6 +112,59 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 {item.name}
               </Link>
             ))}
+
+            {/* 교사/관리자 공통 메뉴 */}
+            {(role === 'TEACHER' || role === 'ADMIN') && (
+              <>
+                <div className="my-4 border-t border-gray-200"></div>
+                {teacherNav.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                ))}
+              </>
+            )}
+
+            {/* 관리자 전용 메뉴 */}
+            {role === 'ADMIN' && (
+              <>
+                <div className="my-4 border-t border-gray-200"></div>
+                <div className="px-3 py-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    관리자 기능
+                  </p>
+                </div>
+                {adminNav.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                ))}
+              </>
+            )}
+
+            {/* 교사 전용 설정 메뉴 */}
+            {role === 'TEACHER' && (
+              <>
+                <div className="my-4 border-t border-gray-200"></div>
+                <Link
+                  href="/settings"
+                  className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                >
+                  <Settings className="mr-3 h-5 w-5" />
+                  설정
+                </Link>
+              </>
+            )}
           </div>
         </nav>
 

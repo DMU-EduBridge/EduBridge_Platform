@@ -2,8 +2,13 @@ import { api } from '@/lib/core/api';
 import type { LMSReport } from '@/types/report';
 
 export const reportsService = {
-  getReports: (params?: { type?: string; status?: string; page?: number; limit?: number }) =>
-    api.get<{ reports: LMSReport[]; total: number }>('/reports', { params }),
+  getReports: (params?: {
+    type?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+    studentId?: string;
+  }) => api.get<{ reports: LMSReport[]; total: number }>('/reports', { params }),
 
   getReport: (id: string) => api.get<LMSReport>(`/reports/${id}`),
 

@@ -1,6 +1,7 @@
+import { prisma } from '@/lib/core/prisma';
 import { NextAuthOptions } from 'next-auth';
-import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -20,14 +21,30 @@ export const authOptions: NextAuthOptions = {
         }
 
         // 실제 구현에서는 데이터베이스에서 사용자를 찾고 비밀번호를 검증합니다
-        // 현재는 데모용으로 간단한 검증만 수행
+        // 개발 환경에서는 시드된 학생 계정에 한해 고정 비밀번호를 허용합니다.
+        const devPassword = process.env.DEV_TEST_PASSWORD || 'student123';
+
+        // 데모 계정 유지
         if (credentials.email === 'demo@example.com' && credentials.password === 'demo123') {
           return {
             id: '1',
             email: credentials.email,
             name: 'Demo User',
-            role: 'PROFESSOR',
+            role: 'TEACHER',
           };
+        }
+
+        // 개발용 고정 비밀번호로 사용자 계정 인증
+        if (credentials.password === devPassword) {
+          const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+          if (user && user.status === 'ACTIVE') {
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            };
+          }
         }
 
         return null;

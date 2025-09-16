@@ -1,9 +1,10 @@
 import { parseJsonBody } from '@/lib/config/validation';
-import { prisma } from '@/lib/core/prisma';
 import { ValidationError, logger, withErrorHandler } from '@/lib/utils/error-handler';
-import { serializeArray } from '@/lib/utils/json';
+import { getPagination, getParam, getSearchParams, okJson } from '@/lib/utils/http';
+import { getRequestId } from '@/lib/utils/request-context';
+import { ProblemListResponseSchema } from '@/server/dto/problem';
+import { problemService } from '@/server/services/problem.service';
 import { CreateProblemSchema } from '@/types/api';
-import { Prisma } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
@@ -12,51 +13,31 @@ const createProblemSchema = CreateProblemSchema;
 
 // 문제 목록 조회
 async function getProblems(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search');
-  const subject = searchParams.get('subject');
-  const difficulty = searchParams.get('difficulty');
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '10');
+  const sp = getSearchParams(request);
+  const search = getParam(sp, 'search');
+  const subject = getParam(sp, 'subject');
+  const difficulty = getParam(sp, 'difficulty');
+  const { page, limit } = getPagination(sp);
 
-  const where: Prisma.ProblemWhereInput = {};
-
-  if (search) {
-    where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
-  }
-
-  if (subject && subject !== 'all') {
-    where.subject = subject;
-  }
-
-  if (difficulty && difficulty !== 'all') {
-    where.difficulty = difficulty;
-  }
-
-  const [problems, total] = await Promise.all([
-    prisma.problem.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.problem.count({ where }),
-  ]);
-
-  logger.info('Problems fetched successfully', { count: problems.length, page, limit });
-
-  return NextResponse.json(
-    {
-      problems,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    },
-    { headers: { 'Cache-Control': 'private, max-age=60' } },
-  );
+  const { items: problems, total } = await problemService.list({
+    search,
+    subject,
+    difficulty,
+    page,
+    limit,
+  });
+  const payload = {
+    problems,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+  ProblemListResponseSchema.parse(payload);
+  logger.info('Problems fetched successfully', {
+    count: problems.length,
+    page,
+    limit,
+    requestId: getRequestId(request),
+  });
+  return okJson(payload, 'private, max-age=60', request);
 }
 
 // 새 문제 생성
@@ -81,20 +62,17 @@ async function createProblem(request: NextRequest) {
     tags,
   } = parsed.data;
 
-  const problem = await prisma.problem.create({
-    data: {
-      title,
-      description,
-      content,
-      subject,
-      type,
-      difficulty,
-      options: serializeArray(options),
-      correctAnswer,
-      hints: serializeArray(hints),
-      tags: serializeArray(tags),
-      isActive: true,
-    },
+  const problem = await problemService.create({
+    title,
+    description,
+    content,
+    subject,
+    type,
+    difficulty,
+    options,
+    correctAnswer,
+    hints,
+    tags,
   });
 
   logger.info('Problem created successfully', { problemId: problem.id });

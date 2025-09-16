@@ -299,6 +299,56 @@ EduBridge/
 └── 📄 README.md                          # 프로젝트 문서
 ```
 
+## 🧩 백엔드 구조(아키텍처)
+
+- 레이어드 아키텍처: Controller(API Route) → Service(비즈니스 로직) → Repository(DB 접근, Prisma) → DB
+- DTO 기반 검증: zod 스키마로 요청/응답 검증 및 타입 일치 보장
+- 공통 유틸: 표준 응답/에러/로깅/Request ID/페이징 헬퍼 제공
+
+### 디렉터리 역할
+
+- `src/app/api/**`: App Router API 라우트(컨트롤러). 파라미터 파싱, DTO 검증, 서비스 호출, 응답 처리만 담당
+- `src/server/services/**`: 도메인 서비스. 권한/레이트리밋/트랜잭션/집계 등 비즈니스 로직
+- `src/server/repositories/**`: Prisma 쿼리 캡슐화. findMany/findById/create/update/delete 등
+- `src/server/dto/**`: zod 스키마(요청/응답). 일부는 OpenAPI components.schemas로 자동 노출
+- `src/lib/utils/http.ts`: `okJson`, `getPagination`, `getParam`, `getSearchParams`
+- `src/lib/utils/error-handler.ts`: `withErrorHandler`, 표준 에러 응답(요청 실패 시 `X-Request-Id` 포함), Prisma 에러 매핑(P2002/2003/2025 등)
+- `src/lib/utils/request-context.ts`: `getRequestId`(성공/에러 응답 헤더 부착에 사용)
+- `src/lib/utils/service-metrics.ts`: 서비스 경계 성능 로깅 프록시(호출 시간/에러 로깅)
+
+### 요청 흐름
+
+1. API Route(Controller): 파라미터/바디 파싱 → zod 검증 → Service 호출 → `okJson(.., request)`로 성공 응답(`X-Request-Id` 자동)
+2. Service: 권한 확인, 레이트리밋, 트랜잭션, 도메인 규칙 처리(서비스 경계 로깅 적용)
+3. Repository: Prisma로 DB 접근, N+1 방지 및 필요한 관계만 select/include
+
+### 표준 컨벤션
+
+- 에러 처리: `withErrorHandler`로 래핑, 에러 바디/헤더에 `requestId` 포함
+- 로깅: `logger.info|warn|error` + 서비스 경계 로깅(`service-metrics`)
+- 캐시: 읽기 GET에 한해 `Cache-Control` 명시, 민감 데이터 `no-store`
+- 레이트리밋: 시도 생성 등 쓰기 엔드포인트에 도메인별 적용(전역 미들웨어 확장 가능)
+- 보안 헤더: `middleware.ts` 전역 기본 적용, 일부 API에서 직접 헤더 세팅
+- 런타임: 파일 IO(업로드/다운로드)는 Node 런타임 유지. 경량 GET은 필요 시 Edge 전환 가능
+
+### OpenAPI(스웨거)
+
+- 스펙: `GET /api/docs` (OpenAPI 3.0 JSON)
+- UI: `GET /api/docs/ui` (Swagger UI)
+- DTO 자동 반영: `@asteasolutions/zod-to-openapi`로 주요 zod 스키마를 components.schemas로 등록
+- 태그 분류: Reports/Problems/Attempts/Solutions/Students/Materials/Upload/Alerts/Metrics/Health
+
+### 인덱스/성능
+
+- 주요 조회 최적화를 위해 복합 인덱스 추가
+  - `analysis_reports (studentId, type, status, createdAt)`
+  - `learning_materials (status, subject, createdAt)`
+
+### 테스트/CI (권장)
+
+- 서비스/레포 단위 테스트: Vitest/Jest + sqlite-in-memory
+- CI: `lint`/`typecheck`/`test`/`prisma generate`/`build`
+
 ## 🗄️ 데이터베이스 스키마 (ERD)
 
 ```mermaid
