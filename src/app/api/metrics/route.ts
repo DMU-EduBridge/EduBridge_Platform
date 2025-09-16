@@ -1,5 +1,4 @@
 import { performanceMiddleware } from '@/lib/performance';
-import { securityMiddleware } from '@/lib/security';
 import { getRequestId } from '@/lib/utils/request-context';
 import {
   MetricsCacheSchema,
@@ -44,11 +43,11 @@ export const GET = performanceMiddleware(async (request: NextRequest) => {
       },
     });
 
-    // 보안 헤더 적용
-    const securedResponse = securityMiddleware(request);
-    securedResponse.headers.forEach((value, key) => {
-      response.headers.set(key, value);
-    });
+    // Edge 호환 보안 헤더 직접 적용
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
     return response;
   } catch (error) {
