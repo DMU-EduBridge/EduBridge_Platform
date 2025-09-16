@@ -103,9 +103,8 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **Type Checking**: TypeScript strict mode
 - **Package Manager**: npm
 
-### AI & Analytics
+### Analytics
 
-- **AI Integration**: OpenAI, Anthropic, Google AI (확장 가능)
 - **Data Analysis**: Prisma + Custom analytics
 - **Logging**: Custom logger with structured logging
 
