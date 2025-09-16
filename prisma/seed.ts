@@ -6,6 +6,17 @@ async function main() {
   console.log('🌱 시드 데이터 생성을 시작합니다...');
 
   // 사용자 생성
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      name: '관리자',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+    },
+  });
+
   const teacher = await prisma.user.upsert({
     where: { email: 'teacher@example.com' },
     update: {},
@@ -202,6 +213,7 @@ async function main() {
   );
 
   console.log('✅ 시드 데이터 생성이 완료되었습니다!');
+  console.log(`👨‍💼 관리자: ${admin.name} (${admin.email})`);
   console.log(`👨‍🏫 교사: ${teacher.name} (${teacher.email})`);
   console.log(`👨‍🎓 학생: ${students.length}명`);
   console.log(`📝 문제: ${problems.length}개`);

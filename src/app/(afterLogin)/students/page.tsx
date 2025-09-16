@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
@@ -299,6 +300,12 @@ export default function StudentsPage() {
                     <Mail className="mr-1 h-4 w-4" />
                     메일
                   </Button>
+                  <Link href={`/reports?studentId=${student.id}`} className="flex-1">
+                    <Button variant="default" size="sm" className="w-full">
+                      <BookOpen className="mr-1 h-4 w-4" />
+                      리포트 보기
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

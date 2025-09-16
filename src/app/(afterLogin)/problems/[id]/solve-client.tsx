@@ -30,8 +30,10 @@ export default function SolveClient({ problem }: { problem: ProblemViewModel }) 
   const isShort = problem.type === 'SHORT_ANSWER';
 
   function onSubmit() {
+    const trimmed = selected.trim();
+    if (!trimmed || attemptMutation.isPending) return;
     attemptMutation.mutate(
-      { selected },
+      { selected: trimmed },
       {
         onSuccess: (data) => {
           setResult({
@@ -45,7 +47,11 @@ export default function SolveClient({ problem }: { problem: ProblemViewModel }) 
           const msg =
             e?.response?.status === 429
               ? '요청이 너무 많습니다. 잠시 후 다시 시도하세요.'
-              : '제출 실패';
+              : e?.response?.status === 404
+                ? '문제를 찾을 수 없습니다.'
+                : e?.response?.status === 409
+                  ? '사용자 정보가 유효하지 않습니다.'
+                  : '제출 실패';
           setResult({ correct: false, message: msg });
         },
       },
@@ -107,14 +113,23 @@ export default function SolveClient({ problem }: { problem: ProblemViewModel }) 
                   <Input
                     placeholder="정답을 입력하세요"
                     value={selected}
-                    onChange={(e) => setSelected(e.target.value)}
+                    onChange={(e) => {
+                      setSelected(e.target.value);
+                      if (result) setResult(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        onSubmit();
+                      }
+                    }}
                   />
                 </div>
               )}
 
               <div className="flex items-center gap-2">
-                <Button onClick={onSubmit} disabled={!selected || attemptMutation.isPending}>
-                  제출
+                <Button onClick={onSubmit} disabled={!selected.trim() || attemptMutation.isPending}>
+                  {attemptMutation.isPending ? '제출 중...' : '제출'}
                 </Button>
                 {result && (
                   <span className={result.correct ? 'text-green-600' : 'text-red-600'}>

@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
@@ -42,6 +43,13 @@ const statusLabels = {
 export default function ReportsPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [studentId, setStudentId] = useState<string | undefined>(undefined);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const s = searchParams.get('studentId') || undefined;
+    setStudentId(s || undefined);
+  }, [searchParams]);
 
   // TanStack Query 훅 사용
   const {
@@ -51,6 +59,8 @@ export default function ReportsPage() {
   } = useReports({
     type: selectedType !== 'all' ? selectedType : undefined,
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
+    // @ts-ignore - hook 서비스가 params를 그대로 전달하므로 studentId도 쿼리에 전달됨
+    studentId,
   });
 
   const reports = reportsQuery.data?.reports || [];

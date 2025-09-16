@@ -13,7 +13,7 @@ generator erd {
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
-  relationMode = "prisma"
+  relationMode = "foreignKeys"
 }
 
 // Enums are not supported in SQLite, using String instead
@@ -99,6 +99,7 @@ model LearningMaterial {
 
   @@index([subject, difficulty, isActive]) // 조회 패턴별 복합 인덱스
   @@index([status, createdAt]) // 상태별 최신순 조회 최적화
+  @@index([status, subject, createdAt]) // 상태+과목 조합 조회 최적화
   @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
   @@map("learning_materials")
 }
@@ -208,6 +209,7 @@ model AnalysisReport {
   @@index([type])
   @@index([status])
   @@index([createdAt])
+  @@index([studentId, type, status, createdAt]) // 목록 필터 복합 인덱스
   @@index([aiGenerationId])
   @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
   @@map("analysis_reports")

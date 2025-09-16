@@ -1,11 +1,13 @@
 import { parseJsonBody } from '@/lib/config/validation';
-import { prisma } from '@/lib/core/prisma';
 import { ValidationError, logger, withErrorHandler } from '@/lib/utils/error-handler';
-import { serializeArray } from '@/lib/utils/json';
-import { Prisma } from '@prisma/client';
+import { getPagination, getParam, getSearchParams, okJson } from '@/lib/utils/http';
+import { getRequestId } from '@/lib/utils/request-context';
+import { StudentListResponseSchema } from '@/server/dto/student';
+import { studentService } from '@/server/services/student.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 목록: 짧은 캐시
 
 const createStudentSchema = z.object({
   name: z.string().min(1),
@@ -18,91 +20,25 @@ const createStudentSchema = z.object({
 
 // 학생 목록 조회
 async function getStudents(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search');
-  const grade = searchParams.get('grade');
-  const status = searchParams.get('status');
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '10');
+  const sp = getSearchParams(request);
+  const search = getParam(sp, 'search');
+  const grade = getParam(sp, 'grade');
+  const status = getParam(sp, 'status');
+  const { page, limit } = getPagination(sp);
 
-  const where: Prisma.UserWhereInput = {
-    role: 'STUDENT',
-  };
-
-  if (search) {
-    where.OR = [{ name: { contains: search } }, { email: { contains: search } }];
-  }
-
-  if (grade && grade !== 'all') {
-    where.grade = grade;
-  }
-
-  if (status && status !== 'all') {
-    where.status = status;
-  }
-
-  const [rawStudents, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        preferences: true,
-        progress: true,
-      },
-    }),
-    prisma.user.count({ where }),
-  ]);
-
-  const students = rawStudents.map((student) => {
-    const completedProblems = student.progress.filter((p) => p.status === 'COMPLETED').length;
-    const totalProblems = student.progress.length;
-    const averageScore =
-      student.progress.length > 0
-        ? Math.round(
-            student.progress.reduce((sum, p) => sum + (p.score || 0), 0) / student.progress.length,
-          )
-        : 0;
-    const progress = totalProblems > 0 ? Math.round((completedProblems / totalProblems) * 100) : 0;
-
-    // preferences에서 interests를 파싱
-    const interests = student.preferences?.interests
-      ? JSON.parse(student.preferences.interests)
-      : [];
-
-    return {
-      id: student.id,
-      name: student.name,
-      email: student.email,
-      grade: student.grade,
-      status: student.status,
-      progress: progress,
-      completedProblems: completedProblems,
-      totalProblems: totalProblems,
-      averageScore: averageScore,
-      subjects: interests, // interests를 subjects로 매핑
-      joinDate: new Date(student.createdAt).toLocaleDateString('ko-KR'),
-      lastActivity: new Date(student.updatedAt).toLocaleDateString('ko-KR'),
-      preferences: student.preferences,
-      rawProgress: student.progress, // 원본 데이터도 포함
-    };
+  const { students, total } = await studentService.list({ search, grade, status, page, limit });
+  logger.info('Students fetched successfully', {
+    count: students.length,
+    page,
+    limit,
+    requestId: getRequestId(request),
   });
-
-  logger.info('Students fetched successfully', { count: students.length, page, limit });
-
-  return NextResponse.json(
-    {
-      students,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    },
-    { headers: { 'Cache-Control': 'private, max-age=60' } },
-  );
+  const payload = {
+    students,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+  StudentListResponseSchema.parse(payload);
+  return okJson(payload, 'private, max-age=60', request);
 }
 
 // 새 학생 생성
@@ -115,26 +51,7 @@ async function createStudent(request: NextRequest) {
   }
 
   const { name, email, grade, learningStyle, interests } = parsed.data;
-
-  const student = await prisma.user.create({
-    data: {
-      name,
-      email,
-      role: 'STUDENT',
-      grade,
-      status: 'ACTIVE',
-      preferences: {
-        create: {
-          learningStyle: serializeArray(learningStyle) ?? '[]',
-          interests: serializeArray(interests) ?? '[]',
-          preferredDifficulty: 'MEDIUM',
-        },
-      },
-    },
-    include: {
-      preferences: true,
-    },
-  });
+  const student = await studentService.create({ name, email, grade, learningStyle, interests });
 
   logger.info('Student created successfully', { studentId: student.id });
 

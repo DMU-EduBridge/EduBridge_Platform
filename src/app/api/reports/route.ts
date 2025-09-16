@@ -1,11 +1,13 @@
 import { parseJsonBody } from '@/lib/config/validation';
-import { prisma } from '@/lib/core/prisma';
 import { ValidationError, logger, withErrorHandler } from '@/lib/utils/error-handler';
-import { serializeArray } from '@/lib/utils/json';
-import { Prisma } from '@prisma/client';
+import { getPagination, getParam, getSearchParams, okJson } from '@/lib/utils/http';
+import { getRequestId } from '@/lib/utils/request-context';
+import { ReportListResponseSchema } from '@/server/dto/report';
+import { reportService } from '@/server/services/report.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 목록/생성 포함: 목록은 짧은 캐시
 
 const createReportSchema = z.object({
   studentId: z.string().min(1),
@@ -16,86 +18,48 @@ const createReportSchema = z.object({
   recommendations: z.array(z.any()).optional(),
   strengths: z.array(z.any()).optional(),
   weaknesses: z.array(z.any()).optional(),
+  // LLM 입력을 위한 선택 필드
+  llmSummary: z.string().optional(),
 });
 
 // 리포트 목록 조회
 async function getReports(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const type = searchParams.get('type');
-  const status = searchParams.get('status');
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '10');
+  const sp = getSearchParams(request);
+  const type = getParam(sp, 'type');
+  const status = getParam(sp, 'status');
+  const studentId = getParam(sp, 'studentId');
+  const { page, limit } = getPagination(sp);
+  const { items, total } = await reportService.list({ type, status, studentId, page, limit });
+  const reports = items.map((report) => ({
+    id: report.id,
+    title: report.title,
+    type: report.type,
+    period: report.period,
+    status: report.status,
+    students: 1,
+    totalProblems: Math.floor(Math.random() * 20) + 10,
+    averageScore: Math.floor(Math.random() * 40) + 60,
+    completionRate: Math.floor(Math.random() * 30) + 70,
+    insights: report.insights ? JSON.parse(report.insights) : [],
+    recommendations: report.recommendations ? JSON.parse(report.recommendations) : [],
+    strengths: report.strengths ? JSON.parse(report.strengths) : [],
+    weaknesses: report.weaknesses ? JSON.parse(report.weaknesses) : [],
+    createdAt: report.createdAt,
+    student: report.student,
+  }));
 
-  const where: Prisma.AnalysisReportWhereInput = {};
-
-  if (type && type !== 'all') {
-    where.type = type;
-  }
-
-  if (status && status !== 'all') {
-    where.status = status;
-  }
-
-  const [rawReports, total] = await Promise.all([
-    prisma.analysisReport.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        student: true,
-      },
-    }),
-    prisma.analysisReport.count({ where }),
-  ]);
-
-  // 프론트엔드가 기대하는 형태로 데이터 변환
-  const reports = rawReports.map((report) => {
-    // JSON 문자열을 파싱
-    const insights = report.insights ? JSON.parse(report.insights) : [];
-    const recommendations = report.recommendations ? JSON.parse(report.recommendations) : [];
-    const strengths = report.strengths ? JSON.parse(report.strengths) : [];
-    const weaknesses = report.weaknesses ? JSON.parse(report.weaknesses) : [];
-
-    // 임시 계산된 통계 데이터 (실제로는 리포트 생성 시 계산되어야 함)
-    const students = 1; // 개별 리포트이므로 1명
-    const totalProblems = Math.floor(Math.random() * 20) + 10; // 10-30 문제
-    const averageScore = Math.floor(Math.random() * 40) + 60; // 60-100점
-    const completionRate = Math.floor(Math.random() * 30) + 70; // 70-100%
-
-    return {
-      id: report.id,
-      title: report.title,
-      type: report.type,
-      period: report.period,
-      status: report.status,
-      students: students,
-      totalProblems: totalProblems,
-      averageScore: averageScore,
-      completionRate: completionRate,
-      insights: insights,
-      recommendations: recommendations,
-      strengths: strengths,
-      weaknesses: weaknesses,
-      createdAt: report.createdAt,
-      student: report.student,
-    };
+  const payload = {
+    reports,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+  ReportListResponseSchema.parse(payload);
+  logger.info('Reports fetched successfully', {
+    count: reports.length,
+    page,
+    limit,
+    requestId: getRequestId(request),
   });
-
-  logger.info('Reports fetched successfully', { count: reports.length, page, limit });
-
-  return NextResponse.json(
-    {
-      reports,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    },
-    { headers: { 'Cache-Control': 'private, max-age=60' } },
-  );
+  return okJson(payload, 'private, max-age=60', request);
 }
 
 // 새 리포트 생성
@@ -107,29 +71,14 @@ async function createReport(request: NextRequest) {
     throw new ValidationError('잘못된 요청 데이터입니다.');
   }
 
-  const { studentId, type, title, period, insights, recommendations, strengths, weaknesses } =
-    parsed.data;
-
-  const report = await prisma.analysisReport.create({
-    data: {
-      studentId,
-      type,
-      title,
-      period,
-      insights: serializeArray(insights),
-      recommendations: serializeArray(recommendations),
-      strengths: serializeArray(strengths),
-      weaknesses: serializeArray(weaknesses),
-      status: 'COMPLETED',
-    },
-    include: {
-      student: true,
-    },
-  });
+  const report = await reportService.create(parsed.data);
 
   logger.info('Report created successfully', { reportId: report.id });
 
-  return NextResponse.json(report, { status: 201 });
+  return NextResponse.json(report, {
+    status: 201,
+    headers: { 'X-Request-Id': getRequestId(request) },
+  });
 }
 
 export const GET = withErrorHandler(getReports);

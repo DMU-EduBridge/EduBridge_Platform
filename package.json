@@ -22,7 +22,8 @@
     "test": "echo \"No tests specified\" && exit 0",
     "test:watch": "echo \"No tests specified\" && exit 0",
     "clean": "rm -rf .next node_modules/.cache",
-    "precommit": "npm run lint:fix && npm run format && npm run type-check"
+    "precommit": "npm run lint:fix && npm run format && npm run type-check",
+    "db:cleanup-orphans": "tsx scripts/cleanup-orphan-attempts.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -53,6 +54,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.2.0",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
