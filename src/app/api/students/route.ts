@@ -7,6 +7,7 @@ import { studentService } from '@/server/services/student.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 목록: 짧은 캐시
 
 const createStudentSchema = z.object({
   name: z.string().min(1),

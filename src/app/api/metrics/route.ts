@@ -11,6 +11,7 @@ import { metricService } from '@/server/services/metric.service';
 import { NextRequest, NextResponse } from 'next/server';
 
 // 고급 메트릭스 엔드포인트
+export const runtime = 'edge'; // 읽기 전용 경량 API → Edge 가능
 export const GET = performanceMiddleware(async (request: NextRequest) => {
   try {
     const url = new URL(request.url);

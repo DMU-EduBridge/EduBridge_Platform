@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRequestId } from './request-context';
 
-export function okJson<T>(data: T, cache: string = 'private, max-age=60', request?: NextRequest) {
+export function okJson<T>(
+  data: T,
+  cache: string = 'private, max-age=60, stale-while-revalidate=30',
+  request?: NextRequest,
+) {
   const headers: Record<string, string> = { 'Cache-Control': cache };
   if (request) headers['X-Request-Id'] = getRequestId(request);
   return NextResponse.json(data as any, { headers });

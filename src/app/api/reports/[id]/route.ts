@@ -6,6 +6,7 @@ import { reportService } from '@/server/services/report.service';
 import { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 상세: 짧은 캐시 + SWR
 
 async function getReport(_request: NextRequest, { params }: { params: { id: string } }) {
   const id = params.id;

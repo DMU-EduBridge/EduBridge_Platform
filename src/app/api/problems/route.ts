@@ -7,6 +7,7 @@ import { problemService } from '@/server/services/problem.service';
 import { CreateProblemSchema } from '@/types/api';
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 목록: 짧은 캐시
 
 // 문제 생성 스키마
 const createProblemSchema = CreateProblemSchema;

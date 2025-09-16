@@ -17,6 +17,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0; // swagger 스펙은 항상 최신
+export const runtime = 'edge';
 
 export async function GET() {
   // Enable zod-to-openapi extensions on zod

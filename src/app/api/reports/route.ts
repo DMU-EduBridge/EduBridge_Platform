@@ -7,6 +7,7 @@ import { reportService } from '@/server/services/report.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
+export const revalidate = 60; // 목록/생성 포함: 목록은 짧은 캐시
 
 const createReportSchema = z.object({
   studentId: z.string().min(1),
