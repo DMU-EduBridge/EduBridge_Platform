@@ -9,7 +9,7 @@ export const StudentQuickActions = () => {
         <Link href="/problems">
           <Button>문제 풀기</Button>
         </Link>
-        <Link href="/reports">
+        <Link href="/my/reports">
           <Button variant="secondary">내 리포트 보기</Button>
         </Link>
         <Link href="/profile">

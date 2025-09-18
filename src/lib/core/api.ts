@@ -12,13 +12,7 @@ export const api = axios.create({
 // 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
-    // 토큰이 있다면 헤더에 추가
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth-token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
+    // NextAuth는 쿠키 기반이므로 별도 헤더 추가 불필요
     return config;
   },
   (error) => {
@@ -35,7 +29,13 @@ api.interceptors.response.use(
     // 401 에러 시 로그인 페이지로 리다이렉트
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth-token');
+        // NextAuth 쿠키 삭제
+        document.cookie =
+          'next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'next-auth.callback-url=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'next-auth.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+
+        // 로그인 페이지로 이동
         window.location.href = '/login';
       }
     }

@@ -1,5 +1,6 @@
 import { serializeArray } from '@/lib/utils/json';
 import type { Prisma } from '@prisma/client';
+import { ProblemStatsSchema } from '../dto/problem-stats';
 import { problemRepository } from '../repositories/problem.repository';
 
 export class ProblemService {
@@ -85,6 +86,11 @@ export class ProblemService {
 
   async remove(id: string) {
     return problemRepository.delete(id);
+  }
+
+  async getStats() {
+    const stats = await problemRepository.getStats();
+    return ProblemStatsSchema.parse(stats);
   }
 }
 

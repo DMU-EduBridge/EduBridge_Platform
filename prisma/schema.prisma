@@ -37,7 +37,9 @@ model User {
   role      String // UserRole enum: TEACHER, STUDENT, ADMIN
   avatar    String?
   bio       String?
+  school    String? // 학교명
   grade     String? // 학년 (1학년, 2학년 등)
+  subject   String? // 담당 과목 (선생님용)
   status    String  @default("ACTIVE") // UserStatus enum: ACTIVE, INACTIVE, SUSPENDED
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
