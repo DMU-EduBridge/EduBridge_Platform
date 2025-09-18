@@ -1,25 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  GraduationCap,
-  Save,
-  Edit,
-  Camera,
   Award,
   BookOpen,
-  Users,
+  Calendar,
+  Camera,
+  Edit,
+  GraduationCap,
+  Mail,
+  MapPin,
+  Phone,
+  Save,
   TrendingUp,
+  Users,
 } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -36,17 +36,20 @@ export default function ProfilePage() {
     joinDate: '2024-01-01',
   });
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     setIsEditing(false);
     // 실제로는 API 호출로 프로필 업데이트
-  };
+  }, []);
 
-  const stats = [
-    { label: '총 학생 수', value: '45', icon: Users },
-    { label: '생성한 문제', value: '128', icon: BookOpen },
-    { label: '평균 성취율', value: '87%', icon: TrendingUp },
-    { label: '교육 경력', value: '15년', icon: Award },
-  ];
+  const stats = useMemo(
+    () => [
+      { label: '총 학생 수', value: '45', icon: Users },
+      { label: '생성한 문제', value: '128', icon: BookOpen },
+      { label: '평균 성취율', value: '87%', icon: TrendingUp },
+      { label: '교육 경력', value: '15년', icon: Award },
+    ],
+    [],
+  );
 
   return (
     <div className="space-y-6">

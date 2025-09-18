@@ -1,4 +1,5 @@
-import { logger, withErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/monitoring';
+import { withErrorHandler } from '@/lib/utils/error-handler';
 import { okJson } from '@/lib/utils/http';
 import { getRequestId } from '@/lib/utils/request-context';
 import { reportService } from '@/server/services/report.service';

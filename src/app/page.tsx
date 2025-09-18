@@ -6,8 +6,26 @@ import { Stats } from '@/components/landing/stats';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { authOptions } from '@/lib/core/auth';
+import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: 'EduBridge AI Platform - AI 기반 교육 플랫폼',
+  description: 'AI 기술을 활용한 통합 교육 플랫폼으로 교사와 학생을 연결하는 차세대 교육 솔루션',
+  keywords: ['교육', 'AI', '학습', '플랫폼', 'EduBridge'],
+  openGraph: {
+    title: 'EduBridge AI Platform',
+    description: 'AI 기반 교육 플랫폼으로 선생님과 학생을 연결하는 통합 교육 솔루션',
+    type: 'website',
+    locale: 'ko_KR',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'EduBridge AI Platform',
+    description: 'AI 기반 교육 플랫폼으로 선생님과 학생을 연결하는 통합 교육 솔루션',
+  },
+};
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions);

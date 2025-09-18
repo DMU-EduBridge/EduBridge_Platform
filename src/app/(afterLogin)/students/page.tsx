@@ -19,7 +19,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
@@ -64,11 +64,11 @@ export default function StudentsPage() {
   //   sendMessageMutation.mutate({ id: studentId, message });
   // };
 
-  const getProgressColor = (progress: number) => {
+  const getProgressColor = useCallback((progress: number) => {
     if (progress >= 80) return progressColors.high;
     if (progress >= 60) return progressColors.medium;
     return progressColors.low;
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

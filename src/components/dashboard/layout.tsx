@@ -63,7 +63,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   const teacherNav = [
-    { name: '학습 관리', href: '/projects', icon: FolderOpen },
+    { name: '학습 관리', href: '/learning-materials', icon: FolderOpen },
     { name: '학생 관리', href: '/students', icon: Users },
     { name: '분석 리포트', href: '/reports', icon: Calendar },
   ];

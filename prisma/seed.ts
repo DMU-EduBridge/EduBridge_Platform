@@ -2,8 +2,10 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+import { logger } from '@/lib/monitoring';
+
 async function main() {
-  console.log('🌱 시드 데이터 생성을 시작합니다...');
+  logger.info('🌱 시드 데이터 생성을 시작합니다...');
 
   // 사용자 생성
   const admin = await prisma.user.upsert({
@@ -212,11 +214,11 @@ async function main() {
     ),
   );
 
-  console.log('✅ 시드 데이터 생성이 완료되었습니다!');
-  console.log(`👨‍💼 관리자: ${admin.name} (${admin.email})`);
-  console.log(`👨‍🏫 교사: ${teacher.name} (${teacher.email})`);
-  console.log(`👨‍🎓 학생: ${students.length}명`);
-  console.log(`📝 문제: ${problems.length}개`);
+  logger.info('✅ 시드 데이터 생성이 완료되었습니다!');
+  logger.info(`👨‍💼 관리자: ${admin.name} (${admin.email})`);
+  logger.info(`👨‍🏫 교사: ${teacher.name} (${teacher.email})`);
+  logger.info(`👨‍🎓 학생: ${students.length}명`);
+  logger.info(`📝 문제: ${problems.length}개`);
 }
 
 main()

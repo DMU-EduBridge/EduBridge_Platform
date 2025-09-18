@@ -1,5 +1,6 @@
 import { parseJsonBody } from '@/lib/config/validation';
-import { ValidationError, logger, withErrorHandler } from '@/lib/utils/error-handler';
+import { logger } from '@/lib/monitoring';
+import { ValidationError, withErrorHandler } from '@/lib/utils/error-handler';
 import { getPagination, getParam, getSearchParams, okJson } from '@/lib/utils/http';
 import { getRequestId } from '@/lib/utils/request-context';
 import { ProblemListResponseSchema } from '@/server/dto/problem';

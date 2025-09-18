@@ -3,8 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { authOptions } from '@/lib/core/auth';
 import { BookOpen, MoreHorizontal, Plus, Search } from 'lucide-react';
+import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: '학습자료 관리 - EduBridge',
+  description: '교육 자료를 생성하고 관리할 수 있는 학습자료 관리 페이지',
+  robots: 'noindex, nofollow', // 로그인 필요 페이지
+};
 
 export default async function LearningMaterialsPage() {
   const session = await getServerSession(authOptions);
@@ -269,4 +276,3 @@ export default async function LearningMaterialsPage() {
     </div>
   );
 }
-

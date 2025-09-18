@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useProblems } from '@/hooks/problems';
 import { useState } from 'react';
 
@@ -18,7 +19,6 @@ export type ProblemViewModel = {
 };
 
 export default function SolveClient({ problem }: { problem: ProblemViewModel }) {
-  const [tab, setTab] = useState<'solve' | 'solution'>('solve');
   const [selected, setSelected] = useState('');
   const [result, setResult] = useState<null | { correct: boolean; message: string }>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -41,7 +41,6 @@ export default function SolveClient({ problem }: { problem: ProblemViewModel }) 
             message: data.correct ? '정답입니다!' : '오답입니다.',
           });
           setSubmitted(true);
-          setTab('solution');
         },
         onError: (e: any) => {
           const msg =
@@ -73,110 +72,100 @@ export default function SolveClient({ problem }: { problem: ProblemViewModel }) 
             <p className="whitespace-pre-wrap text-gray-700">{problem.description}</p>
           )}
 
-          <div className="flex gap-2">
-            <Button
-              variant={tab === 'solve' ? 'default' : 'outline'}
-              onClick={() => setTab('solve')}
-            >
-              풀이
-            </Button>
-            <Button
-              variant={tab === 'solution' ? 'default' : 'outline'}
-              onClick={() => setTab('solution')}
-              disabled={!submitted}
-            >
-              해설
-            </Button>
-          </div>
+          <div className="space-y-4">
+            {isMultiple && (
+              <fieldset className="space-y-2">
+                <legend className="sr-only">답안 선택</legend>
+                {problem.options.map((opt, idx) => (
+                  <label key={idx} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="choice"
+                      value={opt}
+                      checked={selected === opt}
+                      onChange={(e) => setSelected(e.target.value)}
+                      aria-describedby={`option-${idx}`}
+                    />
+                    <span id={`option-${idx}`}>{opt}</span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
 
-          {tab === 'solve' ? (
-            <div className="space-y-4">
-              {isMultiple && (
-                <div className="space-y-2">
-                  {problem.options.map((opt, idx) => (
-                    <label key={idx} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="choice"
-                        value={opt}
-                        checked={selected === opt}
-                        onChange={(e) => setSelected(e.target.value)}
-                      />
-                      <span>{opt}</span>
-                    </label>
-                  ))}
-                </div>
+            {isShort && (
+              <div className="max-w-md">
+                <Label htmlFor="answer-input" className="sr-only">
+                  정답 입력
+                </Label>
+                <Input
+                  id="answer-input"
+                  placeholder="정답을 입력하세요"
+                  value={selected}
+                  onChange={(e) => {
+                    setSelected(e.target.value);
+                    if (result) setResult(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      onSubmit();
+                    }
+                  }}
+                  aria-describedby="answer-help"
+                />
+                <p id="answer-help" className="sr-only">
+                  Enter 키를 눌러 답안을 제출할 수 있습니다.
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Button onClick={onSubmit} disabled={!selected.trim() || attemptMutation.isPending}>
+                {attemptMutation.isPending ? '제출 중...' : '제출'}
+              </Button>
+              {result && (
+                <span className={result.correct ? 'text-green-600' : 'text-red-600'}>
+                  {result.message}
+                </span>
               )}
+            </div>
 
-              {isShort && (
-                <div className="max-w-md">
-                  <Input
-                    placeholder="정답을 입력하세요"
-                    value={selected}
-                    onChange={(e) => {
-                      setSelected(e.target.value);
-                      if (result) setResult(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        onSubmit();
-                      }
-                    }}
-                  />
-                </div>
-              )}
-
-              <div className="flex items-center gap-2">
-                <Button onClick={onSubmit} disabled={!selected.trim() || attemptMutation.isPending}>
-                  {attemptMutation.isPending ? '제출 중...' : '제출'}
-                </Button>
-                {result && (
-                  <span className={result.correct ? 'text-green-600' : 'text-red-600'}>
-                    {result.message}
-                  </span>
+            {submitted && (
+              <div className="space-y-3 border-t pt-4">
+                {solutionQuery.isLoading && (
+                  <div className="text-sm text-gray-500">해설 불러오는 중...</div>
+                )}
+                {solutionQuery.data && (
+                  <>
+                    <div className="rounded-md border p-4">
+                      <div className="mb-1 text-sm text-gray-500">정답</div>
+                      <div className="font-medium">{solutionQuery.data.correctAnswer}</div>
+                    </div>
+                    {solutionQuery.data.explanation || solutionQuery.data.hints.length > 0 ? (
+                      <div className="space-y-2 rounded-md border p-4">
+                        <div className="text-sm font-medium">해설</div>
+                        {solutionQuery.data.explanation && (
+                          <div className="whitespace-pre-wrap text-gray-700">
+                            {solutionQuery.data.explanation}
+                          </div>
+                        )}
+                        {solutionQuery.data.hints.length > 0 && (
+                          <div className="space-y-1 text-sm text-gray-600">
+                            <div className="font-medium">힌트</div>
+                            {solutionQuery.data.hints.map((h: string, i: number) => (
+                              <div key={i}>- {h}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-gray-500">해설이 없습니다.</div>
+                    )}
+                  </>
                 )}
               </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {solutionQuery.isLoading && (
-                <div className="text-sm text-gray-500">해설 불러오는 중...</div>
-              )}
-              {solutionQuery.data ? (
-                <>
-                  <div className="rounded-md border p-4">
-                    <div className="mb-1 text-sm text-gray-500">정답</div>
-                    <div className="font-medium">{solutionQuery.data.correctAnswer}</div>
-                  </div>
-                  {solutionQuery.data.explanation || solutionQuery.data.hints.length > 0 ? (
-                    <div className="space-y-2 rounded-md border p-4">
-                      <div className="text-sm font-medium">해설</div>
-                      {solutionQuery.data.explanation && (
-                        <div className="whitespace-pre-wrap text-gray-700">
-                          {solutionQuery.data.explanation}
-                        </div>
-                      )}
-                      {solutionQuery.data.hints.length > 0 && (
-                        <div className="space-y-1 text-sm text-gray-600">
-                          <div className="font-medium">힌트</div>
-                          {solutionQuery.data.hints.map((h: string, i: number) => (
-                            <div key={i}>- {h}</div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-gray-500">해설이 없습니다.</div>
-                  )}
-                </>
-              ) : (
-                !solutionQuery.isLoading && (
-                  <div className="text-gray-500">제출 후 해설을 확인할 수 있습니다.</div>
-                )
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

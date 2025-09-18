@@ -1,3 +1,4 @@
+import { logger } from '@/lib/monitoring';
 import { NextRequest, NextResponse } from 'next/server';
 
 // ============================================================================
@@ -341,7 +342,7 @@ export class SecurityLogger {
     };
 
     // 실제 운영 환경에서는 보안 로그를 별도 시스템으로 전송
-    console.log(`[SECURITY] ${JSON.stringify(logEntry)}`);
+    logger.warn(`[SECURITY] ${JSON.stringify(logEntry)}`);
 
     // 심각한 보안 이벤트는 즉시 알림
     if (details.severity === 'critical') {

@@ -1,23 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { logger } from '@/lib/monitoring';
 import {
-  User,
-  Mail,
-  Lock,
-  Phone,
-  MapPin,
-  GraduationCap,
   AlertCircle,
   Eye,
   EyeOff,
+  GraduationCap,
+  Lock,
+  Mail,
+  MapPin,
+  Phone,
+  User,
 } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -107,7 +108,7 @@ export default function SignupPage() {
     try {
       // 실제로는 API 호출
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log('회원가입 성공:', formData);
+      logger.info('회원가입 성공', { email: formData.email });
       // 성공 후 로그인 페이지로 리다이렉트
     } catch (error) {
       console.error('회원가입 실패:', error);

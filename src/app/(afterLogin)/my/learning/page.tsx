@@ -3,8 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { authOptions } from '@/lib/core/auth';
 import { BookOpen, CheckCircle, Clock, Target, TrendingUp } from 'lucide-react';
+import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: '나의 학습 - EduBridge',
+  description: '개인 학습 진행 상황과 성과를 확인할 수 있는 페이지',
+  robots: 'noindex, nofollow', // 로그인 필요 페이지
+};
 
 export default async function MyLearningPage() {
   const session = await getServerSession(authOptions);
@@ -259,4 +266,3 @@ export default async function MyLearningPage() {
     </div>
   );
 }
-

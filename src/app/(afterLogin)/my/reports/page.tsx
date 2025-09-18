@@ -10,16 +10,13 @@ import {
   BookOpen,
   Calendar,
   CheckCircle,
-  Clock,
   Download,
   Target,
   TrendingUp,
-  Users,
+  User,
 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-// 하드코딩된 데이터는 이제 API에서 가져옵니다
+import { useSession } from 'next-auth/react';
+import { useState } from 'react';
 
 const typeLabels = {
   MONTHLY: '월간 리포트',
@@ -40,18 +37,12 @@ const statusLabels = {
   PENDING: '대기 중',
 };
 
-export default function ReportsPage() {
+export default function MyReportsPage() {
+  const { data: session } = useSession();
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [studentId, setStudentId] = useState<string | undefined>(undefined);
-  const searchParams = useSearchParams();
 
-  useEffect(() => {
-    const s = searchParams.get('studentId') || undefined;
-    setStudentId(s || undefined);
-  }, [searchParams]);
-
-  // TanStack Query 훅 사용
+  // 학생의 경우 자신의 리포트만 필터링
   const {
     reports: reportsQuery,
     stats: statsQuery,
@@ -59,8 +50,8 @@ export default function ReportsPage() {
   } = useReports({
     type: selectedType !== 'all' ? selectedType : undefined,
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
-    // @ts-ignore - hook 서비스가 params를 그대로 전달하므로 studentId도 쿼리에 전달됨
-    studentId,
+    // 학생인 경우 자신의 ID로 필터링
+    studentId: session?.user?.role === 'STUDENT' ? session.user.id : undefined,
   });
 
   const reports = reportsQuery.data?.reports || [];
@@ -75,18 +66,15 @@ export default function ReportsPage() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">분석 리포트</h1>
+          <h1 className="text-3xl font-bold text-gray-900">내 학습 리포트</h1>
           <p className="mt-2 text-gray-600">
-            AI가 분석한 학습 데이터를 통해 학생들의 성과를 파악하고 개선 방안을 제시합니다.
+            나의 학습 성과를 분석한 개인화된 리포트를 확인하세요.
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
-            리포트 다운로드
-          </Button>
-          <Button>
-            <TrendingUp className="mr-2 h-4 w-4" />새 리포트 생성
+            전체 다운로드
           </Button>
         </div>
       </div>
@@ -123,26 +111,26 @@ export default function ReportsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">평균 분석 시간</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">평균 점수</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : `${stats?.averageAnalysisTime || 0}분`}
+              {statsQuery.isLoading ? '...' : `${stats?.averageScore || 0}점`}
             </div>
-            <p className="text-xs text-muted-foreground">AI 분석 속도</p>
+            <p className="text-xs text-muted-foreground">전체 평균</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">개선 제안</CardTitle>
+            <CardTitle className="text-sm font-medium">완료율</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : stats?.totalRecommendations || 0}
+              {statsQuery.isLoading ? '...' : `${stats?.completionRate || 0}%`}
             </div>
-            <p className="text-xs text-muted-foreground">총 제안 수</p>
+            <p className="text-xs text-muted-foreground">학습 완료율</p>
           </CardContent>
         </Card>
       </div>
@@ -220,7 +208,7 @@ export default function ReportsPage() {
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                   <div className="rounded bg-gray-50 p-3 text-center">
                     <div className="text-lg font-semibold text-gray-900">{report.students}</div>
-                    <div className="text-sm text-gray-600">분석 학생 수</div>
+                    <div className="text-sm text-gray-600">분석 대상</div>
                   </div>
                   <div className="rounded bg-gray-50 p-3 text-center">
                     <div className="text-lg font-semibold text-gray-900">
@@ -276,11 +264,9 @@ export default function ReportsPage() {
 
                 {/* 액션 버튼 */}
                 <div className="flex gap-2 border-t pt-4">
-                  <Button asChild variant="outline" size="sm">
-                    <a href={`/reports/${report.id}`}>
-                      <Calendar className="mr-1 h-4 w-4" />
-                      상세 보기
-                    </a>
+                  <Button variant="outline" size="sm">
+                    <Calendar className="mr-1 h-4 w-4" />
+                    상세 보기
                   </Button>
                   <Button
                     variant="outline"
@@ -292,8 +278,8 @@ export default function ReportsPage() {
                     {downloadMutation.isPending ? '다운로드 중...' : 'PDF 다운로드'}
                   </Button>
                   <Button variant="outline" size="sm">
-                    <Users className="mr-1 h-4 w-4" />
-                    학생 공유
+                    <User className="mr-1 h-4 w-4" />
+                    선생님과 공유
                   </Button>
                 </div>
               </CardContent>
@@ -306,10 +292,13 @@ export default function ReportsPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">리포트를 찾을 수 없습니다</h3>
-            <p className="mb-4 text-gray-600">필터 조건에 맞는 리포트가 없습니다.</p>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">리포트가 없습니다</h3>
+            <p className="mb-4 text-gray-600">
+              아직 생성된 리포트가 없습니다. 학습을 진행하면 리포트가 생성됩니다.
+            </p>
             <Button>
-              <TrendingUp className="mr-2 h-4 w-4" />새 리포트 생성하기
+              <BookOpen className="mr-2 h-4 w-4" />
+              학습 시작하기
             </Button>
           </CardContent>
         </Card>

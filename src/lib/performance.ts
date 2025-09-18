@@ -1,5 +1,6 @@
-import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/core/prisma';
+import { NextRequest } from 'next/server';
+import { logger } from './monitoring';
 
 // ============================================================================
 // 기본 성능 기능
@@ -140,7 +141,7 @@ export class DatabaseMonitor {
   static async checkConnectionHealth() {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      console.log('Database connection healthy');
+      logger.info('Database connection healthy');
       return true;
     } catch (error) {
       console.error('Database connection failed', error);

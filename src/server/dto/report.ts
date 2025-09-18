@@ -10,12 +10,18 @@ export const ReportItemSchema = z.object({
   totalProblems: z.number(),
   averageScore: z.number(),
   completionRate: z.number(),
-  insights: z.array(z.any()),
-  recommendations: z.array(z.any()),
-  strengths: z.array(z.any()),
-  weaknesses: z.array(z.any()),
-  createdAt: z.any(),
-  student: z.any().optional(),
+  insights: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  strengths: z.array(z.string()),
+  weaknesses: z.array(z.string()),
+  createdAt: z.date(),
+  student: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+    })
+    .optional(),
 });
 
 export const ReportListResponseSchema = z.object({

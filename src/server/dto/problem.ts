@@ -8,10 +8,10 @@ export const ProblemItemSchema = z.object({
   subject: z.string(),
   type: z.string(),
   difficulty: z.string(),
-  options: z.any().optional(),
+  options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
-  hints: z.any().optional(),
-  tags: z.any().optional(),
+  hints: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
 });
 

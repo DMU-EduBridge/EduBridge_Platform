@@ -302,5 +302,3 @@ export default async function StudentSettingsPage() {
     </div>
   );
 }
-
-

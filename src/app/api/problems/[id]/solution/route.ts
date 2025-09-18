@@ -1,5 +1,5 @@
-import { ForbiddenError, NotFoundError, logger, withErrorHandler } from '@/lib/utils/error-handler';
-import { parseJsonArray } from '@/lib/utils/json';
+import { logger } from '@/lib/monitoring';
+import { ForbiddenError, NotFoundError, withErrorHandler } from '@/lib/utils/error-handler';
 import { getRequestId } from '@/lib/utils/request-context';
 import { requireSession } from '@/server/auth/session';
 import { attemptService } from '@/server/services/attempt.service';
@@ -30,12 +30,10 @@ async function getSolution(request: NextRequest, { params }: { params: { id: str
     throw new ForbiddenError('해설은 제출 후에만 확인할 수 있습니다.');
   }
 
-  const hints = parseJsonArray(problem.hints);
-
   const payload = {
     correctAnswer: problem.correctAnswer,
     explanation: problem.explanation ?? null,
-    hints,
+    hints: problem.hints,
   };
   // 응답 DTO 검증(런타임 보증)
   SolutionResponseSchema.parse(payload);

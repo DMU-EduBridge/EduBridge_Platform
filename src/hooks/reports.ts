@@ -7,6 +7,7 @@ export function useReports(params?: {
   status?: string;
   page?: number;
   limit?: number;
+  studentId?: string;
 }) {
   const queryClient = useQueryClient();
 

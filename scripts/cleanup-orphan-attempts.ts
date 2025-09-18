@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/core/prisma';
+import { logger } from '@/lib/monitoring';
 import 'dotenv/config';
 
 async function main() {
@@ -16,14 +17,12 @@ async function main() {
     .map((a) => a.id);
 
   if (toDelete.length === 0) {
-    // eslint-disable-next-line no-console
-    console.log('No orphan attempts found.');
+    logger.info('No orphan attempts found.');
     return;
   }
 
   await prisma.attempt.deleteMany({ where: { id: { in: toDelete } } });
-  // eslint-disable-next-line no-console
-  console.log(`Deleted ${toDelete.length} orphan attempt(s).`);
+  logger.info(`Deleted ${toDelete.length} orphan attempt(s).`);
 }
 
 main()

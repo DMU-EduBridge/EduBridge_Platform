@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const protectedPaths = [
   '/dashboard',
   '/profile',
-  '/projects',
+  '/learning-materials',
   '/applications',
   '/(afterLogin)',
   '/problems',
@@ -16,7 +16,7 @@ const protectedPaths = [
 const adminPaths = ['/admin'];
 const teacherOnlyPaths = [
   '/students',
-  '/projects',
+  '/learning-materials',
   '/reports',
   '/problems/new',
   '/learning-materials',
