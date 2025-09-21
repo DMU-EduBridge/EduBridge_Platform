@@ -17,18 +17,11 @@ class UnifiedAIServiceManager {
   constructor() {
     this.services = [
       {
-        name: 'Problem Sync Service',
-        url: process.env.AI_SERVER_URL || 'http://localhost:8000',
-        isHealthy: false,
-        lastChecked: new Date(),
-        features: ['문제 동기화', 'AI 생성 문제 관리'],
-      },
-      {
         name: 'Educational AI System',
         url: process.env.EDUCATIONAL_AI_URL || 'http://localhost:8000',
         isHealthy: false,
         lastChecked: new Date(),
-        features: ['문제 생성', '교과서 처리', 'RAG 기반 학습'],
+        features: ['문제 생성', '교과서 처리', 'RAG 기반 학습', '문제 동기화'],
       },
       {
         name: 'Teacher Report System',

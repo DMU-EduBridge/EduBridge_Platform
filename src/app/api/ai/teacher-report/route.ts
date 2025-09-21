@@ -10,7 +10,7 @@ class TeacherReportClient {
 
   constructor() {
     this.baseUrl = process.env.TEACHER_REPORT_URL || 'http://localhost:8001';
-    this.apiKey = process.env.TEACHER_REPORT_API_KEY;
+    this.apiKey = process.env.OPENAI_API_KEY; // 공통 OpenAI API 키 사용
   }
 
   async generateReport(params: {
