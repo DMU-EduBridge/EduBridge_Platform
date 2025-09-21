@@ -17,8 +17,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const report = await prisma.teacherReport.findFirst({
       where: {
         id: reportId,
-        teacherId: session.user.id, // 본인이 생성한 리포트만 삭제 가능
-        deletedAt: null,
+        createdBy: session.user.id, // 본인이 생성한 리포트만 삭제 가능
+        status: { not: 'ARCHIVED' },
       },
     });
 
@@ -29,7 +29,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // 소프트 삭제 (deletedAt 필드 설정)
     await prisma.teacherReport.update({
       where: { id: reportId },
-      data: { deletedAt: new Date() },
+      data: { status: 'ARCHIVED' },
     });
 
     return NextResponse.json({

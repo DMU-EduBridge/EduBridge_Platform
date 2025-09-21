@@ -55,19 +55,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { title, content, reportType, classInfo, studentCount, analysis } = parsed.data;
+    const { title, content, reportType, classInfo } = parsed.data;
 
     // 리포트 저장
     const report = await prisma.teacherReport.create({
       data: {
-        teacherId: session.user.id,
+        createdBy: session.user.id,
         title,
         content,
         reportType: reportType.toUpperCase(), // FULL, SUMMARY
         classInfo: JSON.stringify(classInfo),
-        studentCount,
-        analysis: analysis ? JSON.stringify(analysis) : null,
-        status: 'COMPLETED',
+        status: 'PUBLISHED',
       },
     });
 
@@ -135,7 +133,7 @@ export async function GET(request: NextRequest) {
           title: true,
           reportType: true,
           classInfo: true,
-          studentCount: true,
+          reportAnalyses: true,
           status: true,
           createdAt: true,
         },
@@ -144,13 +142,13 @@ export async function GET(request: NextRequest) {
     ]);
 
     const formattedReports = reports.map((report) => {
-      const classInfo = JSON.parse(report.classInfo);
+      const classInfo = JSON.parse(report.classInfo as string);
       return {
         id: report.id,
         title: report.title,
         type: report.reportType.toLowerCase(), // FULL -> full, SUMMARY -> summary
         period: `${classInfo.grade}학년 ${classInfo.class}반 ${classInfo.subject}`,
-        studentCount: report.studentCount,
+        studentCount: report.reportAnalyses?.length || 0,
         status: report.status,
         createdAt: report.createdAt,
       };

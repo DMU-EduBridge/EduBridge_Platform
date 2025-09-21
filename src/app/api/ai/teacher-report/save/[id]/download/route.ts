@@ -17,8 +17,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const report = await prisma.teacherReport.findFirst({
       where: {
         id: reportId,
-        teacherId: session.user.id, // 본인이 생성한 리포트만 다운로드 가능
-        deletedAt: null,
+        createdBy: session.user.id, // 본인이 생성한 리포트만 다운로드 가능
+        status: { not: 'ARCHIVED' },
       },
       select: {
         id: true,
@@ -26,8 +26,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         content: true,
         reportType: true,
         classInfo: true,
-        studentCount: true,
-        analysis: true,
+        reportAnalyses: {
+          select: {
+            analysisData: true,
+          },
+        },
         createdAt: true,
       },
     });
@@ -36,8 +39,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: '리포트를 찾을 수 없습니다.' }, { status: 404 });
     }
 
-    const classInfo = JSON.parse(report.classInfo);
-    const analysis = report.analysis ? JSON.parse(report.analysis) : null;
+    const classInfo = JSON.parse(report.classInfo as string);
+    const analysis = report.reportAnalyses?.[0]
+      ? JSON.parse(report.reportAnalyses[0].analysisData as string)
+      : null;
 
     // 리포트 내용을 마크다운 형식으로 변환
     const markdownContent = `# ${report.title}
@@ -46,7 +51,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 - **학급**: ${classInfo.grade}학년 ${classInfo.class}반
 - **과목**: ${classInfo.subject}
 - **담당교사**: ${classInfo.teacher}
-- **학생 수**: ${report.studentCount}명
+- **학생 수**: ${report.reportAnalyses?.length || 0}명
 - **리포트 타입**: ${report.reportType === 'FULL' ? '상세 리포트' : '요약 리포트'}
 - **생성일**: ${new Date(report.createdAt).toLocaleDateString('ko-KR')}
 
