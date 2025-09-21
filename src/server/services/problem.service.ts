@@ -100,6 +100,30 @@ export class ProblemService {
     }
   }
 
+  async update(id: string, data: UpdateProblemDtoType): Promise<Problem> {
+    try {
+      return await this.problemRepository.update(id, data);
+    } catch (error) {
+      logger.error('문제 수정 실패', undefined, {
+        problemId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('문제 수정에 실패했습니다.');
+    }
+  }
+
+  async remove(id: string): Promise<void> {
+    try {
+      await this.problemRepository.softDelete(id);
+    } catch (error) {
+      logger.error('문제 삭제 실패', undefined, {
+        problemId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('문제 삭제에 실패했습니다.');
+    }
+  }
+
   async getProblemStats(): Promise<any> {
     try {
       return await this.problemRepository.getStats();

@@ -3,15 +3,15 @@ import { ForbiddenError, NotFoundError, withErrorHandler } from '@/lib/utils/err
 import { getRequestId } from '@/lib/utils/request-context';
 import { requireSession } from '@/server/auth/session';
 import { attemptService } from '@/server/services/attempt.service';
-import { problemService } from '@/server/services/problem.service';
+import { ProblemService } from '@/server/services/problem.service';
 import { SolutionResponseSchema } from '@/types/api';
 import { NextRequest, NextResponse } from 'next/server';
-export const dynamic = 'force-dynamic';
+const problemService = new ProblemService();
 
 // 권한 체크는 attemptService.hasAttempt로 위임
 
 async function getSolution(request: NextRequest, { params }: { params: { id: string } }) {
-  const base = await problemService.detail(params.id);
+  const base = await problemService.getProblemById(params.id);
   const problem = base
     ? { correctAnswer: base.correctAnswer, explanation: base.explanation, hints: base.hints }
     : null;

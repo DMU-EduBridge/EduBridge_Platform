@@ -1,5 +1,6 @@
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
+import { ProblemDifficulty } from '@/types/domain/problem';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -109,14 +110,16 @@ export async function POST(request: NextRequest) {
     // 생성된 문제들을 데이터베이스에 저장
     const savedQuestions = [];
     for (const questionData of generatedQuestions) {
-      const question = await prisma.aIGeneratedQuestion.create({
+      const question = await prisma.problem.create({
         data: {
-          questionText: questionData.questionText,
+          title: questionData.questionText,
+          content: questionData.questionText,
+          type: 'MULTIPLE_CHOICE',
           subject: questionData.subject,
           gradeLevel: questionData.gradeLevel,
           unit: questionData.unit,
-          difficulty: questionData.difficulty,
-          correctAnswer: questionData.correctAnswer,
+          difficulty: questionData.difficulty as ProblemDifficulty,
+          correctAnswer: questionData.correctAnswer.toString(),
           explanation: questionData.explanation,
           generationPrompt: questionData.generationPrompt,
           contextChunkIds: JSON.stringify(questionData.contextChunkIds),
@@ -129,9 +132,9 @@ export async function POST(request: NextRequest) {
           textbookId: textbookId || null,
         },
         include: {
-          options: true,
-          tags: true,
-          user: {
+          questionOptions: true,
+          questionTags: true,
+          creator: {
             select: {
               id: true,
               name: true,
@@ -153,7 +156,7 @@ export async function POST(request: NextRequest) {
       for (const optionData of questionData.options) {
         await prisma.questionOption.create({
           data: {
-            questionId: question.id,
+            problemId: question.id,
             optionNumber: optionData.optionNumber,
             optionText: optionData.optionText,
             isCorrect: optionData.isCorrect,
@@ -165,7 +168,7 @@ export async function POST(request: NextRequest) {
       for (const tagName of questionData.tags) {
         await prisma.questionTag.create({
           data: {
-            questionId: question.id,
+            problemId: question.id,
             tagName,
           },
         });
@@ -273,15 +276,15 @@ export async function GET(request: NextRequest) {
 
     // 문제 목록 조회
     const [questions, total] = await Promise.all([
-      prisma.aIGeneratedQuestion.findMany({
+      prisma.problem.findMany({
         where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          options: true,
-          tags: true,
-          user: {
+          questionOptions: true,
+          questionTags: true,
+          creator: {
             select: {
               id: true,
               name: true,
@@ -298,7 +301,7 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.aIGeneratedQuestion.count({ where }),
+      prisma.problem.count({ where }),
     ]);
 
     return NextResponse.json({
