@@ -13,15 +13,100 @@ datasource db {
   relationMode = "foreignKeys"
 }
 
+// ===== ENUM 타입 정의 =====
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum ProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ProblemType {
+  MULTIPLE_CHOICE
+  SHORT_ANSWER
+  ESSAY
+  TRUE_FALSE
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_REVISION
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ServerStatus {
+  HEALTHY
+  UNHEALTHY
+  UNKNOWN
+  MAINTENANCE
+}
+
+enum SyncStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum AnalysisType {
+  BASIC_STATISTICS
+  ACHIEVEMENT_DISTRIBUTION
+  STRUGGLING_STUDENTS
+  TOP_PERFORMERS
+  SUBJECT_ANALYSIS
+  TREND_ANALYSIS
+}
+
+enum TemplateType {
+  EXCELLENT
+  NORMAL
+  PROBLEMATIC
+  MIXED
+  PREDEFINED
+}
+
 model User {
   id               String             @id @default(cuid())
   email            String             @unique
   name             String
-  role             String
+  role             UserRole
   avatar           String?
   bio              String?
   grade            String?
-  status           String             @default("ACTIVE")
+  status           UserStatus          @default(ACTIVE)
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   deletedAt        DateTime?
@@ -36,7 +121,7 @@ model User {
   
   // Educational AI System 관련 관계
   textbooks        Textbook[]
-  aiGeneratedQuestions AIGeneratedQuestion[]
+  problems         Problem[]          @relation("ProblemCreator")
   searchQueries    SearchQuery[]
   aiApiUsage       AIApiUsage[]
   aiPerformanceMetrics AIPerformanceMetric[]
@@ -100,9 +185,11 @@ model Problem {
   title            String
   description      String?
   content          String
-  type             String
-  difficulty       String
+  type             ProblemType
+  difficulty       ProblemDifficulty
   subject          String
+  gradeLevel       String?                  // AI 생성 문제용 추가
+  unit             String?                  // AI 생성 문제용 추가
   options          String?
   correctAnswer    String
   explanation      String?
@@ -114,17 +201,29 @@ model Problem {
   isAIGenerated    Boolean                   @default(false)
   aiGenerationId   String?
   qualityScore     Float?
-  reviewStatus     String                    @default("PENDING")
+  reviewStatus     ReviewStatus              @default(PENDING)
   reviewedBy       String?
   reviewedAt       DateTime?
+  generationPrompt String?                   // AI 생성 프롬프트
+  contextChunkIds  String?                   // 참조된 ChromaDB 청크 ID들
+  generationTimeMs Int?                      // AI 생성 시간
+  modelName        String?                   // 사용된 AI 모델
+  tokensUsed       Int?                      // 사용된 토큰 수
+  costUsd          Float?                    // 생성 비용
+  textbookId       String?                   // 참조된 교과서 ID
+  createdBy        String?                   // 생성자 (AI 생성 문제용)
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
   deletedAt        DateTime?
   attempts         Attempt[]
   materialProblems LearningMaterialProblem[]
-  reviewer         User?                     @relation("ProblemReviewer", fields: [reviewedBy], references: [id])
-  aiGeneration     AIGeneration?             @relation(fields: [aiGenerationId], references: [id])
+  reviewer         User?                     @relation("ProblemReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  aiGeneration     AIGeneration?             @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
   progress         StudentProgress[]
+  textbook         Textbook?                 @relation(fields: [textbookId], references: [id], onDelete: SetNull)
+  creator          User?                     @relation("ProblemCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  questionOptions  QuestionOption[]
+  questionTags     QuestionTag[]
 
   @@index([subject])
   @@index([difficulty])
@@ -134,26 +233,35 @@ model Problem {
   @@index([aiGenerationId])
   @@index([reviewedBy])
   @@index([deletedAt])
+  @@index([gradeLevel])
+  @@index([createdBy])
+  @@index([textbookId])
+  @@index([subject, difficulty, gradeLevel]) // 복합 쿼리 최적화
+  @@index([isAIGenerated, reviewStatus, createdAt]) // AI 문제 관리 최적화
+  @@index([createdBy, createdAt]) // 사용자별 문제 생성 이력
+  @@index([textbookId, gradeLevel]) // 교과서별 문제 조회
   @@map("problems")
 }
 
 model StudentProgress {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   studentId String
   problemId String?
-  status    String   @default("NOT_STARTED")
-  score     Int?     @default(0)
-  timeSpent Int      @default(0)
-  attempts  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  problem   Problem? @relation(fields: [problemId], references: [id])
-  student   User     @relation(fields: [studentId], references: [id])
+  status    ProgressStatus @default(NOT_STARTED)
+  score     Int?           @default(0)
+  timeSpent Int            @default(0)
+  attempts  Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  problem   Problem?       @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  student   User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, problemId])
   @@index([studentId])
   @@index([problemId])
   @@index([status])
+  @@index([studentId, status, updatedAt]) // 학생별 진행상황 조회
+  @@index([problemId, status]) // 문제별 학생 진행상황
   @@map("student_progress")
 }
 
@@ -191,20 +299,20 @@ model TeacherReport {
   title             String
   content           String
   reportType        String   @default("full") // full, summary
-  classInfo         String   @default("{}") // JSON string
-  students          String   @default("[]") // JSON string
-  analysisData      String   @default("{}") // JSON string
-  metadata          String   @default("{}") // JSON string
+  classInfo         Json?    // JSON object
+  students          Json?    // JSON array
+  analysisData      Json?    // JSON object
+  metadata          Json?    // JSON object
   tokenUsage        Int?
   generationTimeMs  Int?
   modelName         String?
   costUsd           Float?
-  status            String   @default("draft") // draft, published, archived
+  status            ReportStatus @default(DRAFT)
   createdBy         String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
-  user              User     @relation(fields: [createdBy], references: [id])
+  user              User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   reportAnalyses    ReportAnalysis[]
   studentData       StudentData[]
   classInfoData     ClassInfo[]
@@ -337,15 +445,15 @@ model Textbook {
   fileSize          Int
   mimeType          String?
   totalChunks       Int              @default(0)
-  processingStatus  String           @default("pending")
+  processingStatus  ProcessingStatus @default(PENDING)
   errorMessage      String?
   uploadedBy        String
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   
-  user              User             @relation(fields: [uploadedBy], references: [id])
+  user              User             @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
   chunks            DocumentChunk[]
-  questions         AIGeneratedQuestion[]
+  problems          Problem[]        // AI 생성 문제들
 
   @@index([subject, gradeLevel])
   @@index([processingStatus])
@@ -360,75 +468,15 @@ model DocumentChunk {
   content         String
   contentLength   Int
   embeddingId     String?    // ChromaDB의 문서 ID
-  metadata        String     @default("{}") // ChromaDB 메타데이터 JSON
+  metadata        Json?      // ChromaDB 메타데이터 JSON
   createdAt       DateTime   @default(now())
   
-  textbook        Textbook   @relation(fields: [textbookId], references: [id])
+  textbook        Textbook   @relation(fields: [textbookId], references: [id], onDelete: Cascade)
   searchResults   SearchResult[]
 
   @@index([textbookId])
   @@index([embeddingId])
   @@map("document_chunks")
-}
-
-model AIGeneratedQuestion {
-  id                String           @id @default(cuid())
-  questionText      String
-  subject           String
-  gradeLevel        String
-  unit              String?
-  difficulty        String
-  correctAnswer     Int
-  explanation       String
-  generationPrompt  String?
-  contextChunkIds   String           @default("[]") // 참조된 ChromaDB 청크 ID들
-  qualityScore      Float?
-  generationTimeMs  Int?
-  modelName         String?
-  tokensUsed        Int?
-  costUsd           Float?
-  createdBy         String
-  textbookId        String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  
-  user              User             @relation(fields: [createdBy], references: [id])
-  textbook          Textbook?        @relation(fields: [textbookId], references: [id])
-  options           QuestionOption[]
-  tags              QuestionTag[]
-
-  @@index([subject, gradeLevel])
-  @@index([difficulty])
-  @@index([createdBy])
-  @@index([textbookId])
-  @@index([createdAt])
-  @@map("ai_generated_questions")
-}
-
-model QuestionOption {
-  id           String              @id @default(cuid())
-  questionId   String
-  optionNumber Int
-  optionText   String
-  isCorrect    Boolean
-  createdAt    DateTime            @default(now())
-  
-  question     AIGeneratedQuestion @relation(fields: [questionId], references: [id])
-
-  @@index([questionId])
-  @@map("question_options")
-}
-
-model QuestionTag {
-  id         String              @id @default(cuid())
-  questionId String
-  tagName    String
-  createdAt  DateTime            @default(now())
-  
-  question   AIGeneratedQuestion @relation(fields: [questionId], references: [id])
-
-  @@index([questionId])
-  @@map("question_tags")
 }
 
 model SearchQuery {
@@ -443,11 +491,13 @@ model SearchQuery {
   sessionId      String?
   createdAt      DateTime        @default(now())
   
-  user           User            @relation(fields: [userId], references: [id])
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   results        SearchResult[]
 
   @@index([userId])
   @@index([createdAt])
+  @@index([userId, subject, createdAt]) // 사용자별 검색 이력
+  @@index([subject, gradeLevel, createdAt]) // 주제별 검색 트렌드
   @@map("search_queries")
 }
 
@@ -465,6 +515,32 @@ model SearchResult {
   @@index([queryId])
   @@index([chunkId])
   @@map("search_results")
+}
+
+model QuestionOption {
+  id           String   @id @default(cuid())
+  problemId    String
+  optionNumber Int
+  optionText   String
+  isCorrect    Boolean
+  createdAt    DateTime @default(now())
+  
+  problem      Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+  @@map("question_options")
+}
+
+model QuestionTag {
+  id         String  @id @default(cuid())
+  problemId  String
+  tagName    String
+  createdAt  DateTime @default(now())
+  
+  problem    Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+  @@map("question_tags")
 }
 
 model AIApiUsage {
@@ -526,11 +602,11 @@ model AIUsageStatistics {
 model ReportAnalysis {
   id                String   @id @default(cuid())
   reportId          String
-  analysisType      String   // basic_statistics, achievement_distribution, struggling_students, etc.
-  analysisData      String   @default("{}") // JSON string
+  analysisType      AnalysisType // enum 사용
+  analysisData      Json?    // JSON object
   createdAt         DateTime @default(now())
   
-  report            TeacherReport @relation(fields: [reportId], references: [id])
+  report            TeacherReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
   @@index([analysisType])
@@ -581,12 +657,12 @@ model AIServerStatus {
   id                String   @id @default(cuid())
   serverName        String   // educational_ai, teacher_report
   serverUrl         String
-  status            String   @default("unknown") // healthy, unhealthy, unknown
+  status            ServerStatus @default(UNKNOWN)
   responseTimeMs    Int?
   version           String?
   lastChecked       DateTime @default(now())
   errorMessage      String?
-  services          String   @default("{}") // JSON string - 실제 서버 상태 정보
+  services          Json?    // JSON object - 실제 서버 상태 정보
   createdAt         DateTime @default(now())
   
   @@index([serverName])
@@ -599,18 +675,18 @@ model AIServerSync {
   id                String   @id @default(cuid())
   serverName        String
   syncType          String   // data_sync, health_check, report_generation
-  status            String   @default("pending") // pending, success, failed
+  status            SyncStatus @default(PENDING)
   startTime         DateTime @default(now())
   endTime           DateTime?
   durationMs        Int?
   recordsProcessed  Int?
   recordsSynced     Int?
   errors            String?  // JSON string
-  metadata          String   @default("{}") // JSON string
+  metadata          Json?    // JSON object
   userId            String?
   createdAt         DateTime @default(now())
   
-  user              User?    @relation(fields: [userId], references: [id])
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([serverName])
   @@index([status])
@@ -642,12 +718,12 @@ model ChromaDBEmbedding {
   documentId        String   // ChromaDB의 실제 문서 ID
   content           String   // 원본 텍스트 내용
   embedding         String   // JSON string - 1536차원 벡터
-  metadata          String   @default("{}") // ChromaDB 메타데이터
+  metadata          Json?    // ChromaDB 메타데이터
   similarityScore   Float?   // 검색 시 유사도 점수
   distance          Float?   // 검색 시 거리
   createdAt         DateTime @default(now())
   
-  collection        ChromaDBCollection @relation(fields: [collectionId], references: [id])
+  collection        ChromaDBCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   @@index([collectionId])
   @@index([documentId])
@@ -658,15 +734,15 @@ model ChromaDBEmbedding {
 model SampleDataTemplate {
   id                String   @id @default(cuid())
   templateName      String   // "excellent_class", "normal_class", "problematic_class"
-  templateType      String   // "excellent", "normal", "problematic", "mixed", "predefined"
+  templateType      TemplateType // enum 사용
   description       String?
-  dataStructure     String   @default("{}") // JSON string - 실제 샘플 데이터 구조
+  dataStructure     Json?    // JSON object - 실제 샘플 데이터 구조
   isActive          Boolean  @default(true)
   createdBy         String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
-  user              User?    @relation(fields: [createdBy], references: [id])
+  user              User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@index([templateName])
   @@index([templateType])
