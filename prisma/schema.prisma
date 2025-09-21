@@ -190,11 +190,11 @@ model Problem {
   subject          String
   gradeLevel       String?                  // AI 생성 문제용 추가
   unit             String?                  // AI 생성 문제용 추가
-  options          String?
+  options          Json?
   correctAnswer    String
   explanation      String?
-  hints            String?
-  tags             String?
+  hints            Json?
+  tags             Json?
   points           Int                       @default(1)
   timeLimit        Int?
   isActive         Boolean                   @default(true)

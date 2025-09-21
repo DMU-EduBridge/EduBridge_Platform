@@ -123,14 +123,10 @@ async function main() {
       }),
     ]);
 
-    const admin = users[0];
     const mathTeacher1 = users[1];
     const mathTeacher2 = users[2];
     const scienceTeacher = users[3];
     const englishTeacher = users[4];
-    const student1 = users[5];
-    const student2 = users[6];
-    const student3 = users[7];
 
     // 2. 교과서 데이터 생성 (다양한 과목과 학년)
     const textbooks = await Promise.all([
@@ -988,7 +984,9 @@ async function main() {
       questionHistory: questionHistory.length,
     });
   } catch (error) {
-    logger.error('❌ 시드 데이터 생성 중 오류 발생', error, { service: 'edubridge-api' });
+    logger.error('❌ 시드 데이터 생성 중 오류 발생', error instanceof Error ? error : undefined, {
+      service: 'edubridge-api',
+    });
     throw error;
   }
 }
