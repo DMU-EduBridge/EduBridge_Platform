@@ -1,13 +1,20 @@
+import {
+  AIApiUsageListResponseSchema,
+  AIPerformanceMetricListResponseSchema,
+  AIUsageStatisticsListResponseSchema,
+} from '@/server/dto/ai-stats';
 import { MaterialListResponseSchema } from '@/server/dto/material';
 import { ProblemListResponseSchema } from '@/server/dto/problem';
 import { ReportDetailResponseSchema, ReportListResponseSchema } from '@/server/dto/report';
-import { StudentListResponseSchema } from '@/server/dto/student';
-import { TeacherReportListResponseSchema, TeacherReportResponseDto } from '@/server/dto/teacher-report';
-import { TextbookListResponseSchema, TextbookResponseDto } from '@/server/dto/textbook';
-import { UserListResponseSchema, UserResponseDto } from '@/server/dto/user';
 import { SearchQueryListResponseSchema, SearchResultListResponseSchema } from '@/server/dto/search';
-import { AIApiUsageListResponseSchema, AIPerformanceMetricListResponseSchema, AIUsageStatisticsListResponseSchema } from '@/server/dto/ai-stats';
+import { StudentListResponseSchema } from '@/server/dto/student';
+import {
+  TeacherReportListResponseSchema,
+  TeacherReportResponseDto,
+} from '@/server/dto/teacher-report';
+import { TextbookListResponseSchema, TextbookResponseDto } from '@/server/dto/textbook';
 import { UploadResponseSchema } from '@/server/dto/upload';
+import { UserListResponseSchema, UserResponseDto } from '@/server/dto/user';
 import {
   AttemptPostResponseSchema,
   AttemptsResponseSchema,
@@ -29,7 +36,7 @@ export async function GET() {
   // Enable zod-to-openapi extensions on zod
   extendZodWithOpenApi(z);
   const registry = new OpenAPIRegistry();
-  
+
   // 등록: 모든 DTO 스키마들을 components로 추가
   registry.register('UploadResponse', UploadResponseSchema);
   registry.register('ReportListResponse', ReportListResponseSchema);
@@ -111,8 +118,16 @@ export async function GET() {
           parameters: [
             { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
             { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
-            { name: 'role', in: 'query', schema: { type: 'string', enum: ['STUDENT', 'TEACHER', 'ADMIN'] } },
-            { name: 'status', in: 'query', schema: { type: 'string', enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DELETED'] } },
+            {
+              name: 'role',
+              in: 'query',
+              schema: { type: 'string', enum: ['STUDENT', 'TEACHER', 'ADMIN'] },
+            },
+            {
+              name: 'status',
+              in: 'query',
+              schema: { type: 'string', enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DELETED'] },
+            },
             { name: 'search', in: 'query', schema: { type: 'string' } },
           ],
           responses: {
@@ -233,18 +248,38 @@ export async function GET() {
             { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
             { name: 'subject', in: 'query', schema: { type: 'string' } },
             { name: 'gradeLevel', in: 'query', schema: { type: 'string' } },
-            { name: 'difficulty', in: 'query', schema: { type: 'string', enum: ['EASY', 'MEDIUM', 'HARD'] } },
-            { name: 'type', in: 'query', schema: { type: 'string', enum: ['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE'] } },
+            {
+              name: 'difficulty',
+              in: 'query',
+              schema: { type: 'string', enum: ['EASY', 'MEDIUM', 'HARD'] },
+            },
+            {
+              name: 'type',
+              in: 'query',
+              schema: {
+                type: 'string',
+                enum: ['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE'],
+              },
+            },
             { name: 'textbookId', in: 'query', schema: { type: 'string' } },
             { name: 'isAIGenerated', in: 'query', schema: { type: 'boolean' } },
-            { name: 'reviewStatus', in: 'query', schema: { type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED', 'NEEDS_REVISION'] } },
+            {
+              name: 'reviewStatus',
+              in: 'query',
+              schema: {
+                type: 'string',
+                enum: ['PENDING', 'APPROVED', 'REJECTED', 'NEEDS_REVISION'],
+              },
+            },
             { name: 'search', in: 'query', schema: { type: 'string' } },
           ],
           responses: {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/ProblemListResponse' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ProblemListResponse' },
+                },
               },
             },
             '400': { $ref: '#/components/responses/BadRequestError' },
@@ -265,7 +300,10 @@ export async function GET() {
                     description: { type: 'string' },
                     content: { type: 'string' },
                     subject: { type: 'string' },
-                    type: { type: 'string', enum: ['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE'] },
+                    type: {
+                      type: 'string',
+                      enum: ['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE'],
+                    },
                     difficulty: { type: 'string', enum: ['EASY', 'MEDIUM', 'HARD'] },
                     gradeLevel: { type: 'string' },
                     unit: { type: 'string' },
@@ -380,14 +418,20 @@ export async function GET() {
             { name: 'subject', in: 'query', schema: { type: 'string' } },
             { name: 'gradeLevel', in: 'query', schema: { type: 'string' } },
             { name: 'publisher', in: 'query', schema: { type: 'string' } },
-            { name: 'processingStatus', in: 'query', schema: { type: 'string', enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'] } },
+            {
+              name: 'processingStatus',
+              in: 'query',
+              schema: { type: 'string', enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'] },
+            },
             { name: 'search', in: 'query', schema: { type: 'string' } },
           ],
           responses: {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/TextbookListResponseSchema' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/TextbookListResponseSchema' },
+                },
               },
             },
             '400': { $ref: '#/components/responses/BadRequestError' },
@@ -422,7 +466,9 @@ export async function GET() {
             '201': {
               description: 'Created',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/TextbookResponseDto' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/TextbookResponseDto' },
+                },
               },
             },
             '400': { $ref: '#/components/responses/BadRequestError' },
@@ -439,7 +485,9 @@ export async function GET() {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/TextbookResponseDto' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/TextbookResponseDto' },
+                },
               },
             },
             '401': { $ref: '#/components/responses/UnauthorizedError' },
@@ -478,14 +526,20 @@ export async function GET() {
           parameters: [
             { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
             { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
-            { name: 'status', in: 'query', schema: { type: 'string', enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'] } },
+            {
+              name: 'status',
+              in: 'query',
+              schema: { type: 'string', enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'] },
+            },
             { name: 'search', in: 'query', schema: { type: 'string' } },
           ],
           responses: {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/TeacherReportListResponse' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/TeacherReportListResponse' },
+                },
               },
             },
             '400': { $ref: '#/components/responses/BadRequestError' },
@@ -518,7 +572,9 @@ export async function GET() {
             '201': {
               description: 'Created',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/TeacherReportResponseDto' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/TeacherReportResponseDto' },
+                },
               },
             },
             '400': { $ref: '#/components/responses/BadRequestError' },
@@ -544,7 +600,9 @@ export async function GET() {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/SearchQueryListResponseSchema' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/SearchQueryListResponseSchema' },
+                },
               },
             },
             '400': { $ref: '#/components/responses/BadRequestError' },
@@ -580,7 +638,10 @@ export async function GET() {
                     type: 'object',
                     properties: {
                       query: { $ref: '#/components/schemas/SearchQueryItem' },
-                      results: { type: 'array', items: { $ref: '#/components/schemas/DocumentChunkItem' } },
+                      results: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/DocumentChunkItem' },
+                      },
                       totalResults: { type: 'integer' },
                     },
                   },
@@ -599,7 +660,11 @@ export async function GET() {
           tags: ['Dashboard'],
           summary: '통합 대시보드 데이터',
           parameters: [
-            { name: 'timeRange', in: 'query', schema: { type: 'string', enum: ['1h', '24h', '7d', '30d'], default: '24h' } },
+            {
+              name: 'timeRange',
+              in: 'query',
+              schema: { type: 'string', enum: ['1h', '24h', '7d', '30d'], default: '24h' },
+            },
             { name: 'includeDetails', in: 'query', schema: { type: 'boolean', default: false } },
           ],
           responses: {
@@ -654,7 +719,9 @@ export async function GET() {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/StudentListResponse' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/StudentListResponse' },
+                },
               },
             },
           },
@@ -676,7 +743,9 @@ export async function GET() {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/MaterialListResponse' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/MaterialListResponse' },
+                },
               },
             },
           },
@@ -710,7 +779,10 @@ export async function GET() {
                   properties: {
                     subject: { type: 'string' },
                     difficulty: { type: 'string', enum: ['EASY', 'MEDIUM', 'HARD'] },
-                    type: { type: 'string', enum: ['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE'] },
+                    type: {
+                      type: 'string',
+                      enum: ['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE'],
+                    },
                     limit: { type: 'integer', default: 50 },
                     offset: { type: 'integer', default: 0 },
                   },
@@ -781,7 +853,9 @@ export async function GET() {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/AIApiUsageListResponseSchema' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/AIApiUsageListResponseSchema' },
+                },
               },
             },
           },
@@ -802,7 +876,9 @@ export async function GET() {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/AIPerformanceMetricListResponseSchema' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/AIPerformanceMetricListResponseSchema' },
+                },
               },
             },
           },
@@ -823,7 +899,9 @@ export async function GET() {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/AIUsageStatisticsListResponseSchema' } },
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/AIUsageStatisticsListResponseSchema' },
+                },
               },
             },
           },
@@ -898,14 +976,14 @@ export async function GET() {
         get: {
           tags: ['Health'],
           summary: '헬스 체크',
-          responses: { 
-            '200': { description: 'OK' }, 
-            '503': { description: 'Unhealthy' } 
+          responses: {
+            '200': { description: 'OK' },
+            '503': { description: 'Unhealthy' },
           },
         },
       },
     },
-    components: { 
+    components: {
       schemas: baseDoc.components?.schemas || {},
       securitySchemes: {
         bearerAuth: {
