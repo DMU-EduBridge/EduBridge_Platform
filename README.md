@@ -91,6 +91,7 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **Runtime**: Node.js
 - **Framework**: Next.js API Routes
 - **Database**: SQLite (개발) / PostgreSQL (프로덕션)
+- **Vector Database**: ChromaDB (벡터 임베딩 저장 및 검색)
 - **ORM**: Prisma 5.7
 - **Authentication**: NextAuth.js
 - **File Upload**: Next.js built-in API
@@ -106,6 +107,8 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 ### AI & Analytics
 
 - **AI Integration**: OpenAI, Anthropic, Google AI (확장 가능)
+- **Vector Embeddings**: OpenAI text-embedding-ada-002
+- **Semantic Search**: ChromaDB + 벡터 임베딩
 - **Data Analysis**: Prisma + Custom analytics
 - **Logging**: Custom logger with structured logging
 

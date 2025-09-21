@@ -26,8 +26,8 @@ export const StudentStatsCards = () => {
               <p className="text-sm font-medium text-gray-600">{stat.name}</p>
               <p className="mt-1 text-2xl font-bold text-gray-900">{stat.value}</p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100">
-              <stat.icon className="h-6 w-6 text-indigo-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+              <stat.icon className="h-6 w-6 text-blue-600" />
             </div>
           </div>
           {stat.change && (

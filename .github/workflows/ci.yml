@@ -1,4 +1,4 @@
-name: Lint & Type Check
+name: Lint, Type Check & (Conditional) Build
 
 on:
   push:
@@ -29,3 +29,7 @@ jobs:
 
       - name: Type Check
         run: npm run type-check
+
+      - name: Build (skippable)
+        if: ${{ !env.SKIP_BUILD }}
+        run: npm run build

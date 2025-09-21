@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useProblems } from '@/hooks/problems';
-import { LMSProblem } from '@/types/problem';
+import { Problem } from '@/types/domain/problem';
 import { Clock, Edit, Eye, FileText, Plus, Search, Trash2, TrendingUp, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -206,7 +206,7 @@ export default function ProblemsPage() {
             </CardContent>
           </Card>
         ) : (
-          problems.map((problem: LMSProblem) => (
+          problems.map((problem: Problem) => (
             <Card key={problem.id} className="transition-shadow hover:shadow-md">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -228,7 +228,7 @@ export default function ProblemsPage() {
                       <span>과목: {problem.subject}</span>
                       <span>유형: {typeLabels[problem.type as keyof typeof typeLabels]}</span>
                       <span>문제 수: {problem.questions}개</span>
-                      <span>생성일: {problem.createdAt}</span>
+                      <span>생성일: {new Date(problem.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-6 text-sm">
                       <div className="flex items-center gap-1">

@@ -1,15 +1,8 @@
-// Domain
-export * from './domain/ai';
-export * from './domain/application';
-export * from './domain/project';
+// 도메인별 타입들을 re-export
+export * from './common';
+export * from './domain/attempt';
+export * from './domain/material';
+export * from './domain/problem';
+export * from './domain/report';
+export * from './domain/student';
 export * from './domain/user';
-
-// LMS
-export * from './problem';
-export * from './report';
-export * from './student';
-export * from './user';
-
-// API
-export * from './api';
-export * from './next-auth';

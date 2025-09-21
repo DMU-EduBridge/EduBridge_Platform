@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useReports } from '@/hooks/reports';
-import { LMSReport } from '@/types/report';
+import { Report } from '@/types/domain/report';
 import {
   AlertTriangle,
   BookOpen,
@@ -195,7 +195,7 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
         ) : (
-          reports.map((report: LMSReport) => (
+          reports.map((report: Report) => (
             <Card key={report.id} className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -249,7 +249,7 @@ export default function ReportsPage() {
                     주요 인사이트
                   </h4>
                   <div className="space-y-2">
-                    {report.insights.map((insight: string, index: number) => (
+                    {report.insights?.map((insight: string, index: number) => (
                       <div key={index} className="flex items-start gap-2 rounded bg-blue-50 p-2">
                         <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
                         <span className="text-sm text-gray-700">{insight}</span>
@@ -265,7 +265,7 @@ export default function ReportsPage() {
                     개선 제안
                   </h4>
                   <div className="space-y-2">
-                    {report.recommendations.map((recommendation: string, index: number) => (
+                    {report.recommendations?.map((recommendation: string, index: number) => (
                       <div key={index} className="flex items-start gap-2 rounded bg-green-50 p-2">
                         <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
                         <span className="text-sm text-gray-700">{recommendation}</span>

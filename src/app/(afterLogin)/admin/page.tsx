@@ -1,3 +1,5 @@
+import { AIProblemSyncCard } from '@/components/ai/problem-sync-card';
+import { AIServiceMonitorCard } from '@/components/ai/service-monitor-card';
 import { Card } from '@/components/ui/card';
 import { authOptions } from '@/lib/core/auth';
 import { BarChart3, Settings, Shield, Users } from 'lucide-react';
@@ -100,6 +102,16 @@ export default async function AdminDashboardPage() {
         </div>
       </Card>
 
+      {/* AI 서비스 모니터링 */}
+      <div className="mb-6">
+        <AIServiceMonitorCard />
+      </div>
+
+      {/* AI 서버 문제 동기화 */}
+      <div className="mb-6">
+        <AIProblemSyncCard />
+      </div>
+
       {/* 최근 활동 */}
       <Card className="p-6">
         <h3 className="mb-4 text-lg font-semibold text-gray-900">최근 시스템 활동</h3>
@@ -145,4 +157,3 @@ export default async function AdminDashboardPage() {
     </div>
   );
 }
-

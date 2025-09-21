@@ -114,24 +114,42 @@ export class ReportService {
     return reportRepository.create(data);
   }
 
-  async stats() {
-    const [totalReports, completedReports] = await Promise.all([
-      reportRepository.countAll(),
-      reportRepository.countCompleted(),
-    ]);
-    const averageAnalysisTime = 3;
-    const totalRecommendations = 5;
-    const weeklyChange = 2;
-    const completionRate =
-      totalReports > 0 ? Math.round((completedReports / totalReports) * 100) : 0;
-    return {
-      totalReports,
-      completedReports,
-      completionRate,
-      averageAnalysisTime,
-      totalRecommendations,
-      weeklyChange,
+  async update(
+    id: string,
+    input: {
+      title?: string;
+      type?: string;
+      period?: string;
+      insights?: string[];
+      recommendations?: string[];
+      strengths?: string[];
+      weaknesses?: string[];
+      status?: string;
+    },
+  ) {
+    const data: Prisma.AnalysisReportUpdateInput = {
+      title: input.title,
+      type: input.type,
+      period: input.period,
+      insights: serializeArray(input.insights),
+      recommendations: serializeArray(input.recommendations),
+      strengths: serializeArray(input.strengths),
+      weaknesses: serializeArray(input.weaknesses),
+      status: input.status,
     };
+    return reportRepository.update(id, data);
+  }
+
+  async remove(id: string) {
+    return reportRepository.delete(id);
+  }
+
+  async getByStudent(studentId: string, page: number, limit: number) {
+    return reportRepository.findByStudentId(studentId, page, limit);
+  }
+
+  async stats() {
+    return reportRepository.getStats();
   }
 }
 

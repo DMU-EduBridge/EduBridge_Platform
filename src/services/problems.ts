@@ -1,6 +1,6 @@
 import { api } from '@/lib/core/api';
 import { AttemptPostBody, AttemptPostResponse, SolutionResponse } from '@/types/api';
-import type { LMSProblem } from '@/types/problem';
+import type { Problem } from '@/types/domain/problem';
 
 export const problemsService = {
   getProblems: (params?: {
@@ -9,15 +9,14 @@ export const problemsService = {
     difficulty?: string;
     page?: number;
     limit?: number;
-  }) => api.get<{ problems: LMSProblem[]; total: number }>('/problems', { params }),
+  }) => api.get<{ problems: Problem[]; total: number }>('/problems', { params }),
 
-  getProblem: (id: string) => api.get<LMSProblem>(`/problems/${id}`),
+  getProblem: (id: string) => api.get<Problem>(`/problems/${id}`),
 
-  createProblem: (data: Omit<LMSProblem, 'id' | 'createdAt' | 'attempts' | 'successRate'>) =>
-    api.post<LMSProblem>('/problems', data),
+  createProblem: (data: Omit<Problem, 'id' | 'createdAt' | 'attempts' | 'successRate'>) =>
+    api.post<Problem>('/problems', data),
 
-  updateProblem: (id: string, data: Partial<LMSProblem>) =>
-    api.put<LMSProblem>(`/problems/${id}`, data),
+  updateProblem: (id: string, data: Partial<Problem>) => api.put<Problem>(`/problems/${id}`, data),
 
   deleteProblem: (id: string) => api.delete(`/problems/${id}`),
 

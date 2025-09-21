@@ -28,6 +28,31 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
 
+  // AI 서버 연동
+  AI_SERVER_URL: z.string().url().optional(),
+  AI_SERVER_API_KEY: z.string().optional(),
+
+  // Educational AI System 연동
+  EDUCATIONAL_AI_URL: z.string().url().optional(),
+  EDUCATIONAL_AI_API_KEY: z.string().optional(),
+
+  // Teacher Report System 연동
+  TEACHER_REPORT_URL: z.string().url().optional(),
+  TEACHER_REPORT_API_KEY: z.string().optional(),
+
+  // Teacher Report System 설정
+  TEACHER_REPORT_MODEL_NAME: z.string().default('gpt-4'),
+  TEACHER_REPORT_MAX_TOKENS: z.string().transform(Number).default('4000'),
+  TEACHER_REPORT_TEMPERATURE: z.string().transform(Number).default('0.7'),
+
+  // ChromaDB 설정
+  CHROMA_URL: z.string().url().default('http://localhost:8000'),
+  CHROMA_API_KEY: z.string().optional(),
+
+  // 벡터 임베딩 설정
+  EMBEDDING_MODEL: z.string().default('text-embedding-ada-002'),
+  EMBEDDING_DIMENSIONS: z.string().transform(Number).default('1536'),
+
   // 로깅
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });

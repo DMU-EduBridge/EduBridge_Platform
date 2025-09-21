@@ -53,6 +53,27 @@ export class StudentService {
     return { students, total };
   }
 
+  async detail(id: string) {
+    const student = await studentRepository.findById(id);
+    if (!student || student.role !== 'STUDENT') return null;
+
+    const progressStats = await studentRepository.getProgressStats(id);
+    const interests = student.preferences?.interests
+      ? JSON.parse(student.preferences.interests)
+      : [];
+    const learningStyle = student.preferences?.learningStyle
+      ? JSON.parse(student.preferences.learningStyle)
+      : [];
+
+    return {
+      ...student,
+      ...progressStats,
+      interests,
+      learningStyle,
+      preferences: student.preferences,
+    };
+  }
+
   async create(input: {
     name: string;
     email: string;
@@ -75,6 +96,47 @@ export class StudentService {
       },
     };
     return studentRepository.create(data);
+  }
+
+  async update(
+    id: string,
+    input: {
+      name?: string;
+      email?: string;
+      grade?: string;
+      status?: string;
+      learningStyle?: string[];
+      interests?: string[];
+    },
+  ) {
+    const data: Prisma.UserUpdateInput = {
+      name: input.name,
+      email: input.email,
+      grade: input.grade,
+      status: input.status,
+      preferences:
+        input.learningStyle || input.interests
+          ? {
+              update: {
+                learningStyle: serializeArray(input.learningStyle),
+                interests: serializeArray(input.interests),
+              },
+            }
+          : undefined,
+    };
+    return studentRepository.update(id, data);
+  }
+
+  async remove(id: string) {
+    return studentRepository.delete(id);
+  }
+
+  async getStats() {
+    return studentRepository.getStats();
+  }
+
+  async getProgressStats(studentId: string) {
+    return studentRepository.getProgressStats(studentId);
   }
 }
 

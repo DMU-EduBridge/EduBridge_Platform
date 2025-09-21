@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import {
   Bell,
+  Bot,
   Calendar,
   FileText,
   FolderOpen,
@@ -71,6 +72,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: '학습 관리', href: '/learning-materials', icon: FolderOpen },
     { name: '학생 관리', href: '/students', icon: Users },
     { name: '분석 리포트', href: '/reports', icon: Calendar },
+    { name: 'AI 교사 리포트', href: '/teacher-reports', icon: Bot },
+    { name: '의미적 검색', href: '/vector-search', icon: Search },
     { name: '프로필', href: '/profile', icon: User },
   ];
 

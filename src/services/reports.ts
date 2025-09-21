@@ -1,5 +1,5 @@
 import { api } from '@/lib/core/api';
-import type { LMSReport } from '@/types/report';
+import type { Report } from '@/types/domain/report';
 
 export const reportsService = {
   getReports: (params?: {
@@ -8,9 +8,9 @@ export const reportsService = {
     page?: number;
     limit?: number;
     studentId?: string;
-  }) => api.get<{ reports: LMSReport[]; total: number }>('/reports', { params }),
+  }) => api.get<{ reports: Report[]; total: number }>('/reports', { params }),
 
-  getReport: (id: string) => api.get<LMSReport>(`/reports/${id}`),
+  getReport: (id: string) => api.get<Report>(`/reports/${id}`),
 
   createReport: (data: {
     title: string;
@@ -18,7 +18,7 @@ export const reportsService = {
     period: string;
     studentIds?: string[];
     subjectIds?: string[];
-  }) => api.post<LMSReport>('/reports', data),
+  }) => api.post<Report>('/reports', data),
 
   downloadReport: (id: string) =>
     api.get(`/reports/${id}/download`, {

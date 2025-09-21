@@ -24,3 +24,7 @@ async function getProblemStats(request: NextRequest) {
 }
 
 export const GET = withErrorHandler(getProblemStats);
+
+
+
+

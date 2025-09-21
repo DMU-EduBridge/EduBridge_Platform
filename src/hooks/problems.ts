@@ -1,6 +1,6 @@
 import { problemsService } from '@/services/problems';
 import type { AttemptPostResponse, SolutionResponse } from '@/types/api';
-import type { LMSProblem } from '@/types/problem';
+import type { Problem } from '@/types/domain/problem';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { problemKeys } from './keys/problems';
 
@@ -38,7 +38,7 @@ export function useProblems(params?: {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<LMSProblem> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<Problem> }) =>
       problemsService.updateProblem(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: problemKeys.detail(id) });

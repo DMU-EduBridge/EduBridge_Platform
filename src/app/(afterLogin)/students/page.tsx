@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useStudents } from '@/hooks/students';
-import { LMSStudent } from '@/types/student';
+import { Student } from '@/types/domain/student';
 import {
   Award,
   BookOpen,
@@ -216,7 +216,7 @@ export default function StudentsPage() {
             </Card>
           </div>
         ) : (
-          students.map((student: LMSStudent) => (
+          students.map((student: Student) => (
             <Card key={student.id} className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -238,11 +238,11 @@ export default function StudentsPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="h-4 w-4" />
-                    <span>가입일: {student.joinDate}</span>
+                    <span>가입일: {new Date(student.joinDate).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Clock className="h-4 w-4" />
-                    <span>마지막 활동: {student.lastActivity}</span>
+                    <span>마지막 활동: {new Date(student.lastActivity).toLocaleDateString()}</span>
                   </div>
                 </div>
 
