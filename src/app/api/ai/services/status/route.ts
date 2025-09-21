@@ -97,7 +97,7 @@ const aiServiceManager = new UnifiedAIServiceManager();
 /**
  * 모든 AI 서비스 상태 확인
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -193,4 +193,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'AI 서비스 확인 중 오류가 발생했습니다.' }, { status: 500 });
   }
 }
-

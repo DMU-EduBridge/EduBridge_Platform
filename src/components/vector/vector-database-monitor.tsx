@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle, CheckCircle, Database, RefreshCw, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface VectorStats {
   healthy: boolean;
@@ -49,7 +49,7 @@ export function VectorDatabaseMonitor() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
-  const fetchVectorStats = async () => {
+  const fetchVectorStats = useCallback(async () => {
     try {
       const response = await fetch('/api/vector/search');
       if (response.ok) {
@@ -59,9 +59,9 @@ export function VectorDatabaseMonitor() {
     } catch (error) {
       console.error('벡터 상태 조회 오류:', error);
     }
-  };
+  }, []);
 
-  const fetchSyncStatus = async () => {
+  const fetchSyncStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/vector/sync');
       if (response.ok) {
@@ -71,13 +71,13 @@ export function VectorDatabaseMonitor() {
     } catch (error) {
       console.error('동기화 상태 조회 오류:', error);
     }
-  };
+  }, []);
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     setIsRefreshing(true);
     await Promise.all([fetchVectorStats(), fetchSyncStatus()]);
     setIsRefreshing(false);
-  };
+  }, [fetchVectorStats, fetchSyncStatus]);
 
   const syncAllData = async () => {
     setIsLoading(true);
@@ -116,7 +116,7 @@ export function VectorDatabaseMonitor() {
 
   useEffect(() => {
     refreshData();
-  }, []);
+  }, [refreshData]);
 
   const getHealthIcon = (healthy: boolean) => {
     return healthy ? (

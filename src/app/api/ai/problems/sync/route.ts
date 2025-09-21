@@ -21,11 +21,11 @@ const SubjectSyncSchema = z.object({
   limit: z.number().min(1).max(1000).default(50),
 });
 
-// 난이도별 동기화 요청 스키마
-const DifficultySyncSchema = z.object({
-  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD', 'EXPERT']),
-  limit: z.number().min(1).max(1000).default(50),
-});
+// // 난이도별 동기화 요청 스키마
+// const DifficultySyncSchema = z.object({
+//   difficulty: z.enum(['EASY', 'MEDIUM', 'HARD', 'EXPERT']),
+//   limit: z.number().min(1).max(1000).default(50),
+// });
 
 /**
  * AI 서버에서 문제 동기화
@@ -97,7 +97,10 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('주제별 문제 동기화 오류:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '주제별 문제 동기화 중 오류가 발생했습니다.' },
+      {
+        error:
+          error instanceof Error ? error.message : '주제별 문제 동기화 중 오류가 발생했습니다.',
+      },
       { status: 500 },
     );
   }
@@ -106,7 +109,7 @@ export async function PUT(request: NextRequest) {
 /**
  * AI 서버 상태 확인
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -128,4 +131,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
