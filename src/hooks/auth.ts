@@ -39,7 +39,6 @@ export const useAuth = () => {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth-token');
         localStorage.removeItem('user-profile');
-        localStorage.removeItem('user-preferences');
         sessionStorage.clear();
       }
       // 모든 쿼리 캐시 정리
@@ -51,7 +50,6 @@ export const useAuth = () => {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth-token');
         localStorage.removeItem('user-profile');
-        localStorage.removeItem('user-preferences');
         sessionStorage.clear();
       }
       queryClient.clear();

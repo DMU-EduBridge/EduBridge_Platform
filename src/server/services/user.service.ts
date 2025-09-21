@@ -89,15 +89,6 @@ export class UserService {
       school: input.school,
       subject: input.subject,
       status: input.status,
-      preferences:
-        input.learningStyle || input.interests
-          ? {
-              update: {
-                learningStyle: serializeArray(input.learningStyle),
-                interests: serializeArray(input.interests),
-              },
-            }
-          : undefined,
     };
     return userRepository.update(id, data);
   }

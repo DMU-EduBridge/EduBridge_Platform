@@ -114,15 +114,6 @@ export class StudentService {
       email: input.email,
       grade: input.grade,
       status: input.status,
-      preferences:
-        input.learningStyle || input.interests
-          ? {
-              update: {
-                learningStyle: serializeArray(input.learningStyle),
-                interests: serializeArray(input.interests),
-              },
-            }
-          : undefined,
     };
     return studentRepository.update(id, data);
   }

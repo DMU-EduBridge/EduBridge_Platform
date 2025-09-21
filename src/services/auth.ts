@@ -23,7 +23,6 @@ export const authService = {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth-token');
         localStorage.removeItem('user-profile');
-        localStorage.removeItem('user-preferences');
         sessionStorage.clear();
 
         // 쿠키 정리
@@ -50,7 +49,6 @@ export const authService = {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth-token');
         localStorage.removeItem('user-profile');
-        localStorage.removeItem('user-preferences');
         sessionStorage.clear();
       }
       throw error;
