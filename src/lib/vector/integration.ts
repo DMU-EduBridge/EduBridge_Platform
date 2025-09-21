@@ -70,7 +70,10 @@ export class ProblemVectorIntegration {
         subject: updates.subject || problem.subject,
         difficulty: updates.difficulty || problem.difficulty,
         tags:
-          updates.tags || (problem.tags ? problem.tags.split(',').map((tag) => tag.trim()) : []),
+          updates.tags ||
+          (problem.tags
+            ? (problem.tags as string).split(',').map((tag: string) => tag.trim())
+            : []),
         createdAt: problem.createdAt,
       };
 
@@ -260,7 +263,9 @@ export class VectorIntegrationUtils {
             content: problem.content,
             subject: problem.subject,
             difficulty: problem.difficulty,
-            tags: problem.tags ? problem.tags.split(',').map((tag) => tag.trim()) : [],
+            tags: problem.tags
+              ? (problem.tags as string).split(',').map((tag: string) => tag.trim())
+              : [],
             createdAt: problem.createdAt,
           });
           success++;

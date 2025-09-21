@@ -90,7 +90,7 @@ export class ProblemSyncService {
       description: aiProblem.description || null,
       content: aiProblem.content,
       type: aiProblem.type,
-      difficulty: aiProblem.difficulty,
+      difficulty: aiProblem.difficulty === 'EXPERT' ? 'HARD' : (aiProblem.difficulty as any),
       subject: aiProblem.subject,
       options: aiProblem.options ? JSON.stringify(aiProblem.options) : null,
       correctAnswer: aiProblem.correctAnswer,
@@ -112,6 +112,15 @@ export class ProblemSyncService {
           where: { id: aiProblem.id },
           data: {
             ...problemData,
+            type:
+              problemData.type === 'CODING'
+                ? 'MULTIPLE_CHOICE'
+                : problemData.type === 'MATH'
+                  ? 'MULTIPLE_CHOICE'
+                  : problemData.type,
+            options: problemData.options ? JSON.parse(problemData.options) : null,
+            hints: problemData.hints ? JSON.parse(problemData.hints) : null,
+            tags: problemData.tags ? JSON.parse(problemData.tags) : null,
             updatedAt: new Date(),
           },
         });
@@ -126,6 +135,17 @@ export class ProblemSyncService {
         data: {
           id: aiProblem.id,
           ...problemData,
+          type:
+            problemData.type === 'CODING'
+              ? 'MULTIPLE_CHOICE'
+              : problemData.type === 'MATH'
+                ? 'MULTIPLE_CHOICE'
+                : problemData.type,
+          options: problemData.options ? JSON.parse(problemData.options) : null,
+          hints: problemData.hints ? JSON.parse(problemData.hints) : null,
+          tags: problemData.tags ? JSON.parse(problemData.tags) : null,
+          isAIGenerated: true,
+          aiGenerationId: aiProblem.id,
         },
       });
       return 'synced';

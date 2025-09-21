@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       where,
       include: {
         chunks: true,
-        questions: true,
+        problems: true,
       },
     });
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         // 1. 교과서 처리 상태 업데이트
         await prisma.textbook.update({
           where: { id: textbook.id },
-          data: { processingStatus: 'processing' },
+          data: { processingStatus: 'PROCESSING' },
         });
 
         // 2. 청크들을 AI 서버에 전송하여 임베딩 생성 (시뮬레이션)
@@ -95,15 +95,15 @@ export async function POST(request: NextRequest) {
         }
 
         // 3. AI 서버에서 생성된 문제들을 동기화 (시뮬레이션)
-        const aiGeneratedQuestions = await prisma.aIGeneratedQuestion.findMany({
+        const aiGeneratedProblems = await prisma.problem.findMany({
           where: { textbookId: textbook.id },
-          include: { options: true, tags: true },
+          include: { questionOptions: true, questionTags: true },
         });
 
         // 실제로는 AI 서버에서 새로운 문제들을 가져와서 저장
         // 여기서는 기존 문제들의 메타데이터를 업데이트하는 것으로 시뮬레이션
-        for (const question of aiGeneratedQuestions) {
-          await prisma.aIGeneratedQuestion.update({
+        for (const question of aiGeneratedProblems) {
+          await prisma.problem.update({
             where: { id: question.id },
             data: {
               qualityScore: Math.random() * 0.3 + 0.7,
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         await prisma.textbook.update({
           where: { id: textbook.id },
           data: {
-            processingStatus: 'completed',
+            processingStatus: 'COMPLETED',
             totalChunks: textbook.chunks.length,
             updatedAt: new Date(),
           },
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
         await prisma.textbook.update({
           where: { id: textbook.id },
           data: {
-            processingStatus: 'failed',
+            processingStatus: 'FAILED',
             errorMessage: errorMessage,
             updatedAt: new Date(),
           },
@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
       ] = await Promise.all([
         prisma.textbook.count(),
         prisma.documentChunk.count(),
-        prisma.aIGeneratedQuestion.count(),
+        prisma.problem.count({ where: { isAIGenerated: true } }),
         prisma.searchQuery.count(),
         prisma.aIApiUsage.findMany({
           take: 10,
@@ -272,8 +272,11 @@ export async function GET(request: NextRequest) {
           performance: performanceMetrics,
         },
         costSummary: {
-          totalCost: recentApiUsage.reduce((sum, usage) => sum + usage.costUsd, 0),
-          totalTokens: recentApiUsage.reduce((sum, usage) => sum + usage.tokensUsed, 0),
+          totalCost: recentApiUsage.reduce((sum: number, usage: any) => sum + usage.costUsd, 0),
+          totalTokens: recentApiUsage.reduce(
+            (sum: number, usage: any) => sum + usage.tokensUsed,
+            0,
+          ),
         },
       };
     }
