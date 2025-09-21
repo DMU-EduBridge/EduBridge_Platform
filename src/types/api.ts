@@ -70,8 +70,8 @@ export const CreateProblemSchema = z.object({
   description: z.string().min(1),
   content: z.string().min(1),
   subject: z.string().min(1),
-  type: z.string().min(1),
-  difficulty: z.string().min(1),
+  type: z.enum(['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE']),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']),
   options: z.array(z.string()).optional(),
   correctAnswer: z.string().min(1),
   hints: z.array(z.string()).optional(),
@@ -101,8 +101,8 @@ export interface CreateProblemRequest {
   description: string;
   content: string;
   subject: string;
-  type: string;
-  difficulty: string;
+  type: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'TRUE_FALSE';
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   options?: string[];
   correctAnswer: string;
   hints?: string[];

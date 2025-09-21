@@ -1,6 +1,6 @@
 // 문제 관련 타입 정의
-export type ProblemDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
-export type ProblemType = 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'CODING' | 'MATH';
+export type ProblemDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+export type ProblemType = 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'TRUE_FALSE';
 export type ProblemStatus = 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
 
 export interface Problem {
@@ -22,7 +22,7 @@ export interface Problem {
   isAIGenerated: boolean;
   aiGenerationId?: string;
   qualityScore?: number;
-  reviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION';
   reviewedBy?: string;
   reviewedAt?: Date;
   createdAt: Date;
