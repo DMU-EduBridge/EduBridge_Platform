@@ -617,7 +617,6 @@ async function main() {
       const status = statuses[Math.floor(Math.random() * statuses.length)];
 
       teacherReportData.push({
-        teacherId: teacher.id,
         title: `${teacher.name} 선생님의 ${teacher.subject} 과목 리포트`,
         content: `${teacher.subject} 과목에 대한 상세한 분석 리포트입니다.`,
         reportType: 'CLASS_ANALYSIS',
@@ -630,8 +629,12 @@ async function main() {
           teacher: teacher.name,
           totalStudents: 30,
         }),
-        studentCount: 30,
-        analysis: JSON.stringify({
+        students: JSON.stringify([
+          { name: '김민수', math: 85, korean: 78, english: 72 },
+          { name: '이지영', math: 92, korean: 88, english: 85 },
+          { name: '박준호', math: 78, korean: 82, english: 79 },
+        ]),
+        analysisData: JSON.stringify({
           basicStatistics: {
             average: 78.5,
             median: 80.0,
@@ -667,7 +670,17 @@ async function main() {
           },
           totalStudents: 30,
         }),
+        metadata: JSON.stringify({
+          generatedBy: 'AI',
+          modelVersion: '1.0.0',
+          processingTime: '2.5초',
+        }),
+        tokenUsage: 1500,
+        generationTimeMs: 2500,
+        modelName: 'gpt-4',
+        costUsd: 0.06,
         status,
+        createdBy: teacher.id,
       });
     }
   }
@@ -680,6 +693,651 @@ async function main() {
     ),
   );
 
+  // Educational AI System 더미 데이터 생성
+
+  // 교과서 데이터 생성
+  const textbooks = await Promise.all([
+    prisma.textbook.create({
+      data: {
+        title: '중학교 수학 1학년',
+        subject: '수학',
+        gradeLevel: '중1',
+        publisher: '교육부',
+        fileName: 'math_1.pdf',
+        filePath: '/uploads/math_1.pdf',
+        fileSize: 1024000,
+        mimeType: 'application/pdf',
+        totalChunks: 15,
+        processingStatus: 'completed',
+        uploadedBy: teachers[0].id, // 김수학 선생님
+      },
+    }),
+    prisma.textbook.create({
+      data: {
+        title: '중학교 과학 2학년',
+        subject: '과학',
+        gradeLevel: '중2',
+        publisher: '교육부',
+        fileName: 'science_2.pdf',
+        filePath: '/uploads/science_2.pdf',
+        fileSize: 2048000,
+        mimeType: 'application/pdf',
+        totalChunks: 20,
+        processingStatus: 'completed',
+        uploadedBy: teachers[1].id, // 이과학 선생님
+      },
+    }),
+    prisma.textbook.create({
+      data: {
+        title: '중학교 국어 3학년',
+        subject: '국어',
+        gradeLevel: '중3',
+        publisher: '교육부',
+        fileName: 'korean_3.pdf',
+        filePath: '/uploads/korean_3.pdf',
+        fileSize: 1536000,
+        mimeType: 'application/pdf',
+        totalChunks: 12,
+        processingStatus: 'processing',
+        uploadedBy: teachers[2].id, // 박국어 선생님
+      },
+    }),
+    prisma.textbook.create({
+      data: {
+        title: '중학교 영어 1학년',
+        subject: '영어',
+        gradeLevel: '중1',
+        publisher: '교육부',
+        fileName: 'english_1.pdf',
+        filePath: '/uploads/english_1.pdf',
+        fileSize: 1800000,
+        mimeType: 'application/pdf',
+        totalChunks: 18,
+        processingStatus: 'failed',
+        errorMessage: '파일 형식 오류',
+        uploadedBy: teachers[3].id, // 최영어 선생님
+      },
+    }),
+  ]);
+
+  // 문서 청크 데이터 생성
+  const documentChunks = [];
+  for (const textbook of textbooks) {
+    for (let i = 0; i < textbook.totalChunks; i++) {
+      const chunk = await prisma.documentChunk.create({
+        data: {
+          textbookId: textbook.id,
+          chunkIndex: i,
+          content: `${textbook.title}의 ${i + 1}번째 청크입니다. 이 부분에서는 ${textbook.subject}의 중요한 개념들을 다룹니다.`,
+          contentLength: 200 + Math.floor(Math.random() * 300),
+          embeddingId: `embedding_${textbook.id}_${i}`,
+          metadata: JSON.stringify({
+            subject: textbook.subject,
+            gradeLevel: textbook.gradeLevel,
+            chunkIndex: i,
+            keywords: ['개념', '이론', '예제', '문제'],
+          }),
+        },
+      });
+      documentChunks.push(chunk);
+    }
+  }
+
+  // AI 생성 문제 데이터 (documentChunks가 생성된 후)
+  const aiQuestions = await Promise.all([
+    prisma.aIGeneratedQuestion.create({
+      data: {
+        questionText: '다음 중 이차방정식 x² - 5x + 6 = 0의 해는?',
+        subject: '수학',
+        gradeLevel: '중3',
+        unit: '이차방정식',
+        difficulty: 'medium',
+        correctAnswer: 1,
+        explanation: '인수분해를 이용하여 (x-2)(x-3) = 0이므로 x = 2, 3입니다.',
+        generationPrompt: '이차방정식의 해를 구하는 문제를 생성해주세요.',
+        contextChunkIds: JSON.stringify([documentChunks[0]?.id || '', documentChunks[1]?.id || '']),
+        qualityScore: 0.85,
+        generationTimeMs: 2500,
+        modelName: 'gpt-4',
+        tokensUsed: 1200,
+        costUsd: 0.05,
+        createdBy: teachers[0].id,
+        textbookId: textbooks[0].id,
+      },
+    }),
+    prisma.aIGeneratedQuestion.create({
+      data: {
+        questionText: '광합성에서 빛에너지가 화학에너지로 변환되는 과정을 설명하세요.',
+        subject: '과학',
+        gradeLevel: '중2',
+        unit: '광합성',
+        difficulty: 'hard',
+        correctAnswer: 1,
+        explanation:
+          '빛에너지가 엽록소에 의해 흡수되어 ATP와 NADPH를 생성하고, 이를 이용해 포도당을 합성합니다.',
+        generationPrompt: '광합성 과정에 대한 설명 문제를 생성해주세요.',
+        contextChunkIds: JSON.stringify([
+          documentChunks[15]?.id || '',
+          documentChunks[16]?.id || '',
+        ]),
+        qualityScore: 0.92,
+        generationTimeMs: 3200,
+        modelName: 'gpt-4',
+        tokensUsed: 1500,
+        costUsd: 0.07,
+        createdBy: teachers[1].id,
+        textbookId: textbooks[1].id,
+      },
+    }),
+    prisma.aIGeneratedQuestion.create({
+      data: {
+        questionText: '다음 중 현재완료시제가 올바르게 사용된 문장은?',
+        subject: '영어',
+        gradeLevel: '중1',
+        unit: '시제',
+        difficulty: 'medium',
+        correctAnswer: 2,
+        explanation: '현재완료시제는 have + 과거분사 형태로 사용됩니다.',
+        generationPrompt: '영어 시제에 대한 문제를 생성해주세요.',
+        contextChunkIds: JSON.stringify([documentChunks[50]?.id || '']),
+        qualityScore: 0.78,
+        generationTimeMs: 1800,
+        modelName: 'gpt-4',
+        tokensUsed: 900,
+        costUsd: 0.04,
+        createdBy: teachers[3].id,
+        textbookId: textbooks[3].id,
+      },
+    }),
+  ]);
+
+  // 문제 선택지 생성
+  const questionOptions = [];
+  for (const question of aiQuestions) {
+    const options = [
+      { optionNumber: 1, optionText: 'x = 2, 3', isCorrect: question.id === aiQuestions[0].id },
+      { optionNumber: 2, optionText: 'x = 1, 6', isCorrect: false },
+      { optionNumber: 3, optionText: 'x = -2, -3', isCorrect: false },
+      { optionNumber: 4, optionText: '해가 없음', isCorrect: false },
+      { optionNumber: 5, optionText: '모르겠음', isCorrect: false },
+    ];
+
+    if (question.subject === '과학') {
+      options[0] = {
+        optionNumber: 1,
+        optionText: '빛에너지 → ATP/NADPH → 포도당',
+        isCorrect: true,
+      };
+      options[1] = {
+        optionNumber: 2,
+        optionText: '화학에너지 → 빛에너지 → 포도당',
+        isCorrect: false,
+      };
+      options[2] = { optionNumber: 3, optionText: '포도당 → ATP → 빛에너지', isCorrect: false };
+      options[3] = { optionNumber: 4, optionText: 'ATP → 빛에너지 → 포도당', isCorrect: false };
+      options[4] = { optionNumber: 5, optionText: '모르겠음', isCorrect: false };
+    } else if (question.subject === '영어') {
+      options[0] = { optionNumber: 1, optionText: 'I have went to school', isCorrect: false };
+      options[1] = { optionNumber: 2, optionText: 'I have gone to school', isCorrect: true };
+      options[2] = { optionNumber: 3, optionText: 'I went to school', isCorrect: false };
+      options[3] = { optionNumber: 4, optionText: 'I go to school', isCorrect: false };
+      options[4] = { optionNumber: 5, optionText: '모르겠음', isCorrect: false };
+    }
+
+    for (const option of options) {
+      questionOptions.push({
+        questionId: question.id,
+        optionNumber: option.optionNumber,
+        optionText: option.optionText,
+        isCorrect: option.isCorrect,
+      });
+    }
+  }
+
+  await Promise.all(
+    questionOptions.map((option) =>
+      prisma.questionOption.create({
+        data: option,
+      }),
+    ),
+  );
+
+  // 문제 태그 생성
+  const questionTags = [];
+  for (const question of aiQuestions) {
+    const tags = ['AI생성', question.difficulty, question.subject];
+    for (const tag of tags) {
+      questionTags.push({
+        questionId: question.id,
+        tagName: tag,
+      });
+    }
+  }
+
+  await Promise.all(
+    questionTags.map((tag) =>
+      prisma.questionTag.create({
+        data: tag,
+      }),
+    ),
+  );
+
+  // 검색 쿼리 데이터 생성
+  const searchQueries = await Promise.all([
+    prisma.searchQuery.create({
+      data: {
+        queryText: '이차방정식 해 구하기',
+        subject: '수학',
+        gradeLevel: '중3',
+        resultsCount: 5,
+        searchTimeMs: 150,
+        userId: teachers[0].id,
+        sessionId: 'session_001',
+      },
+    }),
+    prisma.searchQuery.create({
+      data: {
+        queryText: '광합성 과정',
+        subject: '과학',
+        gradeLevel: '중2',
+        resultsCount: 8,
+        searchTimeMs: 200,
+        userId: teachers[1].id,
+        sessionId: 'session_002',
+      },
+    }),
+    prisma.searchQuery.create({
+      data: {
+        queryText: '영어 시제',
+        subject: '영어',
+        gradeLevel: '중1',
+        resultsCount: 3,
+        searchTimeMs: 120,
+        userId: teachers[3].id,
+        sessionId: 'session_003',
+      },
+    }),
+  ]);
+
+  // 검색 결과 데이터 생성 (간단한 버전)
+  const searchResults = [];
+  for (const query of searchQueries) {
+    for (let i = 0; i < Math.min(query.resultsCount, 3); i++) {
+      // 첫 번째 문서 청크를 사용 (안전하게)
+      const chunkId = documentChunks.length > 0 ? documentChunks[0]?.id : null;
+      if (chunkId) {
+        searchResults.push({
+          queryId: query.id,
+          chunkId: chunkId,
+          similarityScore: 0.9 - i * 0.1,
+          rankPosition: i + 1,
+        });
+      }
+    }
+  }
+
+  if (searchResults.length > 0) {
+    await Promise.all(
+      searchResults.map((result) =>
+        prisma.searchResult.create({
+          data: {
+            queryId: result.queryId,
+            chunkId: result.chunkId,
+            similarityScore: result.similarityScore,
+            rankPosition: result.rankPosition,
+          },
+        }),
+      ),
+    );
+  }
+
+  // AI 서버 상태 데이터 생성
+  const aiServerStatuses = await Promise.all([
+    prisma.aIServerStatus.create({
+      data: {
+        serverName: 'educational_ai',
+        serverUrl: 'http://localhost:8000',
+        status: 'healthy',
+        responseTimeMs: 150,
+        version: '1.0.0',
+        lastChecked: new Date(),
+        services: JSON.stringify({
+          embedding: 'healthy',
+          questionGeneration: 'healthy',
+          vectorSearch: 'healthy',
+        }),
+      },
+    }),
+    prisma.aIServerStatus.create({
+      data: {
+        serverName: 'teacher_report',
+        serverUrl: 'http://localhost:8001',
+        status: 'healthy',
+        responseTimeMs: 200,
+        version: '1.0.0',
+        lastChecked: new Date(),
+        services: JSON.stringify({
+          reportGeneration: 'healthy',
+          dataAnalysis: 'healthy',
+          visualization: 'healthy',
+        }),
+      },
+    }),
+  ]);
+
+  // AI 서버 동기화 기록 생성
+  const aiServerSyncs = await Promise.all([
+    prisma.aIServerSync.create({
+      data: {
+        serverName: 'educational_ai',
+        syncType: 'data_sync',
+        status: 'success',
+        startTime: new Date(Date.now() - 3600000), // 1시간 전
+        endTime: new Date(Date.now() - 3500000), // 10분 후
+        durationMs: 600000, // 10분
+        recordsProcessed: 100,
+        recordsSynced: 95,
+        metadata: JSON.stringify({
+          textbooksProcessed: 4,
+          chunksProcessed: 65,
+          questionsGenerated: 3,
+        }),
+        userId: admin.id,
+      },
+    }),
+    prisma.aIServerSync.create({
+      data: {
+        serverName: 'teacher_report',
+        syncType: 'health_check',
+        status: 'success',
+        startTime: new Date(Date.now() - 1800000), // 30분 전
+        endTime: new Date(Date.now() - 1790000), // 1분 후
+        durationMs: 10000, // 10초
+        recordsProcessed: 1,
+        recordsSynced: 1,
+        metadata: JSON.stringify({
+          healthCheck: 'passed',
+          services: ['reportGeneration', 'dataAnalysis'],
+        }),
+        userId: admin.id,
+      },
+    }),
+  ]);
+
+  // API 사용량 데이터 생성
+  const apiUsages = await Promise.all([
+    prisma.aIApiUsage.create({
+      data: {
+        userId: teachers[0].id,
+        apiType: 'question_generation',
+        modelName: 'gpt-4',
+        tokensUsed: 1200,
+        costUsd: 0.05,
+        requestCount: 1,
+        responseTimeMs: 2500,
+        success: true,
+      },
+    }),
+    prisma.aIApiUsage.create({
+      data: {
+        userId: teachers[1].id,
+        apiType: 'vector_search',
+        modelName: 'text-embedding-ada-002',
+        tokensUsed: 500,
+        costUsd: 0.02,
+        requestCount: 1,
+        responseTimeMs: 200,
+        success: true,
+      },
+    }),
+    prisma.aIApiUsage.create({
+      data: {
+        userId: teachers[2].id,
+        apiType: 'teacher_report_generation',
+        modelName: 'gpt-4',
+        tokensUsed: 2000,
+        costUsd: 0.08,
+        requestCount: 1,
+        responseTimeMs: 5000,
+        success: true,
+      },
+    }),
+  ]);
+
+  // 성능 지표 데이터 생성
+  const performanceMetrics = await Promise.all([
+    prisma.aIPerformanceMetric.create({
+      data: {
+        operationType: 'question_generation',
+        durationMs: 2500,
+        success: true,
+        metadata: JSON.stringify({
+          questionsGenerated: 3,
+          averageQualityScore: 0.85,
+          subjects: ['수학', '과학', '영어'],
+        }),
+        userId: admin.id,
+      },
+    }),
+    prisma.aIPerformanceMetric.create({
+      data: {
+        operationType: 'vector_search',
+        durationMs: 200,
+        success: true,
+        metadata: JSON.stringify({
+          queriesProcessed: 3,
+          averageResultsCount: 5,
+          averageSimilarityScore: 0.85,
+        }),
+        userId: admin.id,
+      },
+    }),
+    prisma.aIPerformanceMetric.create({
+      data: {
+        operationType: 'teacher_report_generation',
+        durationMs: 5000,
+        success: true,
+        metadata: JSON.stringify({
+          reportsGenerated: 2,
+          averageStudentCount: 30,
+          reportTypes: ['full', 'summary'],
+        }),
+        userId: admin.id,
+      },
+    }),
+  ]);
+
+  // 사용 통계 데이터 생성 (upsert 사용)
+  const usageStatistics = await Promise.all([
+    prisma.aIUsageStatistics.upsert({
+      where: {
+        userId_date: {
+          userId: teachers[0].id,
+          date: new Date().toISOString().split('T')[0],
+        },
+      },
+      update: {},
+      create: {
+        userId: teachers[0].id,
+        date: new Date().toISOString().split('T')[0],
+        questionsGenerated: 1,
+        textbooksUploaded: 1,
+        searchesPerformed: 1,
+        totalCostUsd: 0.05,
+      },
+    }),
+    prisma.aIUsageStatistics.upsert({
+      where: {
+        userId_date: {
+          userId: teachers[1].id,
+          date: new Date().toISOString().split('T')[0],
+        },
+      },
+      update: {},
+      create: {
+        userId: teachers[1].id,
+        date: new Date().toISOString().split('T')[0],
+        questionsGenerated: 1,
+        textbooksUploaded: 1,
+        searchesPerformed: 1,
+        totalCostUsd: 0.07,
+      },
+    }),
+    prisma.aIUsageStatistics.upsert({
+      where: {
+        userId_date: {
+          userId: teachers[2].id,
+          date: new Date().toISOString().split('T')[0],
+        },
+      },
+      update: {},
+      create: {
+        userId: teachers[2].id,
+        date: new Date().toISOString().split('T')[0],
+        questionsGenerated: 0,
+        textbooksUploaded: 1,
+        searchesPerformed: 0,
+        totalCostUsd: 0.08,
+      },
+    }),
+  ]);
+
+  // ChromaDB 컬렉션 데이터 생성 (upsert 사용)
+  const chromaCollections = await Promise.all([
+    prisma.chromaDBCollection.upsert({
+      where: { collectionName: 'textbook_embeddings' },
+      update: {},
+      create: {
+        collectionName: 'textbook_embeddings',
+        description: '교과서 텍스트의 벡터 임베딩 컬렉션',
+        persistDirectory: './data/vector_db',
+        totalDocuments: 65,
+        totalEmbeddings: 65,
+        lastUpdated: new Date(),
+      },
+    }),
+    prisma.chromaDBCollection.upsert({
+      where: { collectionName: 'question_embeddings' },
+      update: {},
+      create: {
+        collectionName: 'question_embeddings',
+        description: '생성된 문제의 벡터 임베딩 컬렉션',
+        persistDirectory: './data/vector_db',
+        totalDocuments: 3,
+        totalEmbeddings: 3,
+        lastUpdated: new Date(),
+      },
+    }),
+  ]);
+
+  // ChromaDB 임베딩 데이터 생성
+  const chromaEmbeddings = [];
+  for (let i = 0; i < 10; i++) {
+    chromaEmbeddings.push({
+      collectionId: chromaCollections[0].id,
+      documentId: `doc_${i}`,
+      content: `교과서 내용 ${i + 1}번째 청크입니다.`,
+      embedding: JSON.stringify(Array.from({ length: 1536 }, () => Math.random())),
+      metadata: JSON.stringify({
+        subject: ['수학', '과학', '국어', '영어'][i % 4],
+        gradeLevel: ['중1', '중2', '중3'][i % 3],
+        chunkIndex: i,
+      }),
+      similarityScore: 0.9 - i * 0.05,
+      distance: 0.1 + i * 0.02,
+    });
+  }
+
+  await Promise.all(
+    chromaEmbeddings.map((embedding) =>
+      prisma.chromaDBEmbedding.create({
+        data: embedding,
+      }),
+    ),
+  );
+
+  // 샘플 데이터 템플릿 생성
+  const sampleTemplates = await Promise.all([
+    prisma.sampleDataTemplate.create({
+      data: {
+        templateName: 'excellent_class',
+        templateType: 'excellent',
+        description: '우수한 학급 샘플 데이터',
+        dataStructure: JSON.stringify({
+          students: [
+            { id: 1, name: '김우수', math: 95, korean: 92, english: 88 },
+            { id: 2, name: '이영재', math: 98, korean: 95, english: 90 },
+          ],
+          classInfo: { grade: 2, classNum: 1, totalStudents: 30 },
+        }),
+        isActive: true,
+        createdBy: admin.id,
+      },
+    }),
+    prisma.sampleDataTemplate.create({
+      data: {
+        templateName: 'normal_class',
+        templateType: 'normal',
+        description: '일반적인 학급 샘플 데이터',
+        dataStructure: JSON.stringify({
+          students: [
+            { id: 1, name: '김보통', math: 75, korean: 78, english: 72 },
+            { id: 2, name: '이평균', math: 80, korean: 82, english: 76 },
+          ],
+          classInfo: { grade: 2, classNum: 2, totalStudents: 30 },
+        }),
+        isActive: true,
+        createdBy: admin.id,
+      },
+    }),
+    prisma.sampleDataTemplate.create({
+      data: {
+        templateName: 'problematic_class',
+        templateType: 'problematic',
+        description: '학습 부진 학급 샘플 데이터',
+        dataStructure: JSON.stringify({
+          students: [
+            { id: 1, name: '김부진', math: 45, korean: 52, english: 48 },
+            { id: 2, name: '이어려움', math: 58, korean: 62, english: 55 },
+          ],
+          classInfo: { grade: 2, classNum: 3, totalStudents: 30 },
+        }),
+        isActive: true,
+        createdBy: admin.id,
+      },
+    }),
+  ]);
+
+  // 문제 생성 히스토리 데이터
+  const questionHistories = await Promise.all([
+    prisma.questionHistory.create({
+      data: {
+        questionId: aiQuestions[0].id,
+        questionText: aiQuestions[0].questionText,
+        subject: aiQuestions[0].subject,
+        difficulty: aiQuestions[0].difficulty,
+        generatedAt: new Date(),
+        modelUsed: 'gpt-4',
+        tokensUsed: 1200,
+        costUsd: 0.05,
+        userId: teachers[0].id,
+      },
+    }),
+    prisma.questionHistory.create({
+      data: {
+        questionId: aiQuestions[1].id,
+        questionText: aiQuestions[1].questionText,
+        subject: aiQuestions[1].subject,
+        difficulty: aiQuestions[1].difficulty,
+        generatedAt: new Date(),
+        modelUsed: 'gpt-4',
+        tokensUsed: 1500,
+        costUsd: 0.07,
+        userId: teachers[1].id,
+      },
+    }),
+  ]);
+
   logger.info('✅ 시드 데이터 생성이 완료되었습니다!');
   logger.info(`👨‍💼 관리자: ${admin.name} (${admin.email})`);
   logger.info(`👨‍🏫 교사: ${teachers.length}명`);
@@ -689,6 +1347,20 @@ async function main() {
   logger.info(`📈 분석 리포트: ${reportData.length}개`);
   logger.info(`🎯 진로 상담: ${counselingData.length}개`);
   logger.info(`📋 교사 리포트: ${teacherReportData.length}개`);
+  logger.info(`📚 교과서: ${textbooks.length}개`);
+  logger.info(`📄 문서 청크: ${documentChunks.length}개`);
+  logger.info(`🤖 AI 생성 문제: ${aiQuestions.length}개`);
+  logger.info(`🔍 검색 쿼리: ${searchQueries.length}개`);
+  logger.info(`🔗 검색 결과: ${searchResults.length}개`);
+  logger.info(`🖥️ AI 서버 상태: ${aiServerStatuses.length}개`);
+  logger.info(`🔄 AI 서버 동기화: ${aiServerSyncs.length}개`);
+  logger.info(`📊 API 사용량: ${apiUsages.length}개`);
+  logger.info(`⚡ 성능 지표: ${performanceMetrics.length}개`);
+  logger.info(`📈 사용 통계: ${usageStatistics.length}개`);
+  logger.info(`🗄️ ChromaDB 컬렉션: ${chromaCollections.length}개`);
+  logger.info(`🔢 ChromaDB 임베딩: ${chromaEmbeddings.length}개`);
+  logger.info(`📋 샘플 템플릿: ${sampleTemplates.length}개`);
+  logger.info(`📝 문제 히스토리: ${questionHistories.length}개`);
 }
 
 main()

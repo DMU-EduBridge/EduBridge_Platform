@@ -32,8 +32,23 @@ model User {
   counseling       CareerCounseling[]
   reviewedProblems Problem[]          @relation("ProblemReviewer")
   progress         StudentProgress[]
-  teacherReports   TeacherReport[]    @relation("TeacherReports")
   preferences      UserPreferences?
+  
+  // Educational AI System 관련 관계
+  textbooks        Textbook[]
+  aiGeneratedQuestions AIGeneratedQuestion[]
+  searchQueries    SearchQuery[]
+  aiApiUsage       AIApiUsage[]
+  aiPerformanceMetrics AIPerformanceMetric[]
+  aiUsageStatistics AIUsageStatistics[]
+  
+  // Teacher Report System 관련 관계
+  teacherReports   TeacherReport[]
+  aiServerSyncs    AIServerSync[]
+  
+  // 실제 AI 서버 데이터 구조 관련 관계
+  sampleDataTemplates SampleDataTemplate[]
+  questionHistory     QuestionHistory[]
 
   @@index([role])
   @@index([status])
@@ -172,26 +187,31 @@ model AnalysisReport {
 }
 
 model TeacherReport {
-  id           String    @id @default(cuid())
-  teacherId    String
-  title        String
-  content      String
-  reportType   String
-  classInfo    String
-  studentCount Int
-  analysis     String?
-  status       String    @default("COMPLETED")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
-  teacher      User      @relation("TeacherReports", fields: [teacherId], references: [id])
+  id                String   @id @default(cuid())
+  title             String
+  content           String
+  reportType        String   @default("full") // full, summary
+  classInfo         String   @default("{}") // JSON string
+  students          String   @default("[]") // JSON string
+  analysisData      String   @default("{}") // JSON string
+  metadata          String   @default("{}") // JSON string
+  tokenUsage        Int?
+  generationTimeMs  Int?
+  modelName         String?
+  costUsd           Float?
+  status            String   @default("draft") // draft, published, archived
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User     @relation(fields: [createdBy], references: [id])
+  reportAnalyses    ReportAnalysis[]
+  studentData       StudentData[]
+  classInfoData     ClassInfo[]
 
-  @@index([teacherId])
-  @@index([reportType])
+  @@index([createdBy])
   @@index([status])
   @@index([createdAt])
-  @@index([teacherId, reportType, status, createdAt])
-  @@index([deletedAt])
   @@map("teacher_reports")
 }
 
@@ -302,4 +322,373 @@ model Attempt {
 
   @@index([userId, problemId])
   @@map("attempts")
+}
+
+// Educational AI System Models - 실제 ChromaDB 기반 구조 반영
+
+model Textbook {
+  id                String           @id @default(cuid())
+  title             String
+  subject           String
+  gradeLevel        String
+  publisher         String?
+  fileName          String
+  filePath          String
+  fileSize          Int
+  mimeType          String?
+  totalChunks       Int              @default(0)
+  processingStatus  String           @default("pending")
+  errorMessage      String?
+  uploadedBy        String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  user              User             @relation(fields: [uploadedBy], references: [id])
+  chunks            DocumentChunk[]
+  questions         AIGeneratedQuestion[]
+
+  @@index([subject, gradeLevel])
+  @@index([processingStatus])
+  @@index([uploadedBy])
+  @@map("textbooks")
+}
+
+model DocumentChunk {
+  id              String     @id @default(cuid())
+  textbookId      String
+  chunkIndex      Int
+  content         String
+  contentLength   Int
+  embeddingId     String?    // ChromaDB의 문서 ID
+  metadata        String     @default("{}") // ChromaDB 메타데이터 JSON
+  createdAt       DateTime   @default(now())
+  
+  textbook        Textbook   @relation(fields: [textbookId], references: [id])
+  searchResults   SearchResult[]
+
+  @@index([textbookId])
+  @@index([embeddingId])
+  @@map("document_chunks")
+}
+
+model AIGeneratedQuestion {
+  id                String           @id @default(cuid())
+  questionText      String
+  subject           String
+  gradeLevel        String
+  unit              String?
+  difficulty        String
+  correctAnswer     Int
+  explanation       String
+  generationPrompt  String?
+  contextChunkIds   String           @default("[]") // 참조된 ChromaDB 청크 ID들
+  qualityScore      Float?
+  generationTimeMs  Int?
+  modelName         String?
+  tokensUsed        Int?
+  costUsd           Float?
+  createdBy         String
+  textbookId        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  user              User             @relation(fields: [createdBy], references: [id])
+  textbook          Textbook?        @relation(fields: [textbookId], references: [id])
+  options           QuestionOption[]
+  tags              QuestionTag[]
+
+  @@index([subject, gradeLevel])
+  @@index([difficulty])
+  @@index([createdBy])
+  @@index([textbookId])
+  @@index([createdAt])
+  @@map("ai_generated_questions")
+}
+
+model QuestionOption {
+  id           String              @id @default(cuid())
+  questionId   String
+  optionNumber Int
+  optionText   String
+  isCorrect    Boolean
+  createdAt    DateTime            @default(now())
+  
+  question     AIGeneratedQuestion @relation(fields: [questionId], references: [id])
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+model QuestionTag {
+  id         String              @id @default(cuid())
+  questionId String
+  tagName    String
+  createdAt  DateTime            @default(now())
+  
+  question   AIGeneratedQuestion @relation(fields: [questionId], references: [id])
+
+  @@index([questionId])
+  @@map("question_tags")
+}
+
+model SearchQuery {
+  id             String          @id @default(cuid())
+  queryText      String
+  subject        String?
+  gradeLevel     String?
+  unit           String?
+  resultsCount   Int
+  searchTimeMs   Int
+  userId         String
+  sessionId      String?
+  createdAt      DateTime        @default(now())
+  
+  user           User            @relation(fields: [userId], references: [id])
+  results        SearchResult[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("search_queries")
+}
+
+model SearchResult {
+  id               String        @id @default(cuid())
+  queryId          String
+  chunkId          String
+  similarityScore  Float
+  rankPosition     Int
+  createdAt        DateTime      @default(now())
+  
+  query            SearchQuery   @relation(fields: [queryId], references: [id])
+  chunk            DocumentChunk @relation(fields: [chunkId], references: [id])
+
+  @@index([queryId])
+  @@index([chunkId])
+  @@map("search_results")
+}
+
+model AIApiUsage {
+  id               String   @id @default(cuid())
+  userId           String
+  apiType          String
+  modelName        String
+  tokensUsed       Int
+  costUsd          Float
+  requestCount     Int      @default(1)
+  responseTimeMs   Int?
+  success          Boolean  @default(true)
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+  
+  user             User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_api_usage")
+}
+
+model AIPerformanceMetric {
+  id              String   @id @default(cuid())
+  operationType   String
+  durationMs      Int
+  success         Boolean
+  errorMessage    String?
+  metadata        String   @default("{}")
+  userId          String?
+  createdAt       DateTime @default(now())
+  
+  user            User?    @relation(fields: [userId], references: [id])
+
+  @@index([operationType])
+  @@index([createdAt])
+  @@map("ai_performance_metrics")
+}
+
+model AIUsageStatistics {
+  id                   String   @id @default(cuid())
+  userId               String
+  date                 String
+  questionsGenerated   Int      @default(0)
+  textbooksUploaded    Int      @default(0)
+  searchesPerformed    Int      @default(0)
+  totalCostUsd         Float    @default(0)
+  createdAt            DateTime @default(now())
+  
+  user                 User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("ai_usage_statistics")
+}
+
+// Teacher Report System Models - 실제 메모리 기반 구조 반영
+
+model ReportAnalysis {
+  id                String   @id @default(cuid())
+  reportId          String
+  analysisType      String   // basic_statistics, achievement_distribution, struggling_students, etc.
+  analysisData      String   @default("{}") // JSON string
+  createdAt         DateTime @default(now())
+  
+  report            TeacherReport @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+  @@index([analysisType])
+  @@map("report_analyses")
+}
+
+model StudentData {
+  id                String   @id @default(cuid())
+  studentId        Int
+  name              String
+  math              Float?
+  korean            Float?
+  english           Float?
+  science           Float?
+  social            Float?
+  assignmentRate    Float?
+  attendanceRate    Float?
+  reportId          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  report            TeacherReport? @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+  @@index([studentId])
+  @@map("student_data")
+}
+
+model ClassInfo {
+  id                String   @id @default(cuid())
+  grade             Int?
+  classNum          Int?
+  subject           String?
+  semester          String?
+  year              Int?
+  teacher           String?
+  totalStudents     Int?
+  reportId          String?
+  createdAt         DateTime @default(now())
+  
+  report            TeacherReport? @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+  @@map("class_info")
+}
+
+model AIServerStatus {
+  id                String   @id @default(cuid())
+  serverName        String   // educational_ai, teacher_report
+  serverUrl         String
+  status            String   @default("unknown") // healthy, unhealthy, unknown
+  responseTimeMs    Int?
+  version           String?
+  lastChecked       DateTime @default(now())
+  errorMessage      String?
+  services          String   @default("{}") // JSON string - 실제 서버 상태 정보
+  createdAt         DateTime @default(now())
+  
+  @@index([serverName])
+  @@index([status])
+  @@index([lastChecked])
+  @@map("ai_server_status")
+}
+
+model AIServerSync {
+  id                String   @id @default(cuid())
+  serverName        String
+  syncType          String   // data_sync, health_check, report_generation
+  status            String   @default("pending") // pending, success, failed
+  startTime         DateTime @default(now())
+  endTime           DateTime?
+  durationMs        Int?
+  recordsProcessed  Int?
+  recordsSynced     Int?
+  errors            String?  // JSON string
+  metadata          String   @default("{}") // JSON string
+  userId            String?
+  createdAt         DateTime @default(now())
+  
+  user              User?    @relation(fields: [userId], references: [id])
+
+  @@index([serverName])
+  @@index([status])
+  @@index([startTime])
+  @@map("ai_server_sync")
+}
+
+// 실제 AI 서버 데이터 구조를 반영한 추가 테이블들
+
+model ChromaDBCollection {
+  id                String   @id @default(cuid())
+  collectionName    String   @unique // "textbook_embeddings"
+  description       String?
+  persistDirectory  String   // "./data/vector_db"
+  totalDocuments    Int      @default(0)
+  totalEmbeddings   Int      @default(0)
+  lastUpdated       DateTime @default(now())
+  createdAt         DateTime @default(now())
+  
+  embeddings        ChromaDBEmbedding[]
+
+  @@index([collectionName])
+  @@map("chromadb_collections")
+}
+
+model ChromaDBEmbedding {
+  id                String   @id @default(cuid())
+  collectionId      String
+  documentId        String   // ChromaDB의 실제 문서 ID
+  content           String   // 원본 텍스트 내용
+  embedding         String   // JSON string - 1536차원 벡터
+  metadata          String   @default("{}") // ChromaDB 메타데이터
+  similarityScore   Float?   // 검색 시 유사도 점수
+  distance          Float?   // 검색 시 거리
+  createdAt         DateTime @default(now())
+  
+  collection        ChromaDBCollection @relation(fields: [collectionId], references: [id])
+
+  @@index([collectionId])
+  @@index([documentId])
+  @@index([similarityScore])
+  @@map("chromadb_embeddings")
+}
+
+model SampleDataTemplate {
+  id                String   @id @default(cuid())
+  templateName      String   // "excellent_class", "normal_class", "problematic_class"
+  templateType      String   // "excellent", "normal", "problematic", "mixed", "predefined"
+  description       String?
+  dataStructure     String   @default("{}") // JSON string - 실제 샘플 데이터 구조
+  isActive          Boolean  @default(true)
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User?    @relation(fields: [createdBy], references: [id])
+
+  @@index([templateName])
+  @@index([templateType])
+  @@map("sample_data_templates")
+}
+
+model QuestionHistory {
+  id                String   @id @default(cuid())
+  questionId        String   // 실제 생성된 문제의 ID
+  questionText      String
+  subject           String
+  difficulty        String
+  generatedAt       DateTime @default(now())
+  modelUsed         String?
+  tokensUsed        Int?
+  costUsd           Float?
+  userId            String?
+  
+  user              User?    @relation(fields: [userId], references: [id])
+
+  @@index([questionId])
+  @@index([subject])
+  @@index([generatedAt])
+  @@map("question_history")
 }
