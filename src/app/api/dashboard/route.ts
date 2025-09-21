@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
-import { aiStatsService, problemService, textbookService, teacherReportService, searchService } from '@/server';
+import {
+  aiStatsService,
+  problemService,
+  searchService,
+  teacherReportService,
+  textbookService,
+} from '@/server';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 // 대시보드 쿼리 스키마
@@ -39,19 +45,14 @@ export async function GET(request: NextRequest) {
     const { timeRange, includeDetails } = parsed.data;
 
     // 각 서비스에서 통계 데이터 조회
-    const [
-      aiStats,
-      problemStats,
-      textbookStats,
-      teacherReportStats,
-      searchStats,
-    ] = await Promise.all([
-      aiStatsService.getAIStatsSummary(),
-      problemService.getProblemStats(),
-      textbookService.getTextbookStats(),
-      teacherReportService.getTeacherReportStats(),
-      searchService.getSearchStats(),
-    ]);
+    const [aiStats, problemStats, textbookStats, teacherReportStats, searchStats] =
+      await Promise.all([
+        aiStatsService.getAIStatsSummary(),
+        problemService.getProblemStats(),
+        textbookService.getTextbookStats(),
+        teacherReportService.getTeacherReportStats(),
+        searchService.getSearchStats(),
+      ]);
 
     const dashboardData = {
       summary: {

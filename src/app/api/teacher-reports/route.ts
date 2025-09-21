@@ -1,5 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
 import { teacherReportService } from '@/server';
@@ -9,6 +7,8 @@ import {
   TeacherReportListResponseSchema,
   TeacherReportResponseDto,
 } from '@/server/dto/teacher-report';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * 교사 리포트 목록 조회

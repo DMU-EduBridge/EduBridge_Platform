@@ -1,15 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
 import { searchService } from '@/server';
 import {
-  CreateSearchQueryDto,
   SearchQueryListQueryDto,
   SearchQueryListResponseSchema,
-  SearchQueryResponseDto,
   VectorSearchDto,
 } from '@/server/dto/search';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * 검색 쿼리 목록 조회
