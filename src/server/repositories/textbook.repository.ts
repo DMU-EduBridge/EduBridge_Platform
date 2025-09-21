@@ -38,11 +38,7 @@ export class TextbookRepository {
     if (publisher) where.publisher = { contains: publisher };
     if (processingStatus) where.processingStatus = processingStatus;
     if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { subject: { contains: search } },
-        { description: { contains: search } },
-      ];
+      where.OR = [{ title: { contains: search } }, { subject: { contains: search } }];
     }
 
     const [textbooks, total] = await Promise.all([
@@ -75,8 +71,11 @@ export class TextbookRepository {
     return prisma.textbook.create({
       data: {
         ...data,
-        userId,
+        uploadedBy: userId,
         processingStatus: 'PENDING',
+        fileName: 'unknown.pdf',
+        filePath: '/uploads/unknown.pdf',
+        fileSize: 0,
       },
       include: {
         user: {
@@ -117,7 +116,7 @@ export class TextbookRepository {
 
   async findByUserId(userId: string): Promise<Textbook[]> {
     return prisma.textbook.findMany({
-      where: { userId },
+      where: { uploadedBy: userId },
       include: {
         user: {
           select: {

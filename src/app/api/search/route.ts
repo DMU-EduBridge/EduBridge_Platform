@@ -1,11 +1,7 @@
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
 import { searchService } from '@/server';
-import {
-  SearchQueryListQueryDto,
-  SearchQueryListResponseSchema,
-  VectorSearchDto,
-} from '@/server/dto/search';
+import { SearchQueryListQueryDto, SearchQueryListResponseSchema } from '@/server/dto/search';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -67,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = VectorSearchDto.safeParse(body);
+    const parsed = SearchQueryListQueryDto.safeParse(body);
 
     if (!parsed.success) {
       logger.error('잘못된 요청 데이터입니다.', undefined, { details: parsed.error.errors });
@@ -80,8 +76,8 @@ export async function POST(request: NextRequest) {
     // 검색 쿼리 생성
     const searchQuery = await searchService.createSearchQuery(
       {
-        queryText: parsed.data.query,
-        subject: parsed.data.textbookId ? undefined : undefined, // textbookId에서 subject 추출 로직 필요
+        queryText: parsed.data.search || '',
+        subject: parsed.data.subject ? undefined : undefined, // subject 추출 로직 필요
         gradeLevel: undefined,
         unit: undefined,
         searchTimeMs: 0, // 실제 검색 시간 측정 필요
@@ -90,11 +86,11 @@ export async function POST(request: NextRequest) {
     );
 
     // 벡터 검색 실행
-    const searchResults = await searchService.vectorSearch(parsed.data);
+    const searchResults = await searchService.getSearchQueries(parsed.data);
 
     // 검색 결과 저장
-    for (let i = 0; i < searchResults.length; i++) {
-      const result = searchResults[i];
+    for (let i = 0; i < searchResults.queries.length; i++) {
+      const result = searchResults.queries[i];
       await searchService.createSearchResult({
         queryId: searchQuery.id,
         chunkId: result.id,
@@ -105,8 +101,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       query: searchQuery,
-      results: searchResults,
-      totalResults: searchResults.length,
+      results: searchResults.queries,
+      totalResults: searchResults.queries.length,
     });
   } catch (error) {
     logger.error('벡터 검색 API 오류', undefined, {

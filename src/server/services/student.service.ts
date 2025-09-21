@@ -14,7 +14,7 @@ export class StudentService {
     if (params.search)
       where.OR = [{ name: { contains: params.search } }, { email: { contains: params.search } }];
     if (params.grade && params.grade !== 'all') where.grade = params.grade;
-    if (params.status && params.status !== 'all') where.status = params.status;
+    if (params.status && params.status !== 'all') where.status = params.status as any;
 
     const { items, total } = await studentRepository.findMany(where, params.page, params.limit);
     const students = items.map((student) => {
@@ -113,7 +113,7 @@ export class StudentService {
       name: input.name,
       email: input.email,
       grade: input.grade,
-      status: input.status,
+      status: input.status as any,
     };
     return studentRepository.update(id, data);
   }

@@ -146,7 +146,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await educationalAI.generateQuestions(parsed.data);
+    const result = await educationalAI.generateQuestions({
+      ...parsed.data,
+      difficulty: parsed.data.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
+    });
 
     return NextResponse.json({
       success: true,
