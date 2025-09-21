@@ -31,8 +31,8 @@ export type AISyncRequest = z.infer<typeof AISyncRequestSchema>;
 
 // AI 서버 설정
 const AI_SERVER_CONFIG = {
-  baseUrl: process.env.AI_SERVER_URL || 'http://localhost:8000',
-  apiKey: process.env.AI_SERVER_API_KEY,
+  baseUrl: process.env.EDUCATIONAL_AI_URL || 'http://localhost:8000',
+  apiKey: process.env.OPENAI_API_KEY, // 공통 OpenAI API 키 사용
   timeout: 30000, // 30초
 };
 
@@ -106,4 +106,3 @@ export async function checkAIServerHealth() {
     return false;
   }
 }
-

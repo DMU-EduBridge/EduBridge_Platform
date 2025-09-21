@@ -24,21 +24,17 @@ const envSchema = z.object({
   MAX_FILE_SIZE: z.string().transform(Number).default('10485760'), // 10MB
   ALLOWED_FILE_TYPES: z.string().default('image/jpeg,image/png,image/gif,application/pdf'),
 
-  // AI 서비스 (향후 확장용)
+  // AI 서비스 (공통 API 키)
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
 
-  // AI 서버 연동
-  AI_SERVER_URL: z.string().url().optional(),
-  AI_SERVER_API_KEY: z.string().optional(),
-
   // Educational AI System 연동
   EDUCATIONAL_AI_URL: z.string().url().optional(),
-  EDUCATIONAL_AI_API_KEY: z.string().optional(),
+  // EDUCATIONAL_AI_API_KEY는 OPENAI_API_KEY와 동일하게 사용
 
   // Teacher Report System 연동
   TEACHER_REPORT_URL: z.string().url().optional(),
-  TEACHER_REPORT_API_KEY: z.string().optional(),
+  // TEACHER_REPORT_API_KEY는 OPENAI_API_KEY와 동일하게 사용
 
   // Teacher Report System 설정
   TEACHER_REPORT_MODEL_NAME: z.string().default('gpt-4'),
