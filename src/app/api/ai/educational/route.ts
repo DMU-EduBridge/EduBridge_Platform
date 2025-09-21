@@ -10,7 +10,7 @@ class EducationalAIClient {
 
   constructor() {
     this.baseUrl = process.env.EDUCATIONAL_AI_URL || 'http://localhost:8000';
-    this.apiKey = process.env.EDUCATIONAL_AI_API_KEY;
+    this.apiKey = process.env.OPENAI_API_KEY; // 공통 OpenAI API 키 사용
   }
 
   async generateQuestions(params: {
@@ -112,7 +112,7 @@ const educationalAI = new EducationalAIClient();
 const GenerateQuestionsSchema = z.object({
   subject: z.string().min(1),
   unit: z.string().optional(),
-  difficulty: z.enum(['easy', 'medium', 'hard']).default('medium'),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).default('MEDIUM'),
   count: z.number().min(1).max(20).default(5),
   textbookContent: z.string().optional(),
 });

@@ -9,8 +9,8 @@ const problemSyncService = new ProblemSyncService();
 // 문제 동기화 요청 스키마
 const SyncRequestSchema = z.object({
   subject: z.string().optional(),
-  difficulty: z.string().optional(),
-  type: z.string().optional(),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
+  type: z.enum(['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE']).optional(),
   limit: z.number().min(1).max(1000).default(50),
   offset: z.number().min(0).default(0),
 });
