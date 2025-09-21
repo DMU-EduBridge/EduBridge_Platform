@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { timeRange, includeDetails } = parsed.data;
+    const { timeRange } = parsed.data;
 
     // 각 서비스에서 통계 데이터 조회
     const [aiStats, problemStats, textbookStats, teacherReportStats, searchStats] =

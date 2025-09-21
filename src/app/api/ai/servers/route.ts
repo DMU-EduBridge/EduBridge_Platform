@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         performanceMetrics,
       ] = await Promise.all([
         prisma.textbook.count(),
-        prisma.aIGeneratedQuestion.count(),
+        prisma.problem.count({ where: { isAIGenerated: true } }),
         prisma.teacherReport.count(),
         prisma.searchQuery.count(),
         prisma.aIApiUsage.findMany({
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
       data: {
         serverName,
         syncType,
-        status: 'pending',
+        status: 'PENDING',
         startTime: new Date(),
         userId: session.user.id,
         metadata: JSON.stringify({ forceSync }),
@@ -196,13 +196,13 @@ export async function POST(request: NextRequest) {
       await prisma.aIServerSync.update({
         where: { id: syncRecord.id },
         data: {
-          status: 'success',
+          status: 'SUCCESS',
           endTime: new Date(),
           durationMs: duration,
           recordsProcessed: result.recordsProcessed,
           recordsSynced: result.recordsSynced,
           metadata: JSON.stringify({
-            ...JSON.parse(syncRecord.metadata),
+            ...JSON.parse(syncRecord.metadata as string),
             result: result.summary,
           }),
         },
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
       await prisma.aIServerSync.update({
         where: { id: syncRecord.id },
         data: {
-          status: 'failed',
+          status: 'FAILED',
           endTime: new Date(),
           durationMs: duration,
           errors: JSON.stringify([error instanceof Error ? error.message : '알 수 없는 오류']),
@@ -271,26 +271,35 @@ async function checkAIServerStatus(serverName: string) {
         const data = await response.json();
 
         // 서버 상태 저장
-        await prisma.aIServerStatus.upsert({
+        const existingStatus = await prisma.aIServerStatus.findFirst({
           where: { serverName: server },
-          update: {
-            status: 'healthy',
-            responseTimeMs: responseTime,
-            version: data.version || 'unknown',
-            lastChecked: new Date(),
-            errorMessage: null,
-            services: JSON.stringify(data.services || {}),
-          },
-          create: {
-            serverName: server,
-            serverUrl: config.url,
-            status: 'healthy',
-            responseTimeMs: responseTime,
-            version: data.version || 'unknown',
-            lastChecked: new Date(),
-            services: JSON.stringify(data.services || {}),
-          },
         });
+
+        if (existingStatus) {
+          await prisma.aIServerStatus.update({
+            where: { id: existingStatus.id },
+            data: {
+              status: 'HEALTHY',
+              responseTimeMs: responseTime,
+              version: data.version || 'unknown',
+              lastChecked: new Date(),
+              errorMessage: null,
+              services: JSON.stringify(data.services || {}),
+            },
+          });
+        } else {
+          await prisma.aIServerStatus.create({
+            data: {
+              serverName: server,
+              serverUrl: config.url,
+              status: 'HEALTHY',
+              responseTimeMs: responseTime,
+              version: data.version || 'unknown',
+              lastChecked: new Date(),
+              services: JSON.stringify(data.services || {}),
+            },
+          });
+        }
 
         serverStatuses.push({
           serverName: server,
@@ -307,21 +316,30 @@ async function checkAIServerStatus(serverName: string) {
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
 
       // 서버 상태 저장 (오류)
-      await prisma.aIServerStatus.upsert({
+      const existingStatus = await prisma.aIServerStatus.findFirst({
         where: { serverName: server },
-        update: {
-          status: 'unhealthy',
-          lastChecked: new Date(),
-          errorMessage,
-        },
-        create: {
-          serverName: server,
-          serverUrl: config.url,
-          status: 'unhealthy',
-          lastChecked: new Date(),
-          errorMessage,
-        },
       });
+
+      if (existingStatus) {
+        await prisma.aIServerStatus.update({
+          where: { id: existingStatus.id },
+          data: {
+            status: 'UNHEALTHY',
+            lastChecked: new Date(),
+            errorMessage,
+          },
+        });
+      } else {
+        await prisma.aIServerStatus.create({
+          data: {
+            serverName: server,
+            serverUrl: config.url,
+            status: 'UNHEALTHY',
+            lastChecked: new Date(),
+            errorMessage,
+          },
+        });
+      }
 
       serverStatuses.push({
         serverName: server,
@@ -363,13 +381,13 @@ async function syncSpecificServer(serverName: string, syncType: string, forceSyn
 
   switch (syncType) {
     case 'health_check':
-      return await performHealthCheck(serverName, config);
+      return await performHealthCheck({ url: config.url, apiKey: config.apiKey as string });
 
     case 'data_sync':
-      return await performDataSync(serverName, config, forceSync);
+      return await performDataSync(serverName, forceSync);
 
     case 'report_generation':
-      return await performReportGeneration(serverName, config);
+      return await performReportGeneration(serverName);
 
     default:
       throw new Error(`지원하지 않는 동기화 타입: ${syncType}`);
@@ -379,7 +397,7 @@ async function syncSpecificServer(serverName: string, syncType: string, forceSyn
 /**
  * 헬스 체크 수행
  */
-async function performHealthCheck(serverName: string, config: any) {
+async function performHealthCheck(config: { url: string; apiKey: string }) {
   try {
     const response = await fetch(`${config.url}/health`, {
       method: 'GET',
@@ -418,14 +436,14 @@ async function performHealthCheck(serverName: string, config: any) {
 /**
  * 데이터 동기화 수행
  */
-async function performDataSync(serverName: string, config: any, forceSync: boolean) {
+async function performDataSync(serverName: string, forceSync: boolean) {
   let recordsProcessed = 0;
   let recordsSynced = 0;
 
   if (serverName === 'educational_ai') {
     // Educational AI 서버 데이터 동기화
     const textbooks = await prisma.textbook.findMany({
-      where: forceSync ? {} : { processingStatus: 'pending' },
+      where: forceSync ? {} : { processingStatus: 'PENDING' },
     });
 
     recordsProcessed = textbooks.length;
@@ -437,7 +455,7 @@ async function performDataSync(serverName: string, config: any, forceSync: boole
 
         await prisma.textbook.update({
           where: { id: textbook.id },
-          data: { processingStatus: 'completed' },
+          data: { processingStatus: 'COMPLETED' },
         });
 
         recordsSynced++;
@@ -448,7 +466,7 @@ async function performDataSync(serverName: string, config: any, forceSync: boole
   } else if (serverName === 'teacher_report') {
     // Teacher Report 서버 데이터 동기화
     const reports = await prisma.teacherReport.findMany({
-      where: forceSync ? {} : { status: 'draft' },
+      where: forceSync ? {} : { status: 'DRAFT' },
     });
 
     recordsProcessed = reports.length;
@@ -460,7 +478,7 @@ async function performDataSync(serverName: string, config: any, forceSync: boole
 
         await prisma.teacherReport.update({
           where: { id: report.id },
-          data: { status: 'published' },
+          data: { status: 'PUBLISHED' },
         });
 
         recordsSynced++;
@@ -486,7 +504,7 @@ async function performDataSync(serverName: string, config: any, forceSync: boole
 /**
  * 리포트 생성 수행
  */
-async function performReportGeneration(serverName: string, config: any) {
+async function performReportGeneration(serverName: string) {
   // 실제로는 각 서버에서 리포트 생성 작업을 수행
   return {
     recordsProcessed: 1,
