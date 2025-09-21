@@ -1,94 +1,148 @@
-import type { Prisma } from '@prisma/client';
-import { teacherReportRepository } from '../repositories/teacher-report.repository';
+import { TeacherReport } from '@prisma/client';
+import { logger } from '../../lib/monitoring';
+import {
+  CreateReportAnalysisDtoType,
+  CreateTeacherReportDtoType,
+  TeacherReportListQueryDtoType,
+  UpdateTeacherReportDtoType,
+} from '../dto/teacher-report';
+import { TeacherReportRepository } from '../repositories/teacher-report.repository';
 
 export class TeacherReportService {
-  async list(params: {
-    teacherId?: string;
-    reportType?: string;
-    status?: string;
-    page: number;
-    limit: number;
-  }) {
-    const where: Prisma.TeacherReportWhereInput = {};
-    if (params.teacherId) where.teacherId = params.teacherId;
-    if (params.reportType && params.reportType !== 'all') where.reportType = params.reportType;
-    if (params.status && params.status !== 'all') where.status = params.status;
+  private teacherReportRepository = new TeacherReportRepository();
 
-    return teacherReportRepository.findMany(where, params.page, params.limit);
+  async getTeacherReportById(id: string): Promise<TeacherReport | null> {
+    try {
+      return await this.teacherReportRepository.findById(id);
+    } catch (error) {
+      logger.error('교사 리포트 조회 실패', undefined, {
+        reportId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('교사 리포트 조회에 실패했습니다.');
+    }
   }
 
-  async detail(id: string) {
-    const report = await teacherReportRepository.findById(id);
-    if (!report) return null;
-
-    const classInfo = report.classInfo ? JSON.parse(report.classInfo) : {};
-    const analysis = report.analysis ? JSON.parse(report.analysis) : {};
-
-    return {
-      ...report,
-      classInfo,
-      analysis,
+  async getTeacherReports(query: TeacherReportListQueryDtoType): Promise<{
+    reports: TeacherReport[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
     };
+  }> {
+    try {
+      const { reports, total } = await this.teacherReportRepository.findMany(query);
+      const totalPages = Math.ceil(total / query.limit);
+
+      return {
+        reports,
+        pagination: {
+          page: query.page,
+          limit: query.limit,
+          total,
+          totalPages,
+        },
+      };
+    } catch (error) {
+      logger.error('교사 리포트 목록 조회 실패', undefined, {
+        query,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('교사 리포트 목록 조회에 실패했습니다.');
+    }
   }
 
-  async getByTeacher(teacherId: string) {
-    return teacherReportRepository.getByTeacher(teacherId);
+  async createTeacherReport(data: CreateTeacherReportDtoType, userId: string): Promise<TeacherReport> {
+    try {
+      return await this.teacherReportRepository.create(data, userId);
+    } catch (error) {
+      logger.error('교사 리포트 생성 실패', undefined, {
+        data,
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('교사 리포트 생성에 실패했습니다.');
+    }
   }
 
-  async create(input: {
-    teacherId: string;
-    title: string;
-    content: string;
-    reportType: string;
-    classInfo: any;
-    studentCount: number;
-    analysis?: any;
-  }) {
-    const data: Prisma.TeacherReportCreateInput = {
-      teacher: { connect: { id: input.teacherId } },
-      title: input.title,
-      content: input.content,
-      reportType: input.reportType,
-      classInfo: JSON.stringify(input.classInfo),
-      studentCount: input.studentCount,
-      analysis: input.analysis ? JSON.stringify(input.analysis) : null,
-      status: 'COMPLETED',
-    };
-    return teacherReportRepository.create(data);
+  async updateTeacherReport(id: string, data: UpdateTeacherReportDtoType): Promise<TeacherReport> {
+    try {
+      const existingReport = await this.teacherReportRepository.findById(id);
+      if (!existingReport) {
+        throw new Error('교사 리포트를 찾을 수 없습니다.');
+      }
+
+      return await this.teacherReportRepository.update(id, data);
+    } catch (error) {
+      logger.error('교사 리포트 업데이트 실패', undefined, {
+        reportId: id,
+        data,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
-  async update(
-    id: string,
-    input: {
-      title?: string;
-      content?: string;
-      reportType?: string;
-      classInfo?: any;
-      studentCount?: number;
-      analysis?: any;
-      status?: string;
-    },
-  ) {
-    const data: Prisma.TeacherReportUpdateInput = {
-      title: input.title,
-      content: input.content,
-      reportType: input.reportType,
-      classInfo: input.classInfo ? JSON.stringify(input.classInfo) : undefined,
-      studentCount: input.studentCount,
-      analysis: input.analysis ? JSON.stringify(input.analysis) : undefined,
-      status: input.status,
-    };
-    return teacherReportRepository.update(id, data);
+  async deleteTeacherReport(id: string): Promise<TeacherReport> {
+    try {
+      const existingReport = await this.teacherReportRepository.findById(id);
+      if (!existingReport) {
+        throw new Error('교사 리포트를 찾을 수 없습니다.');
+      }
+
+      return await this.teacherReportRepository.delete(id);
+    } catch (error) {
+      logger.error('교사 리포트 삭제 실패', undefined, {
+        reportId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
-  async remove(id: string) {
-    return teacherReportRepository.delete(id);
+  async getTeacherReportsByUserId(userId: string): Promise<TeacherReport[]> {
+    try {
+      return await this.teacherReportRepository.findByUserId(userId);
+    } catch (error) {
+      logger.error('사용자 교사 리포트 목록 조회 실패', undefined, {
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('사용자 교사 리포트 목록 조회에 실패했습니다.');
+    }
   }
 
-  async stats() {
-    return teacherReportRepository.getStats();
+  async createReportAnalysis(data: CreateReportAnalysisDtoType): Promise<any> {
+    try {
+      const existingReport = await this.teacherReportRepository.findById(data.reportId);
+      if (!existingReport) {
+        throw new Error('교사 리포트를 찾을 수 없습니다.');
+      }
+
+      return await this.teacherReportRepository.createAnalysis(data);
+    } catch (error) {
+      logger.error('리포트 분석 생성 실패', undefined, {
+        data,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  async getTeacherReportStats(): Promise<{
+    totalReports: number;
+    byStatus: Record<string, number>;
+    byAnalysisType: Record<string, number>;
+  }> {
+    try {
+      return await this.teacherReportRepository.getTeacherReportStats();
+    } catch (error) {
+      logger.error('교사 리포트 통계 조회 실패', undefined, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('교사 리포트 통계 조회에 실패했습니다.');
+    }
   }
 }
-
-import { wrapService } from '@/lib/utils/service-metrics';
-export const teacherReportService = wrapService(new TeacherReportService(), 'TeacherReportService');

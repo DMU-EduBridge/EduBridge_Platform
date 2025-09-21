@@ -1,130 +1,169 @@
 import { prisma } from '@/lib/core/prisma';
-import type { Prisma } from '@prisma/client';
+import { Prisma, TeacherReport } from '@prisma/client';
+import {
+  CreateReportAnalysisDtoType,
+  CreateTeacherReportDtoType,
+  TeacherReportListQueryDtoType,
+  UpdateTeacherReportDtoType,
+} from '../dto/teacher-report';
 
 export class TeacherReportRepository {
-  async findMany(where: Prisma.TeacherReportWhereInput, page: number, limit: number) {
-    const [items, total] = await Promise.all([
+  async findById(id: string): Promise<TeacherReport | null> {
+    return prisma.teacherReport.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        reportAnalyses: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+  }
+
+  async findMany(
+    query: TeacherReportListQueryDtoType,
+  ): Promise<{ reports: TeacherReport[]; total: number }> {
+    const { page, limit, status, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.TeacherReportWhereInput = {};
+
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [{ title: { contains: search } }, { content: { contains: search } }];
+    }
+
+    const [reports, total] = await Promise.all([
       prisma.teacherReport.findMany({
         where,
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          reportAnalyses: {
+            orderBy: { createdAt: 'desc' },
+            take: 3, // 목록에서는 최근 3개 분석만
+          },
+        },
         orderBy: { createdAt: 'desc' },
-        include: { teacher: true },
       }),
       prisma.teacherReport.count({ where }),
     ]);
-    return { items, total };
+
+    return { reports, total };
   }
 
-  async findById(id: string) {
-    return prisma.teacherReport.findUnique({
-      where: { id },
-      include: { teacher: true },
-    });
-  }
-
-  async findByTeacherId(teacherId: string, page: number, limit: number) {
-    const [items, total] = await Promise.all([
-      prisma.teacherReport.findMany({
-        where: { teacherId },
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: { teacher: true },
-      }),
-      prisma.teacherReport.count({ where: { teacherId } }),
-    ]);
-    return { items, total };
-  }
-
-  async create(data: Prisma.TeacherReportCreateInput) {
+  async create(data: CreateTeacherReportDtoType, userId: string): Promise<TeacherReport> {
     return prisma.teacherReport.create({
-      data,
-      include: { teacher: true },
+      data: {
+        ...data,
+        content: data.description || '', // content 필드 필수
+        createdBy: userId,
+        status: 'DRAFT',
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
   }
 
-  async update(id: string, data: Prisma.TeacherReportUpdateInput) {
+  async update(id: string, data: UpdateTeacherReportDtoType): Promise<TeacherReport> {
     return prisma.teacherReport.update({
       where: { id },
       data,
-      include: { teacher: true },
-    });
-  }
-
-  async delete(id: string) {
-    return prisma.teacherReport.delete({ where: { id } });
-  }
-
-  async countAll() {
-    return prisma.teacherReport.count();
-  }
-
-  async countCompleted() {
-    return prisma.teacherReport.count({ where: { status: 'COMPLETED' } });
-  }
-
-  async countByType() {
-    return prisma.teacherReport.groupBy({
-      by: ['reportType'],
-      _count: { reportType: true },
-    });
-  }
-
-  async countByStatus() {
-    return prisma.teacherReport.groupBy({
-      by: ['status'],
-      _count: { status: true },
-    });
-  }
-
-  async getStats() {
-    const [totalReports, completedReports, byType, byStatus, recentReports] = await Promise.all([
-      this.countAll(),
-      this.countCompleted(),
-      this.countByType(),
-      this.countByStatus(),
-      prisma.teacherReport.count({
-        where: {
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 최근 7일
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
         },
-      }),
-    ]);
-
-    const completionRate =
-      totalReports > 0 ? Math.round((completedReports / totalReports) * 100) : 0;
-
-    return {
-      totalReports,
-      completedReports,
-      completionRate,
-      recentReports,
-      byType: byType.reduce(
-        (acc, item) => {
-          acc[item.reportType] = item._count.reportType;
-          return acc;
+        reportAnalyses: {
+          orderBy: { createdAt: 'desc' },
         },
-        {} as Record<string, number>,
-      ),
-      byStatus: byStatus.reduce(
-        (acc, item) => {
-          acc[item.status] = item._count.status;
-          return acc;
-        },
-        {} as Record<string, number>,
-      ),
-    };
+      },
+    });
   }
 
-  async getByTeacher(teacherId: string) {
+  async delete(id: string): Promise<TeacherReport> {
+    return prisma.teacherReport.delete({
+      where: { id },
+    });
+  }
+
+  async findByUserId(userId: string): Promise<TeacherReport[]> {
     return prisma.teacherReport.findMany({
-      where: { teacherId },
-      include: { teacher: true },
+      where: { createdBy: userId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        reportAnalyses: {
+          orderBy: { createdAt: 'desc' },
+          take: 3,
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
-}
 
-export const teacherReportRepository = new TeacherReportRepository();
+  async createAnalysis(data: CreateReportAnalysisDtoType): Promise<any> {
+    return prisma.reportAnalysis.create({
+      data: {
+        reportId: data.reportId,
+        analysisType: data.analysisType as any, // enum 타입 캐스팅
+        analysisData: data.analysisData,
+      },
+    });
+  }
+
+  async getTeacherReportStats(): Promise<{
+    totalReports: number;
+    byStatus: Record<string, number>;
+    byAnalysisType: Record<string, number>;
+  }> {
+    const [totalReports, byStatus, byAnalysisType] = await Promise.all([
+      prisma.teacherReport.count(),
+      prisma.teacherReport.groupBy({
+        by: ['status'],
+        _count: { status: true },
+      }),
+      prisma.reportAnalysis.groupBy({
+        by: ['analysisType'],
+        _count: { analysisType: true },
+      }),
+    ]);
+
+    return {
+      totalReports,
+      byStatus: byStatus.reduce((acc, item) => ({ ...acc, [item.status]: item._count.status }), {}),
+      byAnalysisType: byAnalysisType.reduce(
+        (acc, item) => ({ ...acc, [item.analysisType]: item._count.analysisType }),
+        {},
+      ),
+    };
+  }
+}

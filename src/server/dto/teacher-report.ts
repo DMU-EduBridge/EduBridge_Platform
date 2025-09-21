@@ -2,23 +2,32 @@ import { z } from 'zod';
 
 export const TeacherReportItemSchema = z.object({
   id: z.string(),
-  teacherId: z.string(),
   title: z.string(),
-  content: z.string(),
-  reportType: z.string(),
-  classInfo: z.string(),
-  studentCount: z.number(),
-  analysis: z.string().nullable().optional(),
-  status: z.string(),
+  description: z.string().nullable().optional(),
+  classInfo: z.record(z.any()).nullable().optional(), // JSON field
+  students: z.record(z.any()).nullable().optional(), // JSON field
+  analysisData: z.record(z.any()).nullable().optional(), // JSON field
+  metadata: z.record(z.any()).nullable().optional(), // JSON field
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']),
   createdAt: z.date(),
   updatedAt: z.date(),
-  teacher: z
+  userId: z.string(),
+  user: z
     .object({
       id: z.string(),
       name: z.string(),
       email: z.string(),
-      subject: z.string().nullable().optional(),
     })
+    .optional(),
+  analyses: z
+    .array(
+      z.object({
+        id: z.string(),
+        analysisType: z.enum(['PERFORMANCE', 'BEHAVIOR', 'ATTENDANCE', 'ENGAGEMENT']),
+        analysisData: z.record(z.any()),
+        createdAt: z.date(),
+      }),
+    )
     .optional(),
 });
 
@@ -32,21 +41,48 @@ export const TeacherReportListResponseSchema = z.object({
   }),
 });
 
-export const TeacherReportDetailResponseSchema = TeacherReportItemSchema.extend({
-  classInfo: z.any(),
-  analysis: z.any().optional(),
+export const TeacherReportDetailResponseSchema = TeacherReportItemSchema;
+export const TeacherReportResponseDto = TeacherReportItemSchema;
+
+// 교사 리포트 생성/업데이트 DTO
+export const CreateTeacherReportDto = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  classInfo: z.record(z.any()).optional(),
+  students: z.record(z.any()).optional(),
+  analysisData: z.record(z.any()).optional(),
+  metadata: z.record(z.any()).optional(),
 });
 
-export const TeacherReportStatsSchema = z.object({
-  totalReports: z.number(),
-  completedReports: z.number(),
-  completionRate: z.number(),
-  recentReports: z.number(),
-  byType: z.record(z.string(), z.number()),
-  byStatus: z.record(z.string(), z.number()),
+export const UpdateTeacherReportDto = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().optional(),
+  classInfo: z.record(z.any()).optional(),
+  students: z.record(z.any()).optional(),
+  analysisData: z.record(z.any()).optional(),
+  metadata: z.record(z.any()).optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+});
+
+export const TeacherReportListQueryDto = z.object({
+  page: z.number().min(1).default(1),
+  limit: z.number().min(1).max(100).default(20),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  search: z.string().optional(),
+});
+
+// 리포트 분석 생성 DTO
+export const CreateReportAnalysisDto = z.object({
+  reportId: z.string(),
+  analysisType: z.enum(['PERFORMANCE', 'BEHAVIOR', 'ATTENDANCE', 'ENGAGEMENT']),
+  analysisData: z.record(z.any()),
 });
 
 export type TeacherReportItem = z.infer<typeof TeacherReportItemSchema>;
 export type TeacherReportListResponse = z.infer<typeof TeacherReportListResponseSchema>;
 export type TeacherReportDetailResponse = z.infer<typeof TeacherReportDetailResponseSchema>;
-export type TeacherReportStats = z.infer<typeof TeacherReportStatsSchema>;
+export type TeacherReportResponseDtoType = z.infer<typeof TeacherReportResponseDto>;
+export type CreateTeacherReportDtoType = z.infer<typeof CreateTeacherReportDto>;
+export type UpdateTeacherReportDtoType = z.infer<typeof UpdateTeacherReportDto>;
+export type TeacherReportListQueryDtoType = z.infer<typeof TeacherReportListQueryDto>;
+export type CreateReportAnalysisDtoType = z.infer<typeof CreateReportAnalysisDto>;
