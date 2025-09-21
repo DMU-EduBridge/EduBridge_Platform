@@ -35,8 +35,24 @@ export const useAuth = () => {
   const logoutMutation = useMutation({
     mutationFn: authService.logout,
     onSuccess: () => {
+      // 클라이언트사이드 정리
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth-token');
+        localStorage.removeItem('user-profile');
+        localStorage.removeItem('user-preferences');
+        sessionStorage.clear();
+      }
+      // 모든 쿼리 캐시 정리
+      queryClient.clear();
+    },
+    onError: (error) => {
+      console.error('Logout mutation error:', error);
+      // 오류가 발생해도 클라이언트 정리와 캐시 정리는 수행
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('user-profile');
+        localStorage.removeItem('user-preferences');
+        sessionStorage.clear();
       }
       queryClient.clear();
     },

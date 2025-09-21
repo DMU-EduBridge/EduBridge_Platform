@@ -30,21 +30,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      // 모든 NextAuth 쿠키를 명시적으로 삭제
-      document.cookie = 'next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'next-auth.callback-url=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'next-auth.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    if (window.confirm('정말 로그아웃하시겠습니까?')) {
+      try {
+        // authService.logout() 호출
+        const { authService } = await import('@/services/auth');
+        await authService.logout();
 
-      // NextAuth signOut 실행
-      await signOut({
-        callbackUrl: '/login',
-        redirect: true,
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-      // 오류가 발생해도 로그인 페이지로 이동
-      window.location.href = '/login';
+        // NextAuth signOut으로 리다이렉트
+        await signOut({
+          callbackUrl: '/login',
+          redirect: true,
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+        // 오류가 발생해도 로그인 페이지로 이동
+        window.location.href = '/login';
+      }
     }
   };
 
