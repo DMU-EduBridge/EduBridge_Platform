@@ -1,85 +1,114 @@
 import { prisma } from '@/lib/core/prisma';
-import type { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
+import { CreateUserDtoType, UpdateUserDtoType, UserListQueryDtoType } from '../dto/user';
 
 export class UserRepository {
-  async findMany(where: Prisma.UserWhereInput, page: number, limit: number) {
-    const [items, total] = await Promise.all([
+  async findById(id: string): Promise<User | null> {
+    return prisma.user.findUnique({
+      where: { id },
+      include: {
+        preferences: true,
+      },
+    });
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return prisma.user.findUnique({
+      where: { email },
+      include: {
+        preferences: true,
+      },
+    });
+  }
+
+  async findMany(query: UserListQueryDtoType): Promise<{ users: User[]; total: number }> {
+    const { page, limit, role, status, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null, // 소프트 삭제되지 않은 사용자만
+    };
+
+    if (role) where.role = role;
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { school: { contains: search } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: { preferences: true },
+        include: {
+          preferences: true,
+        },
       }),
       prisma.user.count({ where }),
     ]);
-    return { items, total };
+
+    return { users, total };
   }
 
-  async findById(id: string) {
-    return prisma.user.findUnique({
-      where: { id },
-      include: { preferences: true },
+  async create(data: CreateUserDtoType): Promise<User> {
+    return prisma.user.create({
+      data: {
+        ...data,
+        status: 'ACTIVE',
+      },
+      include: {
+        preferences: true,
+      },
     });
   }
 
-  async findByEmail(email: string) {
-    return prisma.user.findUnique({
-      where: { email },
-      include: { preferences: true },
-    });
-  }
-
-  async findByRole(role: string, page: number, limit: number) {
-    const [items, total] = await Promise.all([
-      prisma.user.findMany({
-        where: { role },
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: { preferences: true },
-      }),
-      prisma.user.count({ where: { role } }),
-    ]);
-    return { items, total };
-  }
-
-  async create(data: Prisma.UserCreateInput) {
-    return prisma.user.create({ data, include: { preferences: true } });
-  }
-
-  async update(id: string, data: Prisma.UserUpdateInput) {
+  async update(id: string, data: UpdateUserDtoType): Promise<User> {
     return prisma.user.update({
       where: { id },
       data,
-      include: { preferences: true },
+      include: {
+        preferences: true,
+      },
     });
   }
 
-  async updateRole(id: string, role: string) {
+  async softDelete(id: string): Promise<User> {
     return prisma.user.update({
       where: { id },
-      data: { role },
-      include: { preferences: true },
+      data: {
+        deletedAt: new Date(),
+        status: 'DELETED',
+      },
+      include: {
+        preferences: true,
+      },
     });
   }
 
-  async delete(id: string) {
-    return prisma.user.delete({ where: { id } });
-  }
-
-  async getStats() {
-    const [totalUsers, byRole, byStatus, activeUsers] = await Promise.all([
-      prisma.user.count(),
+  async getStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    byRole: Record<string, number>;
+    byStatus: Record<string, number>;
+  }> {
+    const [totalUsers, activeUsers, byRole, byStatus] = await Promise.all([
+      prisma.user.count({ where: { deletedAt: null } }),
+      prisma.user.count({ where: { status: 'ACTIVE', deletedAt: null } }),
       prisma.user.groupBy({
         by: ['role'],
         _count: { role: true },
+        where: { deletedAt: null },
       }),
       prisma.user.groupBy({
         by: ['status'],
         _count: { status: true },
+        where: { deletedAt: null },
       }),
-      prisma.user.count({ where: { status: 'ACTIVE' } }),
     ]);
 
     return {
@@ -102,35 +131,26 @@ export class UserRepository {
     };
   }
 
-  async getTeachers() {
+  async findByRole(role: 'STUDENT' | 'TEACHER' | 'ADMIN'): Promise<User[]> {
     return prisma.user.findMany({
-      where: { role: 'TEACHER' },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        subject: true,
-        school: true,
-        status: true,
-        createdAt: true,
+      where: {
+        role,
+        deletedAt: null,
       },
       orderBy: { createdAt: 'desc' },
+      include: {
+        preferences: true,
+      },
     });
   }
 
-  async getAdmins() {
-    return prisma.user.findMany({
-      where: { role: 'ADMIN' },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        status: true,
-        createdAt: true,
+  async updateRole(id: string, role: 'STUDENT' | 'TEACHER' | 'ADMIN'): Promise<User> {
+    return prisma.user.update({
+      where: { id },
+      data: { role },
+      include: {
+        preferences: true,
       },
-      orderBy: { createdAt: 'desc' },
     });
   }
 }
-
-export const userRepository = new UserRepository();

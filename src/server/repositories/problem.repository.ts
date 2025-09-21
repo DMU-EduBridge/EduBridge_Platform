@@ -1,68 +1,162 @@
 import { prisma } from '@/lib/core/prisma';
-import { parseJsonArray } from '@/lib/utils/json';
-import type { Prisma } from '@prisma/client';
+import { Prisma, Problem } from '@prisma/client';
+import {
+  CreateProblemDtoType,
+  ProblemListQueryDtoType,
+  UpdateProblemDtoType,
+} from '../dto/problem';
 
 export class ProblemRepository {
-  async findMany(where: Prisma.ProblemWhereInput, page: number, limit: number) {
-    const [items, total] = await Promise.all([
+  async findById(id: string): Promise<Problem | null> {
+    return prisma.problem.findUnique({
+      where: { id, deletedAt: null },
+      include: {
+        creator: true,
+        reviewer: true,
+        textbook: true,
+        questionOptions: true,
+        questionTags: true,
+        attempts: {
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+          include: { user: true },
+        },
+      },
+    });
+  }
+
+  async findMany(query: ProblemListQueryDtoType): Promise<{ problems: Problem[]; total: number }> {
+    const {
+      page,
+      limit,
+      subject,
+      gradeLevel,
+      difficulty,
+      type,
+      textbookId,
+      isAIGenerated,
+      reviewStatus,
+      search,
+    } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProblemWhereInput = {
+      deletedAt: null,
+      isActive: true,
+    };
+
+    if (subject) where.subject = subject;
+    if (gradeLevel) where.gradeLevel = gradeLevel;
+    if (difficulty) where.difficulty = difficulty;
+    if (type) where.type = type;
+    if (textbookId) where.textbookId = textbookId;
+    if (isAIGenerated !== undefined) where.isAIGenerated = isAIGenerated;
+    if (reviewStatus) where.reviewStatus = reviewStatus;
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { content: { contains: search } },
+        { description: { contains: search } },
+      ];
+    }
+
+    const [problems, total] = await Promise.all([
       prisma.problem.findMany({
         where,
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        include: {
+          creator: true,
+          reviewer: true,
+          textbook: true,
+          questionOptions: true,
+          questionTags: true,
+          _count: {
+            select: {
+              attempts: true,
+            },
+          },
+        },
       }),
       prisma.problem.count({ where }),
     ]);
 
-    // JSON 문자열을 배열로 변환
-    const transformedItems = items.map((item) => ({
-      ...item,
-      options: parseJsonArray(item.options),
-      hints: parseJsonArray(item.hints),
-      tags: parseJsonArray(item.tags),
-    }));
-
-    return { items: transformedItems, total };
+    return { problems, total };
   }
 
-  async findById(id: string) {
-    const item = await prisma.problem.findUnique({ where: { id } });
-    if (!item) return null;
-
-    // JSON 문자열을 배열로 변환
-    return {
-      ...item,
-      options: parseJsonArray(item.options),
-      hints: parseJsonArray(item.hints),
-      tags: parseJsonArray(item.tags),
-    };
+  async create(data: CreateProblemDtoType, createdBy: string): Promise<Problem> {
+    return prisma.problem.create({
+      data: {
+        ...data,
+        createdBy,
+        isAIGenerated: false,
+        reviewStatus: 'PENDING',
+      },
+      include: {
+        creator: true,
+        textbook: true,
+        questionOptions: true,
+        questionTags: true,
+      },
+    });
   }
 
-  async create(data: Prisma.ProblemCreateInput) {
-    return prisma.problem.create({ data });
+  async update(id: string, data: UpdateProblemDtoType): Promise<Problem> {
+    return prisma.problem.update({
+      where: { id },
+      data,
+      include: {
+        creator: true,
+        reviewer: true,
+        textbook: true,
+        questionOptions: true,
+        questionTags: true,
+      },
+    });
   }
 
-  async update(id: string, data: Prisma.ProblemUpdateInput) {
-    return prisma.problem.update({ where: { id }, data });
+  async softDelete(id: string): Promise<Problem> {
+    return prisma.problem.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 
-  async delete(id: string) {
-    return prisma.problem.delete({ where: { id } });
-  }
-
-  async getStats() {
-    const [totalProblems, activeProblems, bySubject, byDifficulty] = await Promise.all([
-      prisma.problem.count(),
-      prisma.problem.count({ where: { isActive: true } }),
-      prisma.problem.groupBy({
-        by: ['subject'],
-        _count: { subject: true },
-      }),
-      prisma.problem.groupBy({
-        by: ['difficulty'],
-        _count: { difficulty: true },
-      }),
-    ]);
+  async getStats(): Promise<{
+    totalProblems: number;
+    activeProblems: number;
+    bySubject: Record<string, number>;
+    byDifficulty: Record<string, number>;
+    byType: Record<string, number>;
+    aiGeneratedCount: number;
+  }> {
+    const [totalProblems, activeProblems, bySubject, byDifficulty, byType, aiGeneratedCount] =
+      await Promise.all([
+        prisma.problem.count({ where: { deletedAt: null } }),
+        prisma.problem.count({ where: { isActive: true, deletedAt: null } }),
+        prisma.problem.groupBy({
+          by: ['subject'],
+          _count: { subject: true },
+          where: { deletedAt: null },
+        }),
+        prisma.problem.groupBy({
+          by: ['difficulty'],
+          _count: { difficulty: true },
+          where: { deletedAt: null },
+        }),
+        prisma.problem.groupBy({
+          by: ['type'],
+          _count: { type: true },
+          where: { deletedAt: null },
+        }),
+        prisma.problem.count({
+          where: {
+            isAIGenerated: true,
+            deletedAt: null,
+          },
+        }),
+      ]);
 
     return {
       totalProblems,
@@ -81,8 +175,71 @@ export class ProblemRepository {
         },
         {} as Record<string, number>,
       ),
+      byType: byType.reduce(
+        (acc, item) => {
+          acc[item.type] = item._count.type;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      aiGeneratedCount,
     };
   }
-}
 
-export const problemRepository = new ProblemRepository();
+  async findByCreator(
+    createdBy: string,
+    query: Omit<ProblemListQueryDtoType, 'page' | 'limit'>,
+  ): Promise<Problem[]> {
+    const where: Prisma.ProblemWhereInput = {
+      createdBy,
+      deletedAt: null,
+    };
+
+    if (query.subject) where.subject = query.subject;
+    if (query.difficulty) where.difficulty = query.difficulty;
+    if (query.type) where.type = query.type;
+    if (query.reviewStatus) where.reviewStatus = query.reviewStatus;
+
+    return prisma.problem.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        textbook: true,
+        questionOptions: true,
+        questionTags: true,
+      },
+    });
+  }
+
+  async updateReviewStatus(
+    id: string,
+    reviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION',
+    reviewedBy: string,
+  ): Promise<Problem> {
+    return prisma.problem.update({
+      where: { id },
+      data: {
+        reviewStatus,
+        reviewedBy,
+        reviewedAt: new Date(),
+      },
+      include: {
+        reviewer: true,
+      },
+    });
+  }
+
+  async findPendingReview(): Promise<Problem[]> {
+    return prisma.problem.findMany({
+      where: {
+        reviewStatus: 'PENDING',
+        deletedAt: null,
+      },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        creator: true,
+        textbook: true,
+      },
+    });
+  }
+}
