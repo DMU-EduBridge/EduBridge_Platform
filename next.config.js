@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Docker를 위한 standalone 출력
+  output: 'standalone',
+
   // 이미지 최적화 설정
   images: {
     domains: ['example.com'], // 외부 이미지 도메인 추가 시 사용
