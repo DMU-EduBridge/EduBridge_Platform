@@ -64,7 +64,7 @@ export class VectorEmbeddingService {
     createdAt: Date;
   }): Promise<void> {
     try {
-      const collection = chromaClient.getProblemsCollection();
+      const collection = await chromaClient.getProblemsCollection();
       if (!collection) {
         throw new Error('문제 컬렉션을 찾을 수 없습니다.');
       }
@@ -116,7 +116,7 @@ export class VectorEmbeddingService {
     createdAt: Date;
   }): Promise<void> {
     try {
-      const collection = chromaClient.getLearningMaterialsCollection();
+      const collection = await chromaClient.getLearningMaterialsCollection();
       if (!collection) {
         throw new Error('학습자료 컬렉션을 찾을 수 없습니다.');
       }
@@ -176,7 +176,7 @@ export class VectorEmbeddingService {
 
       // 문제 검색
       if (type === 'problem' || type === 'all') {
-        const problemCollection = chromaClient.getProblemsCollection();
+        const problemCollection = await chromaClient.getProblemsCollection();
         if (problemCollection) {
           const problemResults = await problemCollection.query({
             queryEmbeddings: [queryEmbedding],
@@ -185,7 +185,7 @@ export class VectorEmbeddingService {
           });
 
           results.push(
-            ...problemResults.documents![0].map((doc, index) => ({
+            ...problemResults.documents![0].map((doc: string | null, index: number) => ({
               id: problemResults.ids![0][index],
               content: doc || '',
               metadata: problemResults.metadatas![0][index] || {},
@@ -198,7 +198,7 @@ export class VectorEmbeddingService {
 
       // 학습자료 검색
       if (type === 'learning_material' || type === 'all') {
-        const materialCollection = chromaClient.getLearningMaterialsCollection();
+        const materialCollection = await chromaClient.getLearningMaterialsCollection();
         if (materialCollection) {
           const materialResults = await materialCollection.query({
             queryEmbeddings: [queryEmbedding],
@@ -207,7 +207,7 @@ export class VectorEmbeddingService {
           });
 
           results.push(
-            ...materialResults.documents![0].map((doc, index) => ({
+            ...materialResults.documents![0].map((doc: string | null, index: number) => ({
               id: materialResults.ids![0][index],
               content: doc || '',
               metadata: materialResults.metadatas![0][index] || {},
@@ -244,8 +244,8 @@ export class VectorEmbeddingService {
     try {
       const collection =
         type === 'problem'
-          ? chromaClient.getProblemsCollection()
-          : chromaClient.getLearningMaterialsCollection();
+          ? await chromaClient.getProblemsCollection()
+          : await chromaClient.getLearningMaterialsCollection();
 
       if (!collection) {
         throw new Error(`${type} 컬렉션을 찾을 수 없습니다.`);
@@ -281,8 +281,8 @@ export class VectorEmbeddingService {
     try {
       const collection =
         type === 'problem'
-          ? chromaClient.getProblemsCollection()
-          : chromaClient.getLearningMaterialsCollection();
+          ? await chromaClient.getProblemsCollection()
+          : await chromaClient.getLearningMaterialsCollection();
 
       if (!collection) {
         throw new Error(`${type} 컬렉션을 찾을 수 없습니다.`);
@@ -309,8 +309,8 @@ export class VectorEmbeddingService {
     total: number;
   }> {
     try {
-      const problemsCollection = chromaClient.getProblemsCollection();
-      const materialsCollection = chromaClient.getLearningMaterialsCollection();
+      const problemsCollection = await chromaClient.getProblemsCollection();
+      const materialsCollection = await chromaClient.getLearningMaterialsCollection();
 
       const problemsCount = problemsCollection ? await problemsCollection.count() : 0;
       const materialsCount = materialsCollection ? await materialsCollection.count() : 0;

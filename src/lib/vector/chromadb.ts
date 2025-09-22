@@ -1,5 +1,41 @@
 import { logger } from '@/lib/monitoring';
-import { ChromaClient, Collection } from 'chromadb';
+import { ChromaClient } from 'chromadb';
+
+// ChromaDB 3.x 타입 정의 - 실제 사용하는 매개변수만 포함
+interface ChromaCollection {
+  name: string;
+  metadata?: Record<string, any>;
+  count(): Promise<number>;
+  add(args: {
+    ids: string[];
+    embeddings?: number[][];
+    metadatas?: Record<string, any>[];
+    documents?: string[];
+    uris?: string[];
+  }): Promise<void>;
+  query(args: {
+    queryEmbeddings?: number[][];
+    queryTexts?: string[];
+    queryURIs?: string[];
+    ids?: string[];
+    nResults?: number;
+    where?: Record<string, any>;
+    whereDocument?: Record<string, any>;
+    include?: string[];
+  }): Promise<{
+    ids: string[][];
+    documents: (string | null)[][];
+    metadatas: (Record<string, any> | null)[][];
+    distances: (number | null)[][];
+  }>;
+  delete(args: {
+    ids?: string[];
+    where?: Record<string, any>;
+    whereDocument?: Record<string, any>;
+  }): Promise<void>;
+}
+
+type Collection = ChromaCollection;
 
 /**
  * ChromaDB 클라이언트 설정
@@ -7,36 +43,59 @@ import { ChromaClient, Collection } from 'chromadb';
 class ChromaDBClient {
   private client: ChromaClient | null = null;
   private collections: Map<string, Collection> = new Map();
+  private initializationPromise: Promise<void> | null = null;
 
   constructor() {
-    this.initializeClient();
+    // 지연 초기화 - 실제 사용할 때만 초기화
   }
 
   /**
-   * ChromaDB 클라이언트 초기화
+   * ChromaDB 클라이언트 초기화 (지연 초기화)
    */
-  private async initializeClient() {
+  private async initializeClient(): Promise<void> {
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this._doInitialize();
+    return this.initializationPromise;
+  }
+
+  private async _doInitialize(): Promise<void> {
     try {
-      // 개발 환경에서는 로컬 ChromaDB 사용
-      // 프로덕션에서는 외부 ChromaDB 서버 사용
-      const chromaUrl = process.env.CHROMA_URL || 'http://localhost:8000';
+      // 환경별 ChromaDB URL 설정
+      const chromaUrl = this.getChromaUrl();
 
       this.client = new ChromaClient({
         path: chromaUrl,
       });
 
-      // 연결 테스트
-      await this.client.heartbeat();
+      // 연결 테스트 (타임아웃 설정)
+      await Promise.race([
+        this.client.heartbeat(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 5000)),
+      ]);
+
       logger.info('ChromaDB 클라이언트 초기화 완료', { url: chromaUrl });
 
       // 컬렉션 초기화
       await this.initializeCollections();
     } catch (error) {
-      logger.error('ChromaDB 클라이언트 초기화 실패', undefined, {
+      logger.error('ChromaDB 클라이언트 초기화 실패', error instanceof Error ? error : undefined, {
         error: error instanceof Error ? error.message : String(error),
       });
+      // 초기화 실패 시 재시도 가능하도록 promise 초기화
+      this.initializationPromise = null;
       throw new Error('ChromaDB 연결에 실패했습니다.');
     }
+  }
+
+  private getChromaUrl(): string {
+    // 환경별 URL 설정
+    if (process.env.NODE_ENV === 'production') {
+      return process.env.CHROMA_URL || process.env.CHROMA_PRODUCTION_URL || 'http://chromadb:8000';
+    }
+    return process.env.CHROMA_URL || 'http://localhost:8000';
   }
 
   /**
@@ -91,46 +150,57 @@ class ChromaDBClient {
   }
 
   /**
-   * 컬렉션 가져오기
+   * 컬렉션 가져오기 (지연 초기화)
    */
-  getCollection(name: string): Collection | null {
+  async getCollection(name: string): Promise<Collection | null> {
+    await this.initializeClient();
     return this.collections.get(name) || null;
   }
 
   /**
-   * 문제 컬렉션 가져오기
+   * 문제 컬렉션 가져오기 (지연 초기화)
    */
-  getProblemsCollection(): Collection | null {
+  async getProblemsCollection(): Promise<Collection | null> {
     return this.getCollection('problems');
   }
 
   /**
-   * 학습자료 컬렉션 가져오기
+   * 학습자료 컬렉션 가져오기 (지연 초기화)
    */
-  getLearningMaterialsCollection(): Collection | null {
+  async getLearningMaterialsCollection(): Promise<Collection | null> {
     return this.getCollection('learning_materials');
   }
 
   /**
-   * 클라이언트 상태 확인
+   * 클라이언트 상태 확인 (지연 초기화)
    */
   async isHealthy(): Promise<boolean> {
     try {
+      await this.initializeClient();
       if (!this.client) return false;
-      await this.client.heartbeat();
+
+      // 타임아웃과 함께 heartbeat 확인
+      await Promise.race([
+        this.client.heartbeat(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Health check timeout')), 3000),
+        ),
+      ]);
       return true;
-    } catch {
+    } catch (error) {
+      logger.warn('ChromaDB health check failed', error instanceof Error ? error : undefined);
       return false;
     }
   }
 
   /**
-   * 모든 컬렉션 정보 가져오기
+   * 모든 컬렉션 정보 가져오기 (지연 초기화)
    */
   async getCollectionsInfo() {
-    if (!this.client) return [];
-
     try {
+      await this.initializeClient();
+      if (!this.client) return [];
+
       const collections = await this.client.listCollections();
       return collections.map((collection) => ({
         name: collection.name,
@@ -138,7 +208,7 @@ class ChromaDBClient {
         count: collection.count(),
       }));
     } catch (error) {
-      logger.error('컬렉션 정보 조회 실패', undefined, {
+      logger.error('컬렉션 정보 조회 실패', error instanceof Error ? error : undefined, {
         error: error instanceof Error ? error.message : String(error),
       });
       return [];
