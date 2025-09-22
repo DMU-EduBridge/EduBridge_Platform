@@ -23,7 +23,12 @@
     "test:watch": "echo \"No tests specified\" && exit 0",
     "clean": "rm -rf .next node_modules/.cache",
     "precommit": "npm run lint:fix && npm run format && npm run type-check",
-    "db:cleanup-orphans": "tsx scripts/cleanup-orphan-attempts.ts"
+    "db:cleanup-orphans": "tsx scripts/cleanup-orphan-attempts.ts",
+    "test-data": "tsx scripts/generate-test-data.ts",
+    "test-data:performance": "tsx scripts/generate-test-data.ts performance",
+    "test-data:vector": "tsx scripts/generate-test-data.ts vector",
+    "test-data:stress": "tsx scripts/generate-test-data.ts stress",
+    "dummy-data": "tsx scripts/dummy-data-generator.ts"
   },
   "dependencies": {
     "@chroma-core/default-embed": "^0.1.8",
