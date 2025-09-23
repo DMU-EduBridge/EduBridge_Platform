@@ -112,7 +112,7 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **Type Checking**: TypeScript strict mode
 - **Package Manager**: npm
 
-### AI & Analytics
+### Analytics
 
 - **AI Integration**: OpenAI, Anthropic, Google AI (확장 가능)
 - **Vector Embeddings**: OpenAI text-embedding-ada-002
@@ -761,8 +761,6 @@ npm run analyze          # 번들 분석 (webpack-bundle-analyzer)
 
 ### 환경변수 보안
 
-- **`.env.local` 파일**: 실제 환경변수 값 저장 (Git에 커밋 금지)
-- **`.env.example` 파일**: 환경변수 템플릿 제공 (Git에 커밋)
 - **Zod 검증**: 런타임 환경변수 유효성 검사
 - **민감한 정보**: API 키, 비밀키는 예시 값만 README에 포함
 
@@ -874,17 +872,7 @@ npm start
 - 의미있는 커밋 메시지 작성
 - 테스트 코드 작성 권장
 
-## 📄 라이선스
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
-
-## 📞 문의 및 지원
-
-- **이슈 리포트**: [GitHub Issues](https://github.com/your-repo/issues)
-- **기능 요청**: [GitHub Discussions](https://github.com/your-repo/discussions)
-- **이메일**: support@edubridge.com
-
----
 
 <div align="center">
 
