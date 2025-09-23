@@ -19,33 +19,41 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 
 ### 🎯 핵심 가치
 
-- **개인화된 학습**: AI 기반 맞춤형 문제 추천 및 학습 경로 제공
-- **데이터 기반 인사이트**: 학습 패턴 분석을 통한 효과적인 교육 전략 수립
-- **통합 관리**: 문제, 학습자료, 학생 관리, 리포트 생성의 원스톱 솔루션
-- **확장 가능한 아키텍처**: 모듈화된 구조로 기능 확장 용이
+- **Educational AI System**: 교과서 기반 AI 문제 생성 및 RAG 검색
+- **Teacher Report System**: 학생 데이터 분석 및 리포트 생성
+- **통합 대시보드**: AI 서버 모니터링 및 사용 통계
+- **확장 가능한 아키텍처**: Next.js + Prisma + ChromaDB 구조
 
 ## ✨ 주요 기능
 
-### 🤖 AI 튜터 시스템
+### 🤖 Educational AI System
 
-- **개인화 문제 추천**: 학생의 학습 수준과 관심사 기반 맞춤형 문제 제공
-- **학습 경로 가이드**: AI가 분석한 최적 학습 순서 제안
-- **실시간 피드백**: 문제 풀이 과정에서 즉시 피드백 및 힌트 제공
-- **약점 분석**: 학습 패턴 분석을 통한 개선점 도출
+- **교과서 업로드**: PDF 교과서 업로드 및 자동 청크 분할
+- **AI 문제 생성**: 교과서 내용 기반 맞춤형 문제 자동 생성
+- **RAG 검색**: 벡터 임베딩을 활용한 의미 기반 검색
+- **컨텍스트 기반 학습**: 관련 내용을 찾아 학습 효과 향상
 
-### 📊 대시보드 & 분석
+### 📊 Teacher Report System
 
-- **실시간 학습 현황**: 학생별 진행률, 완료율, 평균 점수 시각화
-- **통계 카드**: 전체 문제 수, 활성 학생 수, 완료된 리포트 수 등 핵심 지표
-- **최근 활동**: 최신 학습 활동 및 성과 추적
-- **빠른 액션**: 자주 사용하는 기능에 대한 원클릭 접근
+- **학생 데이터 분석**: 성적, 출석률, 과제 제출률 종합 분석
+- **AI 리포트 생성**: 학생별 학습 패턴 및 개선점 자동 생성
+- **학급 현황 파악**: 전체 학급의 학습 수준 및 분포 분석
+- **맞춤형 권장사항**: 개별 학생을 위한 학습 전략 제안
 
-### 📝 문제 & 학습자료 관리
+### 🖥️ 통합 대시보드
 
-- **문제 생성/수정**: 다양한 유형의 문제 생성 (객관식, 주관식, 서술형, 코딩, 수학)
-- **학습자료 관리**: PDF, 이미지, 동영상 등 다양한 형태의 학습자료 업로드
-- **검색 & 필터링**: 과목, 난이도, 유형별 문제 검색
-- **품질 관리**: AI 생성 문제의 품질 점수 및 검토 시스템
+- **AI 서버 모니터링**: Educational AI, Teacher Report 서버 상태 실시간 확인
+- **사용 통계**: API 사용량, 비용, 성능 지표 종합 관리
+- **동기화 관리**: AI 서버와의 데이터 동기화 상태 및 기록
+- **시스템 현황**: 전체 플랫폼의 건강 상태 및 성능 모니터링
+
+### ⚡ 성능 최적화 (NEW!)
+
+- **이미지 최적화**: Next.js Image 컴포넌트, WebP/AVIF 지원, 지연 로딩
+- **코드 분할**: 동적 임포트를 통한 페이지별 코드 분할
+- **캐싱 전략**: React Query 기반 API 응답 캐싱, Redis 지원
+- **데이터베이스 최적화**: 연결 풀링, 쿼리 최적화, 인덱싱, 배치 작업
+- **성능 모니터링**: Web Vitals 추적, 실시간 성능 대시보드
 
 ### 👥 학생 관리
 
@@ -91,6 +99,7 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **Runtime**: Node.js
 - **Framework**: Next.js API Routes
 - **Database**: SQLite (개발) / PostgreSQL (프로덕션)
+- **Vector Database**: ChromaDB (벡터 임베딩 저장 및 검색)
 - **ORM**: Prisma 5.7
 - **Authentication**: NextAuth.js
 - **File Upload**: Next.js built-in API
@@ -105,8 +114,19 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 
 ### Analytics
 
+- **AI Integration**: OpenAI, Anthropic, Google AI (확장 가능)
+- **Vector Embeddings**: OpenAI text-embedding-ada-002
+- **Semantic Search**: ChromaDB + 벡터 임베딩
 - **Data Analysis**: Prisma + Custom analytics
 - **Logging**: Custom logger with structured logging
+
+### Performance & Monitoring
+
+- **Web Vitals**: LCP, FID, CLS, FCP, TTFB 실시간 추적
+- **Resource Monitoring**: 메모리 사용량, 리소스 로딩 시간
+- **Performance Alerts**: 성능 임계값 초과 시 알림
+- **Caching**: React Query + Redis 다층 캐싱
+- **Image Optimization**: Next.js Image + WebP/AVIF 자동 변환
 
 ## 🚀 빠른 시작
 
@@ -127,7 +147,7 @@ npm install
 
 ```bash
 # 환경변수 파일 생성
-cp .env.example .env.local
+cp env.local.example .env.local
 ```
 
 `.env.local` 파일에서 다음 값들을 설정하세요:
@@ -135,23 +155,28 @@ cp .env.example .env.local
 ```env
 # NextAuth 설정 (필수)
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-super-secret-key-minimum-32-characters
+NEXTAUTH_SECRET=your-super-secret-key-minimum-32-characters-for-development
 
-# 데이터베이스 (필수)
-DATABASE_URL="file:./dev.db"
+# 데이터베이스 (SQLite - 로컬 파일)
+DATABASE_URL="file:./prisma/dev.db"
 
-# API 설정 (선택사항)
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+# ChromaDB 설정 (선택사항 - 벡터 검색 기능용)
+CHROMA_URL=http://localhost:8000
 
-# 파일 업로드 설정 (선택사항)
-MAX_FILE_SIZE=10485760
-ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,application/pdf
+# Redis 설정 (선택사항 - 캐싱용)
+REDIS_URL=redis://localhost:6379
 
-# AI 서비스 (향후 확장용 - 선택사항)
+# Google OAuth (선택사항)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# OpenAI API (선택사항 - AI 기능용)
 OPENAI_API_KEY=your-openai-api-key
-ANTHROPIC_API_KEY=your-anthropic-api-key
 
-# 로깅 레벨 (선택사항)
+# 개발용 비밀번호
+DEV_TEST_PASSWORD=student123
+
+# 로깅 레벨
 LOG_LEVEL=info
 ```
 
@@ -174,15 +199,54 @@ npm run db:migrate
 npm run db:seed
 ```
 
-### 5. 개발 서버 실행
+### 5. 외부 서비스 실행 (선택사항)
+
+#### ChromaDB (벡터 검색 기능용)
+
+```bash
+docker run -d --name chromadb -p 8000:8000 chromadb/chroma:latest
+```
+
+#### Redis (캐싱 기능용)
+
+```bash
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+```
+
+### 6. 개발 서버 실행
 
 ```bash
 npm run dev
 ```
 
-브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인하세요.
+브라우저에서 [http://localhost:3000](http://localhost:3000) (또는 3001)을 열어 확인하세요.
 
-### 6. 프로덕션 빌드
+### 7. 로그인 테스트
+
+다음 계정들로 로그인하여 기능을 테스트할 수 있습니다:
+
+#### 관리자 계정
+
+- **이메일**: `admin@example.com`
+- **비밀번호**: `student123`
+
+#### 교사 계정들
+
+- **수학 교사**: `math_teacher1@example.com` / `student123`
+- **과학 교사**: `science_teacher@example.com` / `student123`
+- **영어 교사**: `english_teacher@example.com` / `student123`
+
+#### 학생 계정들
+
+- **학생 1**: `student1@example.com` / `student123`
+- **학생 2**: `student2@example.com` / `student123`
+
+#### 데모 계정
+
+- **이메일**: `demo@example.com`
+- **비밀번호**: `demo123`
+
+### 8. 프로덕션 빌드
 
 ```bash
 # 타입 체크
@@ -198,10 +262,90 @@ npm run build
 npm start
 ```
 
+## 📚 문서
+
+- [프로젝트 구조 문서](./docs/PROJECT_STRUCTURE.md) - 전체 프로젝트 구조 및 아키텍처
+- [API 문서](./docs/API_DOCUMENTATION.md) - 모든 API 엔드포인트 상세 설명
+- [개발 가이드](./docs/DEVELOPMENT_GUIDE.md) - 개발 환경 설정 및 개발 가이드
+- [ERD 다이어그램](./docs/erd.svg) - 데이터베이스 관계도
+
+## 🛠️ 개발 도구 및 스크립트
+
+### 테스트 데이터 생성
+
+```bash
+# 성능 테스트 데이터 생성
+npm run test-data:performance
+
+# 벡터 검색 테스트 데이터 생성
+npm run test-data:vector
+
+# 스트레스 테스트 데이터 생성
+npm run test-data:stress
+
+# 더미 데이터 생성 (사용자, 문제, 교과서 등)
+npm run dummy-data
+
+# 모든 더미 데이터 정리
+npm run dummy-data:clean
+```
+
+### 데이터베이스 관리
+
+```bash
+# Prisma 클라이언트 생성
+npm run db:generate
+
+# 데이터베이스 마이그레이션
+npm run db:migrate
+
+# 데이터베이스 리셋 (개발 환경)
+npm run db:reset
+
+# 시드 데이터 삽입
+npm run db:seed
+```
+
+### 서비스 관리
+
+```bash
+# 모든 서비스 상태 확인
+docker ps
+
+# ChromaDB 실행
+docker run -d --name chromadb -p 8000:8000 chromadb/chroma:latest
+
+# Redis 실행
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+
+# 서비스 중지
+docker stop chromadb redis
+
+# 서비스 제거
+docker rm chromadb redis
+```
+
 ## 📁 프로젝트 구조
 
 ```
 EduBridge/
+├── 📁 docs/                          # 문서
+│   ├── erd.svg                       # 데이터베이스 ERD
+│   ├── README.md                     # 프로젝트 설명
+│   └── PROJECT_STRUCTURE.md          # 프로젝트 구조 문서
+├── 📁 prisma/                        # 데이터베이스
+│   ├── schema.prisma                 # Prisma 스키마
+│   ├── seed.ts                       # 시드 데이터
+│   ├── dev.db                        # SQLite 데이터베이스
+│   └── migrations/                   # 마이그레이션 파일
+├── 📁 scripts/                       # 유틸리티 스크립트
+│   ├── generate-test-data.ts         # 테스트 데이터 생성
+│   ├── dummy-data-generator.ts       # 더미 데이터 생성
+│   └── cleanup-orphan-attempts.ts   # 고아 데이터 정리
+├── 📁 deployment/                    # 배포 관련 파일
+│   └── nginx.conf                    # Nginx 설정
+├── 📁 public/                        # 정적 파일
+│   └── uploads/                      # 업로드된 파일
 ├── 📁 src/
 │   ├── 📁 app/                          # Next.js App Router
 │   │   ├── 📁 (afterLogin)/             # 로그인 후 페이지 그룹
@@ -314,6 +458,22 @@ EduBridge/
 - `src/lib/utils/error-handler.ts`: `withErrorHandler`, 표준 에러 응답(요청 실패 시 `X-Request-Id` 포함), Prisma 에러 매핑(P2002/2003/2025 등)
 - `src/lib/utils/request-context.ts`: `getRequestId`(성공/에러 응답 헤더 부착에 사용)
 - `src/lib/utils/service-metrics.ts`: 서비스 경계 성능 로깅 프록시(호출 시간/에러 로깅)
+
+### 성능 최적화 모듈
+
+- `src/lib/performance.ts`: 기본 성능 유틸리티 (QueryOptimizer, CacheManager, PerformanceMetrics)
+- `src/lib/performance-monitoring.tsx`: Web Vitals 추적, 실시간 성능 모니터링
+- `src/lib/performance-provider.tsx`: 성능 모니터링 컨텍스트 프로바이더
+- `src/lib/cache.tsx`: React Query 기반 캐싱 전략 및 오프라인 지원
+- `src/lib/dynamic-imports.tsx`: 코드 분할 및 지연 로딩
+- `src/lib/database-optimization.ts`: 데이터베이스 쿼리 최적화, 연결 풀링, 인덱싱
+- `src/components/ui/optimized-image.tsx`: 최적화된 이미지 컴포넌트 (WebP/AVIF 지원)
+- `src/components/dashboard/performance-dashboard.tsx`: 실시간 성능 대시보드
+
+### 벡터 검색 모듈
+
+- `src/lib/vector/chromadb.ts`: ChromaDB 클라이언트 및 컬렉션 관리
+- `src/lib/vector/embedding-service.ts`: 임베딩 생성 및 의미 기반 검색
 
 ### 요청 흐름
 

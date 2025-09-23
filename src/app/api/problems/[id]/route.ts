@@ -1,7 +1,7 @@
 import { parseJsonBody } from '@/lib/config/validation';
 import { getRequestId } from '@/lib/utils/request-context';
 import { ProblemDetailResponseSchema } from '@/server/dto/problem';
-import { problemService } from '@/server/services/problem.service';
+import { ProblemService } from '@/server/services/problem.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -10,8 +10,8 @@ const updateProblemSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
   subject: z.string().min(1),
-  type: z.string().min(1),
-  difficulty: z.string().min(1),
+  type: z.enum(['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE']),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']),
   options: z.array(z.string()).optional(),
   correctAnswer: z.string().min(1),
   hints: z.array(z.string()).optional(),
@@ -20,9 +20,11 @@ const updateProblemSchema = z.object({
 });
 
 // 개별 문제 조회, 수정, 삭제
+const problemService = new ProblemService();
+
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const problem = await problemService.detail(params.id);
+    const problem = await problemService.getProblemById(params.id);
 
     if (!problem) {
       return NextResponse.json({ error: 'Problem not found' }, { status: 404 });

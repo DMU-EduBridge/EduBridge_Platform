@@ -1,5 +1,5 @@
 import { studentsService } from '@/services/students';
-import type { LMSStudent } from '@/types/student';
+import type { Student } from '@/types/domain/student';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { studentKeys } from './keys/students';
 
@@ -37,7 +37,7 @@ export function useStudents(params?: {
   });
 
   const update = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<LMSStudent> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<Student> }) =>
       studentsService.updateStudent(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: studentKeys.detail(id) });

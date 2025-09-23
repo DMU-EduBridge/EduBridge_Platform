@@ -4,9 +4,16 @@ import { StatsCards } from '@/components/dashboard/stats-cards';
 import { StudentQuickActions } from '@/components/dashboard/student-quick-actions';
 import { StudentStatsCards } from '@/components/dashboard/student-stats-cards';
 import { authOptions } from '@/lib/core/auth';
+import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+
+export const metadata: Metadata = {
+  title: '대시보드 - EduBridge',
+  description: '학습 현황과 활동을 한눈에 확인할 수 있는 대시보드',
+  robots: 'noindex, nofollow', // 로그인 필요 페이지
+};
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);

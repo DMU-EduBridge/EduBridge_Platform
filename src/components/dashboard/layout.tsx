@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import {
   Bell,
+  Bot,
   Calendar,
   FileText,
   FolderOpen,
@@ -14,12 +15,14 @@ import {
   User,
   Users,
 } from 'lucide-react';
+import { Session } from 'next-auth';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  session: Session;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -27,21 +30,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      // 모든 NextAuth 쿠키를 명시적으로 삭제
-      document.cookie = 'next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'next-auth.callback-url=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'next-auth.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    if (window.confirm('정말 로그아웃하시겠습니까?')) {
+      try {
+        // authService.logout() 호출
+        const { authService } = await import('@/services/auth');
+        await authService.logout();
 
-      // NextAuth signOut 실행
-      await signOut({
-        callbackUrl: '/login',
-        redirect: true,
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
-      // 오류가 발생해도 로그인 페이지로 이동
-      window.location.href = '/login';
+        // NextAuth signOut으로 리다이렉트
+        await signOut({
+          callbackUrl: '/login',
+          redirect: true,
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+        // 오류가 발생해도 로그인 페이지로 이동
+        window.location.href = '/login';
+      }
     }
   };
 
@@ -56,16 +60,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
-  const baseNav = [
+  const studentNav = [
     { name: '대시보드', href: '/dashboard', icon: LayoutDashboard },
     { name: '문제', href: '/problems', icon: FileText },
+    { name: '내 리포트', href: '/my/reports', icon: Calendar },
     { name: '프로필', href: '/profile', icon: User },
   ];
 
   const teacherNav = [
-    { name: '학습 관리', href: '/projects', icon: FolderOpen },
+    { name: '대시보드', href: '/dashboard', icon: LayoutDashboard },
+    { name: '문제', href: '/problems', icon: FileText },
+    { name: '학습 관리', href: '/learning-materials', icon: FolderOpen },
     { name: '학생 관리', href: '/students', icon: Users },
     { name: '분석 리포트', href: '/reports', icon: Calendar },
+    { name: 'AI 교사 리포트', href: '/teacher-reports', icon: Bot },
+    { name: '의미적 검색', href: '/vector-search', icon: Search },
+    { name: '프로필', href: '/profile', icon: User },
   ];
 
   const adminNav = [
@@ -101,23 +111,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <nav className="mt-6 flex-1 px-3">
           <div className="space-y-1">
-            {/* 기본 메뉴 */}
-            {baseNav.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
-              >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.name}
-              </Link>
-            ))}
-
-            {/* 교사/관리자 공통 메뉴 */}
-            {(role === 'TEACHER' || role === 'ADMIN') && (
+            {/* 학생 메뉴 */}
+            {role === 'STUDENT' && (
               <>
-                <div className="my-4 border-t border-gray-200"></div>
-                {teacherNav.map((item) => (
+                {studentNav.map((item) => (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -130,9 +127,43 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </>
             )}
 
-            {/* 관리자 전용 메뉴 */}
+            {/* 선생님 메뉴 */}
+            {role === 'TEACHER' && (
+              <>
+                {teacherNav.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                ))}
+                <div className="my-4 border-t border-gray-200"></div>
+                <Link
+                  href="/settings"
+                  className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                >
+                  <Settings className="mr-3 h-5 w-5" />
+                  설정
+                </Link>
+              </>
+            )}
+
+            {/* 관리자 메뉴 */}
             {role === 'ADMIN' && (
               <>
+                {teacherNav.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                ))}
                 <div className="my-4 border-t border-gray-200"></div>
                 <div className="px-3 py-2">
                   <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -151,20 +182,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 ))}
               </>
             )}
-
-            {/* 교사 전용 설정 메뉴 */}
-            {role === 'TEACHER' && (
-              <>
-                <div className="my-4 border-t border-gray-200"></div>
-                <Link
-                  href="/settings"
-                  className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                >
-                  <Settings className="mr-3 h-5 w-5" />
-                  설정
-                </Link>
-              </>
-            )}
           </div>
         </nav>
 
@@ -172,15 +189,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="mb-3 flex items-center space-x-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300">
               <span className="text-sm font-medium text-gray-700">
-                {session?.user?.name?.charAt(0) || '선'}
+                {session?.user?.name?.charAt(0) ||
+                  (role === 'STUDENT' ? '학' : role === 'TEACHER' ? '선' : '관')}
               </span>
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-gray-900">
-                {session?.user?.name || '선생님'}
+                {session?.user?.name ||
+                  (role === 'STUDENT' ? '학생' : role === 'TEACHER' ? '선생님' : '관리자')}
               </p>
               <p className="truncate text-xs text-gray-500">
-                {session?.user?.email || 'teacher@example.com'}
+                {session?.user?.email || 'user@example.com'}
               </p>
             </div>
           </div>

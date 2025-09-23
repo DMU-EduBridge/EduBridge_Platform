@@ -25,9 +25,9 @@ Thumbs.db
 .vscode/
 
 # Env
-.env
-.env.*
-!.env.example
+# .env
+# .env.*
+# !.env.example
 
 # Prisma
 prisma/dev.db

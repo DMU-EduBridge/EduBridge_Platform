@@ -1,4 +1,4 @@
-import { logger } from './error-handler';
+import { logger } from '@/lib/monitoring';
 
 export function wrapService<T extends object>(service: T, serviceName: string): T {
   return new Proxy(service, {

@@ -1,17 +1,19 @@
+// 사용자 관련 타입 정의
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'PROFESSOR' | 'STUDENT' | 'ADMIN';
+  role: UserRole;
   avatar?: string;
   bio?: string;
-  department?: string;
-  researchAreas?: string[];
-  studentId?: string;
-  major?: string;
-  year?: number;
-  skills?: string[];
-  portfolio?: string[];
+  grade?: string;
+  school?: string;
+  subject?: string;
+  status: UserStatus;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }

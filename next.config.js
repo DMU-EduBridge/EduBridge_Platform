@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Docker를 위한 standalone 출력
+  output: 'standalone',
+
   // 이미지 최적화 설정
   images: {
     domains: ['example.com'], // 외부 이미지 도메인 추가 시 사용
@@ -32,18 +35,46 @@ const nextConfig = {
     },
   }),
 
-  // 번들 분석기 (개발 시에만)
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config) => {
+  // Webpack 설정
+  webpack: (config, { isServer, webpack }) => {
+    // ChromaDB 관련 바이너리 파일 처리
+    config.module.rules.push({
+      test: /\.node$/,
+      use: 'node-loader',
+    });
+
+    // 번들 분석기 (개발 시에만)
+    if (process.env.ANALYZE === 'true') {
       config.plugins.push(
         new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin)({
           analyzerMode: 'static',
           openAnalyzer: false,
         }),
       );
-      return config;
-    },
-  }),
+    }
+
+    // 서버 사이드에서만 사용되는 패키지들을 외부화
+    if (isServer) {
+      config.externals.push({
+        'onnxruntime-node': 'commonjs onnxruntime-node',
+        '@huggingface/transformers': 'commonjs @huggingface/transformers',
+        '@chroma-core/default-embed': 'commonjs @chroma-core/default-embed',
+      });
+    }
+
+    // 클라이언트 사이드에서 ChromaDB 관련 모듈 제외
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+      };
+    }
+
+    return config;
+  },
 
   // ESLint 설정
   eslint: {

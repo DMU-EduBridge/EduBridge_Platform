@@ -1,10 +1,10 @@
 import { parseJsonBody } from '@/lib/config/validation';
 import { prisma } from '@/lib/core/prisma';
+import { logger } from '@/lib/monitoring';
 import {
   AppError,
   NotFoundError,
   UnauthorizedError,
-  logger,
   withErrorHandler,
 } from '@/lib/utils/error-handler';
 import { requireSession } from '@/server/auth/session';
@@ -75,10 +75,19 @@ async function createAttempt(request: NextRequest, { params }: { params: { id: s
   logger.info('Attempt created', { problemId: params.id, isCorrect: result.isCorrect });
   const payload = { correct: result.isCorrect };
   AttemptPostResponseSchema.parse(payload);
-  return NextResponse.json(payload, {
+
+  // 보안 헤더 추가
+  const response = NextResponse.json(payload, {
     status: 201,
-    headers: { 'Cache-Control': 'no-store' },
+    headers: {
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+    },
   });
+
+  return response;
 }
 
 export const GET = withErrorHandler(getAttempts);

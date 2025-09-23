@@ -1,15 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { signIn } from 'next-auth/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -113,6 +113,7 @@ export function LoginForm() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 transform text-gray-400 hover:text-gray-600"
                 disabled={isLoading}
+                aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>

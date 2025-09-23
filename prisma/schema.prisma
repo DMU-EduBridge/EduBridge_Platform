@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,140 +8,222 @@ generator erd {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider     = "sqlite"
+  url          = env("DATABASE_URL")
   relationMode = "foreignKeys"
 }
 
-// Enums are not supported in SQLite, using String instead
-// When migrating to PostgreSQL, these can be converted to proper enums
+// ===== ENUM 타입 정의 =====
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
 
-// User roles - enum UserRole { TEACHER, STUDENT, ADMIN }
-// User status - enum UserStatus { ACTIVE, INACTIVE, SUSPENDED }
-// Problem difficulty levels - enum DifficultyLevel { EASY, MEDIUM, HARD, EXPERT }
-// Problem types - enum ProblemType { MULTIPLE_CHOICE, SHORT_ANSWER, ESSAY, CODING, MATH }
-// Problem review status - enum ReviewStatus { PENDING, APPROVED, REJECTED }
-// Learning material status - enum MaterialStatus { DRAFT, PUBLISHED, ARCHIVED }
-// Report types - enum ReportType { MONTHLY, INDIVIDUAL, SUBJECT, WEEKLY }
-// Report status - enum ReportStatus { COMPLETED, IN_PROGRESS, PENDING }
-// Progress status - enum ProgressStatus { NOT_STARTED, IN_PROGRESS, COMPLETED, FAILED }
-// Priority levels - enum Priority { HIGH, MEDIUM, LOW }
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum ProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ProblemType {
+  MULTIPLE_CHOICE
+  SHORT_ANSWER
+  ESSAY
+  TRUE_FALSE
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_REVISION
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ServerStatus {
+  HEALTHY
+  UNHEALTHY
+  UNKNOWN
+  MAINTENANCE
+}
+
+enum SyncStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum AnalysisType {
+  BASIC_STATISTICS
+  ACHIEVEMENT_DISTRIBUTION
+  STRUGGLING_STUDENTS
+  TOP_PERFORMERS
+  SUBJECT_ANALYSIS
+  TREND_ANALYSIS
+}
+
+enum TemplateType {
+  EXCELLENT
+  NORMAL
+  PROBLEMATIC
+  MIXED
+  PREDEFINED
+}
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  role      String // UserRole enum: TEACHER, STUDENT, ADMIN
-  avatar    String?
-  bio       String?
-  grade     String? // 학년 (1학년, 2학년 등)
-  status    String  @default("ACTIVE") // UserStatus enum: ACTIVE, INACTIVE, SUSPENDED
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime? // 소프트 삭제 필드
-
-  // 관계
-  preferences   UserPreferences?
-  progress      StudentProgress[]
-  reports       AnalysisReport[]
-  counseling    CareerCounseling[]
-  reviewedProblems Problem[] @relation("ProblemReviewer")
-  attempts      Attempt[]
+  id               String             @id @default(cuid())
+  email            String             @unique
+  name             String
+  role             UserRole
+  avatar           String?
+  bio              String?
+  grade            String?
+  status           UserStatus          @default(ACTIVE)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+  school           String?
+  subject          String?
+  reports          AnalysisReport[]
+  attempts         Attempt[]
+  counseling       CareerCounseling[]
+  reviewedProblems Problem[]          @relation("ProblemReviewer")
+  progress         StudentProgress[]
+  preferences      UserPreferences?
+  
+  // Educational AI System 관련 관계
+  textbooks        Textbook[]
+  problems         Problem[]          @relation("ProblemCreator")
+  searchQueries    SearchQuery[]
+  aiApiUsage       AIApiUsage[]
+  aiPerformanceMetrics AIPerformanceMetric[]
+  aiUsageStatistics AIUsageStatistics[]
+  
+  // Teacher Report System 관련 관계
+  teacherReports   TeacherReport[]
+  aiServerSyncs    AIServerSync[]
+  
+  // 실제 AI 서버 데이터 구조 관련 관계
+  sampleDataTemplates SampleDataTemplate[]
+  questionHistory     QuestionHistory[]
 
   @@index([role])
   @@index([status])
-  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
+  @@index([deletedAt])
   @@map("users")
 }
 
 model UserPreferences {
-  id       String @id @default(cuid())
-  userId   String @unique
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // 학습 설정
-  preferredDifficulty String @default("MEDIUM") // DifficultyLevel enum: EASY, MEDIUM, HARD, EXPERT
-  learningStyle       String // visual, auditory, kinesthetic (JSON string - 애플리케이션에서 객체로 처리)
-  studyTime           Int?     // 분 단위
-  interests           String // JSON string - 애플리케이션에서 배열로 처리
-  
-  // 알림 설정
-  emailNotifications Boolean @default(true)
-  pushNotifications  Boolean @default(true)
-  weeklyReport       Boolean @default(true)
-  
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  preferredDifficulty String  @default("MEDIUM")
+  learningStyle       String
+  studyTime           Int?
+  interests           String
+  emailNotifications  Boolean @default(true)
+  pushNotifications   Boolean @default(true)
+  weeklyReport        Boolean @default(true)
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@map("user_preferences")
 }
 
-
 model LearningMaterial {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  content     String
-  subject     String   // 과목명 (수학, 과학 등)
-  difficulty  String   // DifficultyLevel enum: EASY, MEDIUM, HARD, EXPERT
-  estimatedTime Int?   // 분 단위
-  files       String?  // JSON string - 업로드된 파일들 (애플리케이션에서 배열로 처리)
-  status      String   // MaterialStatus enum: DRAFT, PUBLISHED, ARCHIVED
-  isActive    Boolean  @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime? // 소프트 삭제 필드
-
-  // 관계
+  id               String                    @id @default(cuid())
+  title            String
+  description      String?
+  content          String
+  subject          String
+  difficulty       String
+  estimatedTime    Int?
+  files            String?
+  status           String
+  isActive         Boolean                   @default(true)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  deletedAt        DateTime?
   materialProblems LearningMaterialProblem[]
 
-  @@index([subject, difficulty, isActive]) // 조회 패턴별 복합 인덱스
-  @@index([status, createdAt]) // 상태별 최신순 조회 최적화
-  @@index([status, subject, createdAt]) // 상태+과목 조합 조회 최적화
-  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
+  @@index([subject, difficulty, isActive])
+  @@index([status, createdAt])
+  @@index([status, subject, createdAt])
+  @@index([deletedAt])
   @@map("learning_materials")
 }
 
 model Problem {
-  id          String      @id @default(cuid())
-  title       String
-  description String?
-  content     String
-  type        String // ProblemType enum: MULTIPLE_CHOICE, SHORT_ANSWER, ESSAY, CODING, MATH
-  difficulty  String // DifficultyLevel enum: EASY, MEDIUM, HARD, EXPERT
-  subject     String // 과목명 (수학, 과학 등)
-  
-  // 문제 세부사항
-  options     String?   // 객관식 선택지 (JSON string - 애플리케이션에서 배열로 처리)
-  correctAnswer String
-  explanation String?
-  hints       String?  // JSON string - 애플리케이션에서 배열로 처리
-  tags        String?  // JSON string - 애플리케이션에서 배열로 처리
-  
-  // 메타데이터
-  points      Int         @default(1)
-  timeLimit   Int?        // 초 단위
-  isActive    Boolean     @default(true)
-  
-  // AI 생성 관련
-  isAIGenerated Boolean @default(false)
-  aiGenerationId String?
-  aiGeneration   AIGeneration? @relation(fields: [aiGenerationId], references: [id])
-  
-  // 품질 관리
-  qualityScore   Float?   // AI 평가 점수
-  reviewStatus   String   @default("PENDING") // ReviewStatus enum: PENDING, APPROVED, REJECTED
-  reviewedBy     String?  // 검토자 ID
-  reviewer       User?    @relation("ProblemReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull) // 리뷰어 삭제 시 NULL 처리
-  reviewedAt     DateTime?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime? // 소프트 삭제 필드
-
-  // 관계
-  progress   StudentProgress[]
+  id               String                    @id @default(cuid())
+  title            String
+  description      String?
+  content          String
+  type             ProblemType
+  difficulty       ProblemDifficulty
+  subject          String
+  gradeLevel       String?                  // AI 생성 문제용 추가
+  unit             String?                  // AI 생성 문제용 추가
+  options          Json?
+  correctAnswer    String
+  explanation      String?
+  hints            Json?
+  tags             Json?
+  points           Int                       @default(1)
+  timeLimit        Int?
+  isActive         Boolean                   @default(true)
+  isAIGenerated    Boolean                   @default(false)
+  aiGenerationId   String?
+  qualityScore     Float?
+  reviewStatus     ReviewStatus              @default(PENDING)
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  generationPrompt String?                   // AI 생성 프롬프트
+  contextChunkIds  String?                   // 참조된 ChromaDB 청크 ID들
+  generationTimeMs Int?                      // AI 생성 시간
+  modelName        String?                   // 사용된 AI 모델
+  tokensUsed       Int?                      // 사용된 토큰 수
+  costUsd          Float?                    // 생성 비용
+  textbookId       String?                   // 참조된 교과서 ID
+  createdBy        String?                   // 생성자 (AI 생성 문제용)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  deletedAt        DateTime?
+  attempts         Attempt[]
   materialProblems LearningMaterialProblem[]
-  attempts  Attempt[]
+  reviewer         User?                     @relation("ProblemReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  aiGeneration     AIGeneration?             @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
+  progress         StudentProgress[]
+  textbook         Textbook?                 @relation(fields: [textbookId], references: [id], onDelete: SetNull)
+  creator          User?                     @relation("ProblemCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  questionOptions  QuestionOption[]
+  questionTags     QuestionTag[]
 
   @@index([subject])
   @@index([difficulty])
@@ -153,196 +232,539 @@ model Problem {
   @@index([type])
   @@index([aiGenerationId])
   @@index([reviewedBy])
-  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
+  @@index([deletedAt])
+  @@index([gradeLevel])
+  @@index([createdBy])
+  @@index([textbookId])
+  @@index([subject, difficulty, gradeLevel]) // 복합 쿼리 최적화
+  @@index([isAIGenerated, reviewStatus, createdAt]) // AI 문제 관리 최적화
+  @@index([createdBy, createdAt]) // 사용자별 문제 생성 이력
+  @@index([textbookId, gradeLevel]) // 교과서별 문제 조회
   @@map("problems")
 }
 
 model StudentProgress {
-  id        String        @id @default(cuid())
+  id        String         @id @default(cuid())
   studentId String
-  student   User          @relation(fields: [studentId], references: [id])
   problemId String?
-  problem   Problem?      @relation(fields: [problemId], references: [id])
-  
-  status    String @default("NOT_STARTED") // ProgressStatus enum: NOT_STARTED, IN_PROGRESS, COMPLETED, FAILED
-  score     Int?    @default(0)
-  timeSpent Int     @default(0) // 분 단위
-  attempts  Int     @default(0)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    ProgressStatus @default(NOT_STARTED)
+  score     Int?           @default(0)
+  timeSpent Int            @default(0)
+  attempts  Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  problem   Problem?       @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  student   User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  @@unique([studentId, problemId]) // 중복 진행 방지 제약
+  @@unique([studentId, problemId])
   @@index([studentId])
   @@index([problemId])
   @@index([status])
+  @@index([studentId, status, updatedAt]) // 학생별 진행상황 조회
+  @@index([problemId, status]) // 문제별 학생 진행상황
   @@map("student_progress")
 }
 
-
 model AnalysisReport {
-  id        String   @id @default(cuid())
-  studentId String
-  student   User     @relation(fields: [studentId], references: [id])
-  
-  type      String   // ReportType enum: MONTHLY, INDIVIDUAL, SUBJECT, WEEKLY
-  title     String
-  period    String   // 기간 (예: "2024년 1월")
-  insights  String?  // AI 생성 인사이트 (JSON string - 레거시 호환용, 애플리케이션에서 배열로 처리)
-  recommendations String? // 개선 권장사항 (JSON string - 레거시 호환용, 애플리케이션에서 배열로 처리)
-  strengths String?  // JSON string - 애플리케이션에서 배열로 처리
-  weaknesses String? // JSON string - 애플리케이션에서 배열로 처리
-  status    String   @default("COMPLETED") // ReportStatus enum: COMPLETED, IN_PROGRESS, PENDING
-  
-  // AI 생성 메타데이터
-  aiGenerationId String?
-  aiGeneration   AIGeneration? @relation(fields: [aiGenerationId], references: [id])
-  
-  createdAt DateTime @default(now())
-  deletedAt DateTime? // 소프트 삭제 필드
-  
-  // 정규화된 관계
-  reportInsights       ReportInsight[]
+  id                    String                 @id @default(cuid())
+  studentId             String
+  type                  String
+  title                 String
+  period                String
+  insights              String?
+  recommendations       String?
+  strengths             String?
+  weaknesses            String?
+  status                String                 @default("COMPLETED")
+  aiGenerationId        String?
+  createdAt             DateTime               @default(now())
+  deletedAt             DateTime?
+  aiGeneration          AIGeneration?          @relation(fields: [aiGenerationId], references: [id])
+  student               User                   @relation(fields: [studentId], references: [id])
+  reportInsights        ReportInsight[]
   reportRecommendations ReportRecommendation[]
 
   @@index([studentId])
   @@index([type])
   @@index([status])
   @@index([createdAt])
-  @@index([studentId, type, status, createdAt]) // 목록 필터 복합 인덱스
+  @@index([studentId, type, status, createdAt])
   @@index([aiGenerationId])
-  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
+  @@index([deletedAt])
   @@map("analysis_reports")
 }
 
+model TeacherReport {
+  id                String   @id @default(cuid())
+  title             String
+  content           String
+  reportType        String   @default("full") // full, summary
+  classInfo         Json?    // JSON object
+  students          Json?    // JSON array
+  analysisData      Json?    // JSON object
+  metadata          Json?    // JSON object
+  tokenUsage        Int?
+  generationTimeMs  Int?
+  modelName         String?
+  costUsd           Float?
+  status            ReportStatus @default(DRAFT)
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  reportAnalyses    ReportAnalysis[]
+  studentData       StudentData[]
+  classInfoData     ClassInfo[]
+
+  @@index([createdBy])
+  @@index([status])
+  @@index([createdAt])
+  @@map("teacher_reports")
+}
+
 model CareerCounseling {
-  id        String        @id @default(cuid())
-  studentId String
-  student   User          @relation(fields: [studentId], references: [id])
-  
-  type      String // ACADEMIC, CAREER, PERSONAL, UNIVERSITY_GUIDANCE
-  title     String
-  content   String
-  
-  // AI 분석 결과
-  careerSuggestions  String? // JSON string - 애플리케이션에서 배열로 처리
-  universityRecommendations String? // JSON string - 애플리케이션에서 배열로 처리
-  skillGaps         String? // JSON string - 애플리케이션에서 배열로 처리
-  status            String  @default("COMPLETED") // COMPLETED, IN_PROGRESS, PENDING
-  
-  // AI 생성 메타데이터
-  aiGenerationId String?
-  aiGeneration   AIGeneration? @relation(fields: [aiGenerationId], references: [id])
-  
-  createdAt DateTime @default(now())
-  deletedAt DateTime? // 소프트 삭제 필드
+  id                        String        @id @default(cuid())
+  studentId                 String
+  type                      String
+  title                     String
+  content                   String
+  careerSuggestions         String?
+  universityRecommendations String?
+  skillGaps                 String?
+  status                    String        @default("COMPLETED")
+  aiGenerationId            String?
+  createdAt                 DateTime      @default(now())
+  deletedAt                 DateTime?
+  aiGeneration              AIGeneration? @relation(fields: [aiGenerationId], references: [id])
+  student                   User          @relation(fields: [studentId], references: [id])
 
   @@index([studentId])
   @@index([type])
   @@index([status])
   @@index([aiGenerationId])
-  @@index([deletedAt]) // 소프트 삭제 쿼리 최적화
+  @@index([deletedAt])
   @@map("career_counseling")
 }
 
-// 학습자료 ↔ 문제 관계 중간 테이블
 model LearningMaterialProblem {
-  id                String          @id @default(cuid())
+  id                 String           @id @default(cuid())
   learningMaterialId String
-  learningMaterial  LearningMaterial @relation(fields: [learningMaterialId], references: [id], onDelete: Cascade)
-  problemId         String
-  problem           Problem         @relation(fields: [problemId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
+  problemId          String
+  createdAt          DateTime         @default(now())
+  problem            Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  learningMaterial   LearningMaterial @relation(fields: [learningMaterialId], references: [id], onDelete: Cascade)
 
-  @@unique([learningMaterialId, problemId]) // 중복 관계 방지
+  @@unique([learningMaterialId, problemId])
   @@index([learningMaterialId])
   @@index([problemId])
   @@map("learning_material_problems")
 }
 
-// AI 모델 관리
 model AIModel {
-  id          String   @id @default(cuid())
-  name        String   // "gpt-4", "claude-3", "gemini-pro"
-  version     String   // "1.0", "2024-01"
-  provider    String   // "openai", "anthropic", "google"
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  
+  id          String         @id @default(cuid())
+  name        String
+  version     String
+  provider    String
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
   generations AIGeneration[]
 
   @@map("ai_models")
 }
 
-// AI 생성 이력 추적
 model AIGeneration {
-  id          String   @id @default(cuid())
-  modelId     String
-  model       AIModel  @relation(fields: [modelId], references: [id])
-  
-  prompt      String   // 사용된 프롬프트
-  response    String   // AI 응답
-  tokensUsed  Int?     // 사용된 토큰 수
-  cost        Float?   // 비용
-  duration    Int?     // 생성 시간(ms)
-  
-  createdAt   DateTime @default(now())
-  
-  // 관계
-  problems    Problem[]
-  reports     AnalysisReport[]
-  counseling  CareerCounseling[]
+  id         String             @id @default(cuid())
+  modelId    String
+  prompt     String
+  response   String
+  tokensUsed Int?
+  cost       Float?
+  duration   Int?
+  createdAt  DateTime           @default(now())
+  model      AIModel            @relation(fields: [modelId], references: [id])
+  reports    AnalysisReport[]
+  counseling CareerCounseling[]
+  problems   Problem[]
 
   @@index([modelId])
   @@index([createdAt])
   @@map("ai_generations")
 }
 
-// 리포트 인사이트 정규화
 model ReportInsight {
-  id       String @id @default(cuid())
-  reportId String
-  report   AnalysisReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  
-  category String // "학습패턴", "성취도", "약점분석"
-  content  String
-  priority String // Priority enum: HIGH, MEDIUM, LOW
-  
-  createdAt DateTime @default(now())
+  id        String         @id @default(cuid())
+  reportId  String
+  category  String
+  content   String
+  priority  String
+  createdAt DateTime       @default(now())
+  report    AnalysisReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
   @@map("report_insights")
 }
 
-// 리포트 권장사항 정규화
 model ReportRecommendation {
-  id       String @id @default(cuid())
-  reportId String
-  report   AnalysisReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  
-  type     String // "학습방법", "과목추천", "시간관리"
-  content  String
-  priority String // Priority enum: HIGH, MEDIUM, LOW
-  
-  createdAt DateTime @default(now())
+  id        String         @id @default(cuid())
+  reportId  String
+  type      String
+  content   String
+  priority  String
+  createdAt DateTime       @default(now())
+  report    AnalysisReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
   @@map("report_recommendations")
 }
 
-// 학생 시도 기록
 model Attempt {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  problemId  String
-  problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
-  selected   String
-  isCorrect  Boolean
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  problemId String
+  selected  String
+  isCorrect Boolean
+  createdAt DateTime @default(now())
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, problemId])
   @@map("attempts")
 }
 
+// Educational AI System Models - 실제 ChromaDB 기반 구조 반영
+
+model Textbook {
+  id                String           @id @default(cuid())
+  title             String
+  subject           String
+  gradeLevel        String
+  publisher         String?
+  fileName          String
+  filePath          String
+  fileSize          Int
+  mimeType          String?
+  totalChunks       Int              @default(0)
+  processingStatus  ProcessingStatus @default(PENDING)
+  errorMessage      String?
+  uploadedBy        String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  
+  user              User             @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  chunks            DocumentChunk[]
+  problems          Problem[]        // AI 생성 문제들
+
+  @@index([subject, gradeLevel])
+  @@index([processingStatus])
+  @@index([uploadedBy])
+  @@map("textbooks")
+}
+
+model DocumentChunk {
+  id              String     @id @default(cuid())
+  textbookId      String
+  chunkIndex      Int
+  content         String
+  contentLength   Int
+  embeddingId     String?    // ChromaDB의 문서 ID
+  metadata        Json?      // ChromaDB 메타데이터 JSON
+  createdAt       DateTime   @default(now())
+  
+  textbook        Textbook   @relation(fields: [textbookId], references: [id], onDelete: Cascade)
+  searchResults   SearchResult[]
+
+  @@index([textbookId])
+  @@index([embeddingId])
+  @@map("document_chunks")
+}
+
+model SearchQuery {
+  id             String          @id @default(cuid())
+  queryText      String
+  subject        String?
+  gradeLevel     String?
+  unit           String?
+  resultsCount   Int
+  searchTimeMs   Int
+  userId         String
+  sessionId      String?
+  createdAt      DateTime        @default(now())
+  
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  results        SearchResult[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, subject, createdAt]) // 사용자별 검색 이력
+  @@index([subject, gradeLevel, createdAt]) // 주제별 검색 트렌드
+  @@map("search_queries")
+}
+
+model SearchResult {
+  id               String        @id @default(cuid())
+  queryId          String
+  chunkId          String
+  similarityScore  Float
+  rankPosition     Int
+  createdAt        DateTime      @default(now())
+  
+  query            SearchQuery   @relation(fields: [queryId], references: [id])
+  chunk            DocumentChunk @relation(fields: [chunkId], references: [id])
+
+  @@index([queryId])
+  @@index([chunkId])
+  @@map("search_results")
+}
+
+model QuestionOption {
+  id           String   @id @default(cuid())
+  problemId    String
+  optionNumber Int
+  optionText   String
+  isCorrect    Boolean
+  createdAt    DateTime @default(now())
+  
+  problem      Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+  @@map("question_options")
+}
+
+model QuestionTag {
+  id         String  @id @default(cuid())
+  problemId  String
+  tagName    String
+  createdAt  DateTime @default(now())
+  
+  problem    Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+  @@map("question_tags")
+}
+
+model AIApiUsage {
+  id               String   @id @default(cuid())
+  userId           String
+  apiType          String
+  modelName        String
+  tokensUsed       Int
+  costUsd          Float
+  requestCount     Int      @default(1)
+  responseTimeMs   Int?
+  success          Boolean  @default(true)
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+  
+  user             User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_api_usage")
+}
+
+model AIPerformanceMetric {
+  id              String   @id @default(cuid())
+  operationType   String
+  durationMs      Int
+  success         Boolean
+  errorMessage    String?
+  metadata        String   @default("{}")
+  userId          String?
+  createdAt       DateTime @default(now())
+  
+  user            User?    @relation(fields: [userId], references: [id])
+
+  @@index([operationType])
+  @@index([createdAt])
+  @@map("ai_performance_metrics")
+}
+
+model AIUsageStatistics {
+  id                   String   @id @default(cuid())
+  userId               String
+  date                 String
+  questionsGenerated   Int      @default(0)
+  textbooksUploaded    Int      @default(0)
+  searchesPerformed    Int      @default(0)
+  totalCostUsd         Float    @default(0)
+  createdAt            DateTime @default(now())
+  
+  user                 User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("ai_usage_statistics")
+}
+
+// Teacher Report System Models - 실제 메모리 기반 구조 반영
+
+model ReportAnalysis {
+  id                String   @id @default(cuid())
+  reportId          String
+  analysisType      AnalysisType // enum 사용
+  analysisData      Json?    // JSON object
+  createdAt         DateTime @default(now())
+  
+  report            TeacherReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([analysisType])
+  @@map("report_analyses")
+}
+
+model StudentData {
+  id                String   @id @default(cuid())
+  studentId        Int
+  name              String
+  math              Float?
+  korean            Float?
+  english           Float?
+  science           Float?
+  social            Float?
+  assignmentRate    Float?
+  attendanceRate    Float?
+  reportId          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  report            TeacherReport? @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+  @@index([studentId])
+  @@map("student_data")
+}
+
+model ClassInfo {
+  id                String   @id @default(cuid())
+  grade             Int?
+  classNum          Int?
+  subject           String?
+  semester          String?
+  year              Int?
+  teacher           String?
+  totalStudents     Int?
+  reportId          String?
+  createdAt         DateTime @default(now())
+  
+  report            TeacherReport? @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+  @@map("class_info")
+}
+
+model AIServerStatus {
+  id                String   @id @default(cuid())
+  serverName        String   // educational_ai, teacher_report
+  serverUrl         String
+  status            ServerStatus @default(UNKNOWN)
+  responseTimeMs    Int?
+  version           String?
+  lastChecked       DateTime @default(now())
+  errorMessage      String?
+  services          Json?    // JSON object - 실제 서버 상태 정보
+  createdAt         DateTime @default(now())
+  
+  @@index([serverName])
+  @@index([status])
+  @@index([lastChecked])
+  @@map("ai_server_status")
+}
+
+model AIServerSync {
+  id                String   @id @default(cuid())
+  serverName        String
+  syncType          String   // data_sync, health_check, report_generation
+  status            SyncStatus @default(PENDING)
+  startTime         DateTime @default(now())
+  endTime           DateTime?
+  durationMs        Int?
+  recordsProcessed  Int?
+  recordsSynced     Int?
+  errors            String?  // JSON string
+  metadata          Json?    // JSON object
+  userId            String?
+  createdAt         DateTime @default(now())
+  
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([serverName])
+  @@index([status])
+  @@index([startTime])
+  @@map("ai_server_sync")
+}
+
+// 실제 AI 서버 데이터 구조를 반영한 추가 테이블들
+
+model ChromaDBCollection {
+  id                String   @id @default(cuid())
+  collectionName    String   @unique // "textbook_embeddings"
+  description       String?
+  persistDirectory  String   // "./data/vector_db"
+  totalDocuments    Int      @default(0)
+  totalEmbeddings   Int      @default(0)
+  lastUpdated       DateTime @default(now())
+  createdAt         DateTime @default(now())
+  
+  embeddings        ChromaDBEmbedding[]
+
+  @@index([collectionName])
+  @@map("chromadb_collections")
+}
+
+model ChromaDBEmbedding {
+  id                String   @id @default(cuid())
+  collectionId      String
+  documentId        String   // ChromaDB의 실제 문서 ID
+  content           String   // 원본 텍스트 내용
+  embedding         String   // JSON string - 1536차원 벡터
+  metadata          Json?    // ChromaDB 메타데이터
+  similarityScore   Float?   // 검색 시 유사도 점수
+  distance          Float?   // 검색 시 거리
+  createdAt         DateTime @default(now())
+  
+  collection        ChromaDBCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@index([collectionId])
+  @@index([documentId])
+  @@index([similarityScore])
+  @@map("chromadb_embeddings")
+}
+
+model SampleDataTemplate {
+  id                String   @id @default(cuid())
+  templateName      String   // "excellent_class", "normal_class", "problematic_class"
+  templateType      TemplateType // enum 사용
+  description       String?
+  dataStructure     Json?    // JSON object - 실제 샘플 데이터 구조
+  isActive          Boolean  @default(true)
+  createdBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user              User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([templateName])
+  @@index([templateType])
+  @@map("sample_data_templates")
+}
+
+model QuestionHistory {
+  id                String   @id @default(cuid())
+  questionId        String   // 실제 생성된 문제의 ID
+  questionText      String
+  subject           String
+  difficulty        String
+  generatedAt       DateTime @default(now())
+  modelUsed         String?
+  tokensUsed        Int?
+  costUsd           Float?
+  userId            String?
+  
+  user              User?    @relation(fields: [userId], references: [id])
+
+  @@index([questionId])
+  @@index([subject])
+  @@index([generatedAt])
+  @@map("question_history")
+}

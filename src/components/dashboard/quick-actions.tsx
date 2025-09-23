@@ -1,11 +1,11 @@
+import { BarChart3, BookOpen, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
-import { Plus, BookOpen, Users, BarChart3 } from 'lucide-react';
 
 const quickActions = [
   {
     title: '새 학습 자료 추가',
     description: '학생들을 위한 새로운 학습 자료를 업로드하세요',
-    href: '/learning/new',
+    href: '/learning-materials',
     icon: Plus,
     color: 'bg-blue-100 text-blue-600',
   },

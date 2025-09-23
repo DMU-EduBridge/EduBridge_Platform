@@ -53,6 +53,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30일 (세션 유지 시간)
   },
   cookies: {
     sessionToken: {
@@ -82,10 +83,60 @@ export const authOptions: NextAuthOptions = {
       },
     },
   },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30일 (JWT 토큰 유효 시간)
+  },
   callbacks: {
+    async signIn({ user, account }) {
+      // Google 로그인인 경우
+      if (account?.provider === 'google') {
+        try {
+          // 기존 사용자 확인
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+          });
+
+          if (!existingUser) {
+            // 새로운 사용자 생성 (기본적으로 STUDENT 역할로 설정)
+            await prisma.user.create({
+              data: {
+                id: user.id,
+                email: user.email!,
+                name: user.name!,
+                role: 'STUDENT', // 기본 역할
+                status: 'ACTIVE',
+              },
+            });
+          }
+        } catch (error) {
+          console.error('Error creating user:', error);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
+        // 데이터베이스에서 사용자 정보 가져오기
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+            select: { role: true, status: true },
+          });
+
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.status = dbUser.status;
+          } else {
+            // 사용자가 없으면 기본 역할 설정
+            token.role = 'STUDENT';
+            token.status = 'ACTIVE';
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+          token.role = 'STUDENT';
+          token.status = 'ACTIVE';
+        }
       }
       return token;
     },

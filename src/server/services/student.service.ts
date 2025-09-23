@@ -14,7 +14,7 @@ export class StudentService {
     if (params.search)
       where.OR = [{ name: { contains: params.search } }, { email: { contains: params.search } }];
     if (params.grade && params.grade !== 'all') where.grade = params.grade;
-    if (params.status && params.status !== 'all') where.status = params.status;
+    if (params.status && params.status !== 'all') where.status = params.status as any;
 
     const { items, total } = await studentRepository.findMany(where, params.page, params.limit);
     const students = items.map((student) => {
@@ -53,6 +53,27 @@ export class StudentService {
     return { students, total };
   }
 
+  async detail(id: string) {
+    const student = await studentRepository.findById(id);
+    if (!student || student.role !== 'STUDENT') return null;
+
+    const progressStats = await studentRepository.getProgressStats(id);
+    const interests = student.preferences?.interests
+      ? JSON.parse(student.preferences.interests)
+      : [];
+    const learningStyle = student.preferences?.learningStyle
+      ? JSON.parse(student.preferences.learningStyle)
+      : [];
+
+    return {
+      ...student,
+      ...progressStats,
+      interests,
+      learningStyle,
+      preferences: student.preferences,
+    };
+  }
+
   async create(input: {
     name: string;
     email: string;
@@ -75,6 +96,38 @@ export class StudentService {
       },
     };
     return studentRepository.create(data);
+  }
+
+  async update(
+    id: string,
+    input: {
+      name?: string;
+      email?: string;
+      grade?: string;
+      status?: string;
+      learningStyle?: string[];
+      interests?: string[];
+    },
+  ) {
+    const data: Prisma.UserUpdateInput = {
+      name: input.name,
+      email: input.email,
+      grade: input.grade,
+      status: input.status as any,
+    };
+    return studentRepository.update(id, data);
+  }
+
+  async remove(id: string) {
+    return studentRepository.delete(id);
+  }
+
+  async getStats() {
+    return studentRepository.getStats();
+  }
+
+  async getProgressStats(studentId: string) {
+    return studentRepository.getProgressStats(studentId);
   }
 }
 

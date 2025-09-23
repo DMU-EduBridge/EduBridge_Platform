@@ -1,5 +1,5 @@
 import { api } from '@/lib/core/api';
-import type { LMSStudent } from '@/types/student';
+import type { Student } from '@/types/domain/student';
 
 export const studentsService = {
   getStudents: (params?: {
@@ -8,12 +8,11 @@ export const studentsService = {
     status?: string;
     page?: number;
     limit?: number;
-  }) => api.get<{ students: LMSStudent[]; total: number }>('/students', { params }),
+  }) => api.get<{ students: Student[]; total: number }>('/students', { params }),
 
-  getStudent: (id: string) => api.get<LMSStudent>(`/students/${id}`),
+  getStudent: (id: string) => api.get<Student>(`/students/${id}`),
 
-  updateStudent: (id: string, data: Partial<LMSStudent>) =>
-    api.put<LMSStudent>(`/students/${id}`, data),
+  updateStudent: (id: string, data: Partial<Student>) => api.put<Student>(`/students/${id}`, data),
 
   getStudentProgress: (id: string) => api.get(`/students/${id}/progress`),
 

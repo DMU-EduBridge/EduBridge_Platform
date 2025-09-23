@@ -1,10 +1,11 @@
+import { prisma } from '@/lib/core/prisma';
 import { getToken } from 'next-auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 
 const protectedPaths = [
   '/dashboard',
   '/profile',
-  '/projects',
+  '/learning-materials',
   '/applications',
   '/(afterLogin)',
   '/problems',
@@ -13,10 +14,11 @@ const protectedPaths = [
   '/learning-materials',
   '/my',
 ];
+const setupPaths = ['/setup'];
 const adminPaths = ['/admin'];
 const teacherOnlyPaths = [
   '/students',
-  '/projects',
+  '/learning-materials',
   '/reports',
   '/problems/new',
   '/learning-materials',
@@ -27,6 +29,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
+  const isSetupPath = setupPaths.some((path) => pathname.startsWith(path));
   const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
   const isTeacherOnlyPath = teacherOnlyPaths.some((path) => pathname.startsWith(path));
   const isStudentOnlyPath = studentOnlyPaths.some((path) => pathname.startsWith(path));
@@ -54,7 +57,7 @@ export async function middleware(request: NextRequest) {
     return res;
   };
 
-  if (!isProtectedPath && !isAdminPath) {
+  if (!isProtectedPath && !isAdminPath && !isSetupPath) {
     return applySecurityHeaders(NextResponse.next());
   }
 
@@ -65,6 +68,35 @@ export async function middleware(request: NextRequest) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search);
     return applySecurityHeaders(NextResponse.redirect(loginUrl));
+  }
+
+  // 역할이 없는 사용자는 setup 페이지로 리다이렉트
+  if (!token.role && !isSetupPath) {
+    const setupUrl = new URL('/setup', request.url);
+    return applySecurityHeaders(NextResponse.redirect(setupUrl));
+  }
+
+  // setup 페이지에 접근하는 경우 역할이 있으면 적절한 페이지로 리다이렉트
+  if (isSetupPath && token.role) {
+    const redirectUrl = token.role === 'STUDENT' ? '/problems' : '/dashboard';
+    return applySecurityHeaders(NextResponse.redirect(new URL(redirectUrl, request.url)));
+  }
+
+  // setup 페이지에서 리다이렉트 헤더가 있는 경우 데이터베이스 역할 확인
+  if (isSetupPath && request.headers.get('X-Session-Refresh')) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { email: token.email! },
+        select: { role: true },
+      });
+
+      if (dbUser?.role) {
+        const redirectUrl = dbUser.role === 'STUDENT' ? '/problems' : '/dashboard';
+        return applySecurityHeaders(NextResponse.redirect(new URL(redirectUrl, request.url)));
+      }
+    } catch (error) {
+      console.error('Error checking user role in middleware:', error);
+    }
   }
 
   if (isAdminPath && token.role !== 'ADMIN') {

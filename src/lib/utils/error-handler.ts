@@ -124,25 +124,3 @@ export function withErrorHandler<T extends any[]>(
     }
   };
 }
-
-// 로깅 유틸리티
-export const logger = {
-  info: (message: string, meta?: Record<string, any>) => {
-    console.log(`[INFO] ${message}`, meta ? JSON.stringify(meta) : '');
-  },
-  warn: (message: string, meta?: Record<string, any>) => {
-    console.warn(`[WARN] ${message}`, meta ? JSON.stringify(meta) : '');
-  },
-  error: (message: string, error?: Error, meta?: Record<string, any>) => {
-    console.error(`[ERROR] ${message}`, {
-      error: error?.message,
-      stack: error?.stack,
-      meta: meta ? JSON.stringify(meta) : undefined,
-    });
-  },
-  debug: (message: string, meta?: Record<string, any>) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.debug(`[DEBUG] ${message}`, meta ? JSON.stringify(meta) : '');
-    }
-  },
-};

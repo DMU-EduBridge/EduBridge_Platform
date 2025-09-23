@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/core/prisma';
+import { NextRequest, NextResponse } from 'next/server';
 import { PerformanceMetrics } from './performance';
 
 // ============================================================================
@@ -467,8 +467,8 @@ export class EmailNotificationChannel implements NotificationChannel {
 
   async send(alert: any): Promise<void> {
     // 실제 구현에서는 nodemailer 등 사용
-    console.log(`Email alert: ${alert.title} - ${alert.message}`);
-    console.log(`Severity: ${alert.severity}, Value: ${alert.value}`);
+    logger.warn(`Email alert: ${alert.title} - ${alert.message}`);
+    logger.warn(`Severity: ${alert.severity}, Value: ${alert.value}`);
   }
 }
 
@@ -708,3 +708,6 @@ export function initializeMonitoring() {
     5 * 60 * 1000,
   );
 }
+
+// 기본 logger 인스턴스 export
+export const logger = StructuredLogger.getInstance();

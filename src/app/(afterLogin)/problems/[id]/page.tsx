@@ -26,10 +26,10 @@ export default async function ProblemDetailPage({ params }: { params: { id: stri
     title: problem.title,
     description: problem.description,
     type: problem.type,
-    options: parseJsonArray(problem.options),
+    options: parseJsonArray(problem.options as string),
     correctAnswer: problem.correctAnswer,
     explanation: problem.explanation ?? null,
-    hints: parseJsonArray(problem.hints),
+    hints: parseJsonArray(problem.hints as string),
   };
 
   return <SolveClient problem={vm} />;
