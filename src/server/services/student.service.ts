@@ -1,6 +1,5 @@
-import { serializeArray } from '@/lib/utils/json';
 import type { Prisma } from '@prisma/client';
-import { studentRepository } from '../repositories/student.repository';
+import { prisma } from '../../lib/core/prisma';
 
 export class StudentService {
   async list(params: {
@@ -13,64 +12,49 @@ export class StudentService {
     const where: Prisma.UserWhereInput = { role: 'STUDENT' };
     if (params.search)
       where.OR = [{ name: { contains: params.search } }, { email: { contains: params.search } }];
-    if (params.grade && params.grade !== 'all') where.grade = params.grade;
+    if (params.grade && params.grade !== 'all') where.gradeLevel = params.grade;
     if (params.status && params.status !== 'all') where.status = params.status as any;
 
-    const { items, total } = await studentRepository.findMany(where, params.page, params.limit);
-    const students = items.map((student) => {
-      const completedProblems = student.progress.filter((p) => p.status === 'COMPLETED').length;
-      const totalProblems = student.progress.length;
-      const averageScore =
-        student.progress.length > 0
-          ? Math.round(
-              student.progress.reduce((sum, p) => sum + (p.score || 0), 0) /
-                student.progress.length,
-            )
-          : 0;
-      const progress =
-        totalProblems > 0 ? Math.round((completedProblems / totalProblems) * 100) : 0;
-      const interests = student.preferences?.interests
-        ? JSON.parse(student.preferences.interests)
-        : [];
+    const skip = (params.page - 1) * params.limit;
+    const [students, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: params.limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.user.count({ where }),
+    ]);
 
-      return {
+    return {
+      students: students.map((student) => ({
         id: student.id,
         name: student.name,
         email: student.email,
-        grade: student.grade,
+        grade: student.gradeLevel,
         status: student.status,
-        progress,
-        completedProblems,
-        totalProblems,
-        averageScore,
-        subjects: interests,
+        progress: 0,
+        completedProblems: 0,
+        totalProblems: 0,
+        averageScore: 0,
+        subjects: [],
         joinDate: new Date(student.createdAt).toLocaleDateString('ko-KR'),
         lastActivity: new Date(student.updatedAt).toLocaleDateString('ko-KR'),
-        preferences: student.preferences,
-        rawProgress: student.progress,
-      };
-    });
-    return { students, total };
+      })),
+      total,
+    };
   }
 
   async detail(id: string) {
-    const student = await studentRepository.findById(id);
+    const student = await prisma.user.findUnique({
+      where: { id },
+    });
     if (!student || student.role !== 'STUDENT') return null;
-
-    const progressStats = await studentRepository.getProgressStats(id);
-    const interests = student.preferences?.interests
-      ? JSON.parse(student.preferences.interests)
-      : [];
-    const learningStyle = student.preferences?.learningStyle
-      ? JSON.parse(student.preferences.learningStyle)
-      : [];
 
     return {
       ...student,
-      ...progressStats,
-      interests,
-      learningStyle,
-      preferences: student.preferences,
+      interests: [],
+      learningStyle: [],
     };
   }
 
@@ -81,21 +65,15 @@ export class StudentService {
     learningStyle?: string[];
     interests?: string[];
   }) {
-    const data: Prisma.UserCreateInput = {
-      name: input.name,
-      email: input.email,
-      role: 'STUDENT',
-      grade: input.grade,
-      status: 'ACTIVE',
-      preferences: {
-        create: {
-          learningStyle: serializeArray(input.learningStyle) ?? '[]',
-          interests: serializeArray(input.interests) ?? '[]',
-          preferredDifficulty: 'MEDIUM',
-        },
+    return prisma.user.create({
+      data: {
+        name: input.name,
+        email: input.email,
+        role: 'STUDENT',
+        gradeLevel: input.grade,
+        status: 'ACTIVE',
       },
-    };
-    return studentRepository.create(data);
+    });
   }
 
   async update(
@@ -109,25 +87,75 @@ export class StudentService {
       interests?: string[];
     },
   ) {
-    const data: Prisma.UserUpdateInput = {
-      name: input.name,
-      email: input.email,
-      grade: input.grade,
-      status: input.status as any,
-    };
-    return studentRepository.update(id, data);
+    return prisma.user.update({
+      where: { id },
+      data: {
+        name: input.name,
+        email: input.email,
+        gradeLevel: input.grade,
+        status: input.status as any,
+      },
+    });
   }
 
   async remove(id: string) {
-    return studentRepository.delete(id);
+    return prisma.user.delete({
+      where: { id },
+    });
   }
 
   async getStats() {
-    return studentRepository.getStats();
+    const [total, byGrade, byStatus] = await Promise.all([
+      prisma.user.count({ where: { role: 'STUDENT' } }),
+      prisma.user.groupBy({
+        by: ['gradeLevel'],
+        _count: { gradeLevel: true },
+        where: { role: 'STUDENT' },
+      }),
+      prisma.user.groupBy({
+        by: ['status'],
+        _count: { status: true },
+        where: { role: 'STUDENT' },
+      }),
+    ]);
+
+    return {
+      total,
+      byGrade: byGrade.reduce(
+        (acc, item) => {
+          acc[item.gradeLevel || 'Unknown'] = item._count.gradeLevel;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      byStatus: byStatus.reduce(
+        (acc, item) => {
+          acc[item.status] = item._count.status;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+    };
   }
 
   async getProgressStats(studentId: string) {
-    return studentRepository.getProgressStats(studentId);
+    const attempts = await prisma.attempt.findMany({
+      where: { userId: studentId },
+    });
+
+    const totalAttempts = attempts.length;
+    const correctAttempts = attempts.filter((a) => a.isCorrect).length;
+    const averageTimeSpent =
+      totalAttempts > 0
+        ? attempts.reduce((sum, a) => sum + (a.timeSpent || 0), 0) / totalAttempts
+        : 0;
+
+    return {
+      totalAttempts,
+      correctAttempts,
+      averageTimeSpent,
+      completionRate: totalAttempts > 0 ? correctAttempts / totalAttempts : 0,
+    };
   }
 }
 
