@@ -31,6 +31,7 @@ enum ProblemDifficulty {
   EASY
   MEDIUM
   HARD
+  EXPERT
 }
 
 enum ProblemType {
@@ -38,6 +39,8 @@ enum ProblemType {
   SHORT_ANSWER
   ESSAY
   TRUE_FALSE
+  CODING
+  MATH
 }
 
 enum ReviewStatus {
@@ -101,17 +104,21 @@ enum TemplateType {
 model User {
   id               String             @id @default(cuid())
   email            String             @unique
+  password         String?            // 패스워드 (OAuth 사용자는 null)
   name             String
   role             UserRole
   avatar           String?
   bio              String?
-  grade            String?
+  gradeLevel       String?            // grade -> gradeLevel로 통일
   status           UserStatus          @default(ACTIVE)
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   deletedAt        DateTime?
   school           String?
   subject          String?
+  lastLoginAt      DateTime?          // 마지막 로그인 시간
+  passwordResetToken String?          // 비밀번호 재설정 토큰
+  passwordResetExpires DateTime?      // 비밀번호 재설정 만료 시간
   reports          AnalysisReport[]
   attempts         Attempt[]
   counseling       CareerCounseling[]
@@ -135,10 +142,67 @@ model User {
   sampleDataTemplates SampleDataTemplate[]
   questionHistory     QuestionHistory[]
 
+  // 클래스 관련 관계
+  createdClasses    Class[]            @relation("ClassCreator")
+  classMemberships  ClassMember[]
+  assignedProblems  ProblemAssignment[] @relation("ProblemAssigner")
+  
   @@index([role])
   @@index([status])
   @@index([deletedAt])
+  @@index([lastLoginAt])
   @@map("users")
+}
+
+// 클래스/수업 관리
+model Class {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  subject     String
+  gradeLevel  String
+  schoolYear  String        // 2024, 2025 등
+  semester    String        // 1학기, 2학기
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  
+  // 관계
+  createdBy   String
+  creator     User         @relation("ClassCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  members     ClassMember[]
+  assignments ProblemAssignment[]
+  attempts    Attempt[]
+  
+  @@index([createdBy])
+  @@index([subject, gradeLevel])
+  @@index([schoolYear, semester])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("classes")
+}
+
+// 클래스 멤버십 (선생님-학생 관계)
+model ClassMember {
+  id        String   @id @default(cuid())
+  classId   String
+  userId    String
+  role      String   @default("STUDENT") // STUDENT, TEACHER, ASSISTANT
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+  isActive  Boolean  @default(true)
+  
+  // 관계
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([classId, userId])
+  @@index([classId])
+  @@index([userId])
+  @@index([role])
+  @@index([isActive])
+  @@map("class_members")
 }
 
 model UserPreferences {
@@ -224,6 +288,7 @@ model Problem {
   creator          User?                     @relation("ProblemCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   questionOptions  QuestionOption[]
   questionTags     QuestionTag[]
+  assignments      ProblemAssignment[]
 
   @@index([subject])
   @@index([difficulty])
@@ -419,17 +484,54 @@ model ReportRecommendation {
 }
 
 model Attempt {
-  id        String   @id @default(cuid())
-  userId    String
-  problemId String
-  selected  String
-  isCorrect Boolean
-  createdAt DateTime @default(now())
-  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id           String   @id @default(cuid())
+  userId       String
+  problemId    String
+  classId      String?  // 클래스별 문제 할당 시 사용
+  selected     String
+  isCorrect    Boolean
+  startedAt    DateTime @default(now())  // 문제 풀이 시작 시간
+  completedAt  DateTime?                 // 문제 풀이 완료 시간
+  timeSpent    Int?                     // 소요 시간 (초)
+  hintsUsed    Int      @default(0)     // 사용한 힌트 수
+  attemptsCount Int     @default(1)     // 같은 문제에 대한 시도 횟수
+  createdAt    DateTime @default(now())
+  
+  // 관계
+  problem      Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class        Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  
   @@index([userId, problemId])
+  @@index([classId])
+  @@index([startedAt])
+  @@index([completedAt])
   @@map("attempts")
+}
+
+// 클래스별 문제 할당
+model ProblemAssignment {
+  id          String   @id @default(cuid())
+  classId     String
+  problemId   String
+  assignedBy  String   // 할당한 선생님 ID
+  assignedAt  DateTime @default(now())
+  dueDate     DateTime? // 마감일
+  isActive    Boolean  @default(true)
+  instructions String?  // 특별 지시사항
+  
+  // 관계
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  problem     Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  assigner    User     @relation("ProblemAssigner", fields: [assignedBy], references: [id], onDelete: Cascade)
+  
+  @@unique([classId, problemId])
+  @@index([classId])
+  @@index([problemId])
+  @@index([assignedBy])
+  @@index([dueDate])
+  @@index([isActive])
+  @@map("problem_assignments")
 }
 
 // Educational AI System Models - 실제 ChromaDB 기반 구조 반영
