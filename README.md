@@ -54,8 +54,18 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **캐싱 전략**: React Query 기반 API 응답 캐싱, Redis 지원
 - **데이터베이스 최적화**: 연결 풀링, 쿼리 최적화, 인덱싱, 배치 작업
 - **성능 모니터링**: Web Vitals 추적, 실시간 성능 대시보드
+- **쿼리 최적화**: 페이지네이션, WHERE 절, 관계 로딩 최적화 유틸리티
+- **N+1 문제 해결**: 효율적인 데이터 로딩 및 관계 최적화
 
-### 👥 학생 관리
+### 👥 클래스 관리 (NEW!)
+
+- **클래스 생성**: 교사가 클래스를 생성하고 학생들을 초대
+- **멤버 관리**: 클래스 멤버 추가/제거, 역할 관리
+- **과제 배정**: 클래스별 문제 및 학습자료 배정
+- **진도 추적**: 클래스 전체 및 개별 학생 진도 모니터링
+- **통계 분석**: 클래스별 성과 분석 및 리포트 생성
+
+### 👨‍🎓 학생 관리
 
 - **학생 프로필**: 개인정보, 학습 스타일, 관심사 관리
 - **진행률 추적**: 문제별 완료 상태, 점수, 시도 횟수 기록
@@ -75,6 +85,8 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **역할 기반 접근 제어**: 교사, 학생, 관리자 권한 분리
 - **라우트 보호**: 미들웨어를 통한 페이지 접근 제어
 - **세션 관리**: 안전한 사용자 세션 및 자동 로그아웃
+- **트랜잭션 관리**: 데이터 일관성을 위한 트랜잭션 지원
+- **에러 처리**: 통합 에러 처리 시스템 및 커스텀 에러 클래스
 
 ### 📁 파일 관리
 
@@ -103,6 +115,9 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 - **ORM**: Prisma 5.7
 - **Authentication**: NextAuth.js
 - **File Upload**: Next.js built-in API
+- **Caching**: Redis (선택사항)
+- **Architecture**: Service Layer Pattern (DTO/Repository 제거)
+- **Validation**: Zod 스키마 기반 런타임 검증
 
 ### Development Tools
 
@@ -304,6 +319,12 @@ npm run db:reset
 
 # 시드 데이터 삽입
 npm run db:seed
+
+# 데이터베이스 최적화 (인덱스 생성)
+npm run db:optimize:indexes
+
+# 데이터베이스 성능 분석
+npm run db:optimize:analyze
 ```
 
 ### 서비스 관리
@@ -444,29 +465,32 @@ EduBridge/
 
 ## 🧩 백엔드 구조(아키텍처)
 
-- 레이어드 아키텍처: Controller(API Route) → Service(비즈니스 로직) → Repository(DB 접근, Prisma) → DB
-- DTO 기반 검증: zod 스키마로 요청/응답 검증 및 타입 일치 보장
-- 공통 유틸: 표준 응답/에러/로깅/Request ID/페이징 헬퍼 제공
+- **서비스 레이어 아키텍처**: Controller(API Route) → Service(비즈니스 로직) → Prisma ORM → DB
+- **DTO/Repository 패턴 제거**: 불필요한 중간 계층 제거로 성능 향상 및 코드 단순화
+- **도메인별 서비스 구조**: 클래스, 문제, 사용자 등 도메인별 폴더 구조로 재구성
+- **Zod 기반 검증**: 런타임 타입 검증 및 스키마 기반 API 문서화
+- **통합 에러 처리**: 커스텀 에러 클래스 및 표준화된 에러 응답
+- **트랜잭션 관리**: 데이터 일관성을 위한 트랜잭션 지원
 
 ### 디렉터리 역할
 
-- `src/app/api/**`: App Router API 라우트(컨트롤러). 파라미터 파싱, DTO 검증, 서비스 호출, 응답 처리만 담당
-- `src/server/services/**`: 도메인 서비스. 권한/레이트리밋/트랜잭션/집계 등 비즈니스 로직
-- `src/server/repositories/**`: Prisma 쿼리 캡슐화. findMany/findById/create/update/delete 등
-- `src/server/dto/**`: zod 스키마(요청/응답). 일부는 OpenAPI components.schemas로 자동 노출
-- `src/lib/utils/http.ts`: `okJson`, `getPagination`, `getParam`, `getSearchParams`
-- `src/lib/utils/error-handler.ts`: `withErrorHandler`, 표준 에러 응답(요청 실패 시 `X-Request-Id` 포함), Prisma 에러 매핑(P2002/2003/2025 등)
-- `src/lib/utils/request-context.ts`: `getRequestId`(성공/에러 응답 헤더 부착에 사용)
-- `src/lib/utils/service-metrics.ts`: 서비스 경계 성능 로깅 프록시(호출 시간/에러 로깅)
+- `src/app/api/**`: App Router API 라우트(컨트롤러). 파라미터 파싱, Zod 검증, 서비스 호출, 응답 처리만 담당
+- `src/server/services/**`: 도메인별 서비스 폴더 구조
+  - `class/`: 클래스 관리 (CRUD, 멤버 관리, 과제 배정)
+  - `problem/`: 문제 관리 (CRUD, 검토, 통계, 검색)
+  - `user/`: 사용자 관리 (인증, 프로필, 권한)
+- `src/lib/schemas/**`: Zod 스키마(요청/응답). OpenAPI components.schemas로 자동 노출
+- `src/lib/api-response.ts`: 표준화된 API 응답 구조 및 에러 코드
+- `src/lib/errors/`: 커스텀 에러 클래스 및 통합 에러 처리
+- `src/lib/transactions/`: 트랜잭션 관리 유틸리티
+- `src/lib/validation/`: Zod 기반 검증 유틸리티
 
 ### 성능 최적화 모듈
 
-- `src/lib/performance.ts`: 기본 성능 유틸리티 (QueryOptimizer, CacheManager, PerformanceMetrics)
-- `src/lib/performance-monitoring.tsx`: Web Vitals 추적, 실시간 성능 모니터링
-- `src/lib/performance-provider.tsx`: 성능 모니터링 컨텍스트 프로바이더
-- `src/lib/cache.tsx`: React Query 기반 캐싱 전략 및 오프라인 지원
-- `src/lib/dynamic-imports.tsx`: 코드 분할 및 지연 로딩
-- `src/lib/database-optimization.ts`: 데이터베이스 쿼리 최적화, 연결 풀링, 인덱싱
+- `src/lib/performance/query-optimizer.ts`: 쿼리 최적화 유틸리티 (페이지네이션, WHERE 절, 관계 로딩)
+- `src/lib/performance/web-vitals.ts`: Web Vitals 추적 및 성능 측정
+- `src/lib/cache/cache-manager.ts`: Redis 기반 캐싱 시스템
+- `scripts/optimize-database.ts`: 데이터베이스 최적화 스크립트 (인덱스 생성, 성능 분석)
 - `src/components/ui/optimized-image.tsx`: 최적화된 이미지 컴포넌트 (WebP/AVIF 지원)
 - `src/components/dashboard/performance-dashboard.tsx`: 실시간 성능 대시보드
 
@@ -477,31 +501,36 @@ EduBridge/
 
 ### 요청 흐름
 
-1. API Route(Controller): 파라미터/바디 파싱 → zod 검증 → Service 호출 → `okJson(.., request)`로 성공 응답(`X-Request-Id` 자동)
-2. Service: 권한 확인, 레이트리밋, 트랜잭션, 도메인 규칙 처리(서비스 경계 로깅 적용)
-3. Repository: Prisma로 DB 접근, N+1 방지 및 필요한 관계만 select/include
+1. API Route(Controller): 파라미터/바디 파싱 → Zod 검증 → Service 호출 → 표준화된 응답 반환
+2. Service: 권한 확인, 트랜잭션, 도메인 규칙 처리, 쿼리 최적화 적용
+3. Prisma ORM: 직접 DB 접근, N+1 방지 및 필요한 관계만 select/include
 
 ### 표준 컨벤션
 
-- 에러 처리: `withErrorHandler`로 래핑, 에러 바디/헤더에 `requestId` 포함
-- 로깅: `logger.info|warn|error` + 서비스 경계 로깅(`service-metrics`)
-- 캐시: 읽기 GET에 한해 `Cache-Control` 명시, 민감 데이터 `no-store`
-- 레이트리밋: 시도 생성 등 쓰기 엔드포인트에 도메인별 적용(전역 미들웨어 확장 가능)
-- 보안 헤더: `middleware.ts` 전역 기본 적용, 일부 API에서 직접 헤더 세팅
-- 런타임: 파일 IO(업로드/다운로드)는 Node 런타임 유지. 경량 GET은 필요 시 Edge 전환 가능
+- 에러 처리: 커스텀 에러 클래스 사용, 표준화된 에러 응답 구조
+- 로깅: 구조화된 로깅 시스템, 서비스 경계 성능 측정
+- 캐싱: Redis 기반 다층 캐싱, 읽기 GET에 캐시 적용
+- 트랜잭션: 데이터 일관성을 위한 트랜잭션 관리
+- 보안 헤더: `middleware.ts` 전역 기본 적용
+- 타입 안정성: `exactOptionalPropertyTypes: true` 설정으로 엄격한 타입 검사
 
 ### OpenAPI(스웨거)
 
 - 스펙: `GET /api/docs` (OpenAPI 3.0 JSON)
 - UI: `GET /api/docs/ui` (Swagger UI)
-- DTO 자동 반영: `@asteasolutions/zod-to-openapi`로 주요 zod 스키마를 components.schemas로 등록
-- 태그 분류: Reports/Problems/Attempts/Solutions/Students/Materials/Upload/Alerts/Metrics/Health
+- Zod 스키마 자동 반영: 주요 Zod 스키마를 components.schemas로 등록
+- 태그 분류: Classes/Problems/Students/Materials/Reports/Analytics/Health 등
 
 ### 인덱스/성능
 
 - 주요 조회 최적화를 위해 복합 인덱스 추가
   - `analysis_reports (studentId, type, status, createdAt)`
   - `learning_materials (status, subject, createdAt)`
+  - `classes (teacherId, status, createdAt)`
+  - `class_members (classId, userId, role)`
+  - `student_progress (studentId, problemId, status)`
+- 쿼리 최적화 유틸리티로 N+1 문제 해결
+- Redis 캐싱으로 반복 쿼리 성능 향상
 
 ### 테스트/CI (권장)
 
@@ -509,6 +538,11 @@ EduBridge/
 - CI: `lint`/`typecheck`/`test`/`prisma generate`/`build`
 
 ## 🗄️ 데이터베이스 스키마 (ERD)
+
+![Database ERD](./docs/erd.svg)
+
+<details>
+<summary>📊 상세 ERD 다이어그램 (Mermaid)</summary>
 
 ```mermaid
 erDiagram
@@ -519,7 +553,7 @@ erDiagram
         string role
         string avatar
         string bio
-        string grade
+        string gradeLevel
         string status
         datetime createdAt
         datetime updatedAt
@@ -631,6 +665,26 @@ erDiagram
         datetime createdAt
     }
 
+    Class {
+        string id PK
+        string name
+        string description
+        string subject
+        string schoolYear
+        string teacherId FK
+        string status
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    ClassMember {
+        string id PK
+        string classId FK
+        string userId FK
+        string role
+        datetime joinedAt
+    }
+
     AIModel {
         string id PK
         string name
@@ -648,6 +702,35 @@ erDiagram
         int tokensUsed
         float cost
         int duration
+        datetime createdAt
+    }
+
+    AIServerStatus {
+        string id PK
+        string serverName
+        string serverUrl
+        string status
+        int responseTimeMs
+        string version
+        string errorMessage
+        json services
+        datetime lastChecked
+        datetime createdAt
+    }
+
+    AIServerSync {
+        string id PK
+        string serverName
+        string syncType
+        string status
+        datetime startTime
+        datetime endTime
+        int durationMs
+        int recordsProcessed
+        int recordsSynced
+        string errors
+        json metadata
+        string userId FK
         datetime createdAt
     }
 
@@ -675,6 +758,9 @@ erDiagram
     User ||--o{ AnalysisReport : "generates"
     User ||--o{ CareerCounseling : "receives"
     User ||--o{ Problem : "reviews"
+    User ||--o{ Class : "teaches"
+    User ||--o{ ClassMember : "belongs_to"
+    User ||--o{ AIServerSync : "initiates"
 
     Problem ||--o{ StudentProgress : "tracked_in"
     Problem ||--o{ LearningMaterialProblem : "linked_to"
@@ -689,7 +775,18 @@ erDiagram
     CareerCounseling }o--o| AIGeneration : "generated_by"
 
     AIModel ||--o{ AIGeneration : "creates"
+
+    Class ||--o{ ClassMember : "has"
+    Class ||--o{ ProblemAssignment : "assigns"
+
+    TeacherReport ||--o{ ReportInsight : "contains"
+    TeacherReport ||--o{ ReportRecommendation : "contains"
+    TeacherReport ||--o{ ReportAnalysis : "analyzes"
+    TeacherReport ||--o{ StudentData : "includes"
+    TeacherReport ||--o{ ClassInfo : "summarizes"
 ```
+
+</details>
 
 ### 🏗️ 스키마 주요 특징
 
@@ -871,8 +968,6 @@ npm start
 - Prettier 포맷팅 적용
 - 의미있는 커밋 메시지 작성
 - 테스트 코드 작성 권장
-
-
 
 <div align="center">
 
