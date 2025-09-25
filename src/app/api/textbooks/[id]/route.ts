@@ -1,7 +1,7 @@
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
+import { TextbookResponseSchema, UpdateTextbookSchema } from '@/lib/schemas/api';
 import { textbookService } from '@/server';
-import { TextbookResponseDto, UpdateTextbookDto } from '@/server/dto/textbook';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // 응답 스키마 검증
-    const response = TextbookResponseDto.parse(textbook);
+    const response = TextbookResponseSchema.parse(textbook);
 
     return NextResponse.json(response);
   } catch (error) {
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const body = await request.json();
-    const parsed = UpdateTextbookDto.safeParse(body);
+    const parsed = UpdateTextbookSchema.safeParse(body);
 
     if (!parsed.success) {
       logger.error('잘못된 요청 데이터입니다.', undefined, { details: parsed.error.errors });
@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const textbook = await textbookService.updateTextbook(params.id, parsed.data);
 
     // 응답 스키마 검증
-    const response = TextbookResponseDto.parse(textbook);
+    const response = TextbookResponseSchema.parse(textbook);
 
     return NextResponse.json(response);
   } catch (error) {
@@ -91,7 +91,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const textbook = await textbookService.deleteTextbook(params.id);
 
     // 응답 스키마 검증
-    const response = TextbookResponseDto.parse(textbook);
+    const response = TextbookResponseSchema.parse(textbook);
 
     return NextResponse.json(response);
   } catch (error) {

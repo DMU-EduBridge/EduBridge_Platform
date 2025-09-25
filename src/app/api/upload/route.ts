@@ -1,5 +1,5 @@
+import { UploadResponseSchema } from '@/lib/schemas/api';
 import { getRequestId } from '@/lib/utils/request-context';
-import { UploadResponseSchema } from '@/server/dto/upload';
 import { uploadService } from '@/server/services/upload.service';
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';

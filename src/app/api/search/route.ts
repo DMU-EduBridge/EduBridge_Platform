@@ -1,9 +1,20 @@
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
+import { SearchQueryListResponseSchema } from '@/lib/schemas/api';
 import { searchService } from '@/server';
-import { SearchQueryListQueryDto, SearchQueryListResponseSchema } from '@/server/dto/search';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+// 검색 쿼리 요청 스키마
+const SearchQueryRequestSchema = z.object({
+  page: z.number().optional(),
+  limit: z.number().optional(),
+  userId: z.string().optional(),
+  subject: z.string().optional(),
+  gradeLevel: z.string().optional(),
+  search: z.string().optional(),
+});
 
 /**
  * 검색 쿼리 목록 조회
@@ -17,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const parsed = SearchQueryListQueryDto.safeParse({
+    const parsed = SearchQueryRequestSchema.safeParse({
       page: Number(searchParams.get('page')) || undefined,
       limit: Number(searchParams.get('limit')) || undefined,
       userId: searchParams.get('userId') || undefined,
@@ -63,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = SearchQueryListQueryDto.safeParse(body);
+    const parsed = SearchQueryRequestSchema.safeParse(body);
 
     if (!parsed.success) {
       logger.error('잘못된 요청 데이터입니다.', undefined, { details: parsed.error.errors });

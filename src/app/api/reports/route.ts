@@ -1,9 +1,9 @@
 import { parseJsonBody } from '@/lib/config/validation';
 import { logger } from '@/lib/monitoring';
+import { ReportListResponseSchema } from '@/lib/schemas/api';
 import { ValidationError, withErrorHandler } from '@/lib/utils/error-handler';
 import { getPagination, getParam, getSearchParams, okJson } from '@/lib/utils/http';
 import { getRequestId } from '@/lib/utils/request-context';
-import { ReportListResponseSchema } from '@/server/dto/report';
 import { reportService } from '@/server/services/report.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';

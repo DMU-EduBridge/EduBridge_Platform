@@ -1,20 +1,19 @@
 import {
-  AIApiUsageListResponseSchema,
-  AIPerformanceMetricListResponseSchema,
-  AIUsageStatisticsListResponseSchema,
-} from '@/server/dto/ai-stats';
-import { MaterialListResponseSchema } from '@/server/dto/material';
-import { ProblemListResponseSchema } from '@/server/dto/problem';
-import { ReportDetailResponseSchema, ReportListResponseSchema } from '@/server/dto/report';
-import { SearchQueryListResponseSchema, SearchResultListResponseSchema } from '@/server/dto/search';
-import { StudentListResponseSchema } from '@/server/dto/student';
-import {
+  MaterialListResponseSchema,
+  ProblemListResponseSchema,
+  ReportDetailResponseSchema,
+  ReportListResponseSchema,
+  SearchQueryListResponseSchema,
+  SearchResultListResponseSchema,
+  StudentListResponseSchema,
   TeacherReportListResponseSchema,
-  TeacherReportResponseDto,
-} from '@/server/dto/teacher-report';
-import { TextbookListResponseSchema, TextbookResponseDto } from '@/server/dto/textbook';
-import { UploadResponseSchema } from '@/server/dto/upload';
-import { UserListResponseSchema, UserResponseDto } from '@/server/dto/user';
+  TeacherReportResponseSchema,
+  TextbookListResponseSchema,
+  TextbookResponseSchema,
+  UploadResponseSchema,
+  UserListResponseSchema,
+  UserResponseSchema,
+} from '@/lib/schemas/api';
 import {
   AttemptPostResponseSchema,
   AttemptsResponseSchema,
@@ -45,16 +44,14 @@ export async function GET() {
   registry.register('StudentListResponse', StudentListResponseSchema);
   registry.register('MaterialListResponse', MaterialListResponseSchema);
   registry.register('TeacherReportListResponse', TeacherReportListResponseSchema);
-  registry.register('TeacherReportResponseDto', TeacherReportResponseDto);
+  registry.register('TeacherReportResponseSchema', TeacherReportResponseSchema);
   registry.register('TextbookListResponseSchema', TextbookListResponseSchema);
-  registry.register('TextbookResponseDto', TextbookResponseDto);
+  registry.register('TextbookResponseSchema', TextbookResponseSchema);
   registry.register('UserListResponseSchema', UserListResponseSchema);
-  registry.register('UserResponseDto', UserResponseDto);
+  registry.register('UserResponseSchema', UserResponseSchema);
   registry.register('SearchQueryListResponseSchema', SearchQueryListResponseSchema);
   registry.register('SearchResultListResponseSchema', SearchResultListResponseSchema);
-  registry.register('AIApiUsageListResponseSchema', AIApiUsageListResponseSchema);
-  registry.register('AIPerformanceMetricListResponseSchema', AIPerformanceMetricListResponseSchema);
-  registry.register('AIUsageStatisticsListResponseSchema', AIUsageStatisticsListResponseSchema);
+  // AI Stats 관련 스키마들은 삭제된 서비스로 인해 제거됨
   registry.register('AttemptsResponse', AttemptsResponseSchema as unknown as z.ZodTypeAny);
   registry.register('AttemptPostResponse', AttemptPostResponseSchema as unknown as z.ZodTypeAny);
   registry.register('SolutionResponse', SolutionResponseSchema as unknown as z.ZodTypeAny);
@@ -172,7 +169,7 @@ export async function GET() {
             '201': {
               description: 'Created',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/UserResponseDto' } },
+                'application/json': { schema: { $ref: '#/components/schemas/UserResponseSchema' } },
               },
             },
             '400': { $ref: '#/components/responses/BadRequestError' },
@@ -191,7 +188,7 @@ export async function GET() {
             '200': {
               description: 'OK',
               content: {
-                'application/json': { schema: { $ref: '#/components/schemas/UserResponseDto' } },
+                'application/json': { schema: { $ref: '#/components/schemas/UserResponseSchema' } },
               },
             },
             '401': { $ref: '#/components/responses/UnauthorizedError' },
@@ -467,7 +464,7 @@ export async function GET() {
               description: 'Created',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/TextbookResponseDto' },
+                  schema: { $ref: '#/components/schemas/TextbookResponseSchema' },
                 },
               },
             },
@@ -486,7 +483,7 @@ export async function GET() {
               description: 'OK',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/TextbookResponseDto' },
+                  schema: { $ref: '#/components/schemas/TextbookResponseSchema' },
                 },
               },
             },
@@ -573,7 +570,7 @@ export async function GET() {
               description: 'Created',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/TeacherReportResponseDto' },
+                  schema: { $ref: '#/components/schemas/TeacherReportResponseSchema' },
                 },
               },
             },
@@ -854,7 +851,7 @@ export async function GET() {
               description: 'OK',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/AIApiUsageListResponseSchema' },
+                  schema: { $ref: '#/components/schemas/UserListResponseSchema' },
                 },
               },
             },
@@ -877,7 +874,7 @@ export async function GET() {
               description: 'OK',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/AIPerformanceMetricListResponseSchema' },
+                  schema: { $ref: '#/components/schemas/UserListResponseSchema' },
                 },
               },
             },
@@ -900,7 +897,7 @@ export async function GET() {
               description: 'OK',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/AIUsageStatisticsListResponseSchema' },
+                  schema: { $ref: '#/components/schemas/UserListResponseSchema' },
                 },
               },
             },

@@ -1,12 +1,12 @@
 import { authOptions } from '@/lib/core/auth';
+import { prisma } from '@/lib/core/prisma';
 import { logger } from '@/lib/monitoring';
-import { teacherReportService } from '@/server';
 import {
-  CreateTeacherReportDto,
-  TeacherReportListQueryDto,
+  CreateTeacherReportSchema,
+  TeacherReportListQuerySchema,
   TeacherReportListResponseSchema,
-  TeacherReportResponseDto,
-} from '@/server/dto/teacher-report';
+  TeacherReportResponseSchema,
+} from '@/lib/schemas/api';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const parsed = TeacherReportListQueryDto.safeParse({
+    const parsed = TeacherReportListQuerySchema.safeParse({
       page: Number(searchParams.get('page')) || undefined,
       limit: Number(searchParams.get('limit')) || undefined,
       status: (searchParams.get('status') as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED') || undefined,
@@ -37,7 +37,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await teacherReportService.getTeacherReports(parsed.data);
+    // 직접 Prisma를 사용하여 교사 리포트 조회
+    const { page = 1, limit = 20, status, search } = parsed.data;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) where.status = status;
+    if (search) {
+      where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
+    }
+
+    const [reports, total] = await Promise.all([
+      prisma.teacherReport.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.teacherReport.count({ where }),
+    ]);
+
+    const result = {
+      reports,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
 
     // 응답 스키마 검증
     const response = TeacherReportListResponseSchema.parse({
@@ -66,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = CreateTeacherReportDto.safeParse(body);
+    const parsed = CreateTeacherReportSchema.safeParse(body);
 
     if (!parsed.success) {
       logger.error('잘못된 요청 데이터입니다.', undefined, { details: parsed.error.errors });
@@ -76,10 +104,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const report = await teacherReportService.createTeacherReport(parsed.data, session.user.id);
+    // 직접 Prisma를 사용하여 교사 리포트 생성
+    const report = await prisma.teacherReport.create({
+      data: {
+        ...parsed.data,
+        createdBy: session.user.id,
+      },
+    });
 
     // 응답 스키마 검증
-    const response = TeacherReportResponseDto.parse(report);
+    const response = TeacherReportResponseSchema.parse(report);
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {

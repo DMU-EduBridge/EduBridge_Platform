@@ -1,7 +1,7 @@
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
+import { UpdateUserSchema, UserResponseSchema, UserRoleSetupSchema } from '@/lib/schemas/api';
 import { userService } from '@/server';
-import { UpdateUserDto, UserResponseDto, UserRoleSetupDto } from '@/server/dto/user';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // 응답 스키마 검증
-    const response = UserResponseDto.parse(user);
+    const response = UserResponseSchema.parse(user);
 
     return NextResponse.json(response);
   } catch (error) {
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const body = await request.json();
-    const parsed = UpdateUserDto.safeParse(body);
+    const parsed = UpdateUserSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const user = await userService.updateUser(params.id, parsed.data);
 
     // 응답 스키마 검증
-    const response = UserResponseDto.parse(user);
+    const response = UserResponseSchema.parse(user);
 
     return NextResponse.json(response);
   } catch (error) {
@@ -93,7 +93,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const user = await userService.deleteUser(params.id);
 
     // 응답 스키마 검증
-    const response = UserResponseDto.parse(user);
+    const response = UserResponseSchema.parse(user);
 
     return NextResponse.json(response);
   } catch (error) {
@@ -123,7 +123,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     const body = await request.json();
-    const parsed = UserRoleSetupDto.safeParse(body);
+    const parsed = UserRoleSetupSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -139,7 +139,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     });
 
     // 응답 스키마 검증
-    const response = UserResponseDto.parse(user);
+    const response = UserResponseSchema.parse(user);
 
     return NextResponse.json(response);
   } catch (error) {

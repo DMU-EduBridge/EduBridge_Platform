@@ -1,9 +1,9 @@
+import { prisma } from '@/lib/core/prisma';
 import { logger } from '@/lib/monitoring';
 import { ForbiddenError, NotFoundError, withErrorHandler } from '@/lib/utils/error-handler';
 import { getRequestId } from '@/lib/utils/request-context';
 import { requireSession } from '@/server/auth/session';
-import { attemptService } from '@/server/services/attempt.service';
-import { ProblemService } from '@/server/services/problem.service';
+import { ProblemService } from '@/server/services/problem';
 import { SolutionResponseSchema } from '@/types/api';
 import { NextRequest, NextResponse } from 'next/server';
 const problemService = new ProblemService();
@@ -22,10 +22,14 @@ async function getSolution(request: NextRequest, { params }: { params: { id: str
 
   const session = await requireSession();
   const role = (session.user as any)?.role as string | undefined;
-  const allowed =
-    role === 'TEACHER' ||
-    role === 'ADMIN' ||
-    (await attemptService.hasAttempt(session.user.id, params.id));
+
+  // 시도 기록 확인
+  const hasAttempt = await prisma.attempt.findFirst({
+    where: { userId: session.user.id, problemId: params.id },
+  });
+
+  const allowed = role === 'TEACHER' || role === 'ADMIN' || hasAttempt;
+
   if (!allowed) {
     throw new ForbiddenError('해설은 제출 후에만 확인할 수 있습니다.');
   }

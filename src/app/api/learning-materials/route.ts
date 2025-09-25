@@ -1,85 +1,84 @@
-import { parseJsonBody } from '@/lib/config/validation';
+import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
-import { withErrorHandler } from '@/lib/utils/error-handler';
-import { getPagination, getParam, getSearchParams, okJson } from '@/lib/utils/http';
-import { getRequestId } from '@/lib/utils/request-context';
-import { MaterialListResponseSchema } from '@/server/dto/material';
 import { materialService } from '@/server/services/material.service';
+import { CreateMaterialRequest, MaterialQueryParams } from '@/types/domain/material';
+import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+
 export const dynamic = 'force-dynamic';
 
-// 학습 자료 목록 조회
-async function getLearningMaterials(request: NextRequest) {
-  const sp = getSearchParams(request);
-  const search = getParam(sp, 'search');
-  const subject = getParam(sp, 'subject');
-  const status = getParam(sp, 'status');
-  const { page, limit } = getPagination(sp);
+/**
+ * 학습 자료 목록 조회
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
 
-  const { items: materials, total } = await materialService.list({
-    search,
-    subject,
-    status,
-    page,
-    limit,
-  });
-  logger.info('Learning materials fetched', {
-    count: materials.length,
-    page,
-    limit,
-    requestId: getRequestId(request),
-  });
-  const payload = {
-    materials,
-    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-  };
-  MaterialListResponseSchema.parse(payload);
-  return okJson(payload, 'private, max-age=60', request);
-}
-
-// 새 학습 자료 생성
-const createMaterialSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  subject: z.string().min(1),
-  difficulty: z.string().min(1),
-  // 문자열로 와도 숫자로 강제 변환 허용
-  estimatedTime: z.coerce.number().int().nonnegative().optional(),
-  content: z.string().min(1),
-  // files가 객체 배열(예: {url,name,...})로 와도 문자열(URL/이름)로 정규화
-  files: z.preprocess((v) => {
-    if (Array.isArray(v)) {
-      return v
-        .map((f: any) => (typeof f === 'string' ? f : (f?.url ?? f?.name ?? null)))
-        .filter((s: any) => typeof s === 'string');
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return v;
-  }, z.array(z.string()).optional()),
-  status: z.string().default('DRAFT'),
-});
 
-async function createLearningMaterial(request: NextRequest) {
-  const raw = await request.json();
-  const parsed = parseJsonBody(raw, createMaterialSchema);
-  if (!parsed.success) return parsed.response;
+    const { searchParams } = new URL(request.url);
+    const query: MaterialQueryParams = {
+      page: parseInt(searchParams.get('page') || '1'),
+      limit: parseInt(searchParams.get('limit') || '20'),
+      search: searchParams.get('search') || undefined,
+      subject: searchParams.get('subject') || undefined,
+      difficulty: searchParams.get('difficulty') || undefined,
+      status: searchParams.get('status') || undefined,
+    };
 
-  const { title, description, subject, difficulty, estimatedTime, content, files, status } =
-    parsed.data;
+    const result = await materialService.getMaterials(query);
 
-  const material = await materialService.create({
-    title,
-    description,
-    subject,
-    difficulty,
-    estimatedTime,
-    content,
-    files: files as string[],
-    status,
-  });
-
-  return NextResponse.json(material, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      data: {
+        materials: result.materials,
+        pagination: result.pagination,
+        total: result.total,
+      },
+    });
+  } catch (error) {
+    logger.error('학습 자료 목록 조회 실패', undefined, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return NextResponse.json({ error: '학습 자료 목록 조회에 실패했습니다.' }, { status: 500 });
+  }
 }
 
-export const GET = withErrorHandler(getLearningMaterials);
-export const POST = withErrorHandler(createLearningMaterial);
+/**
+ * 학습 자료 생성
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 선생님과 관리자만 학습 자료 생성 가능
+    if (session.user.role !== 'TEACHER' && session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const data: CreateMaterialRequest = body;
+
+    const material = await materialService.createMaterial(data);
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: material,
+        message: '학습 자료가 성공적으로 생성되었습니다.',
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    logger.error('학습 자료 생성 실패', undefined, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return NextResponse.json({ error: '학습 자료 생성에 실패했습니다.' }, { status: 500 });
+  }
+}

@@ -1,12 +1,12 @@
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
-import { textbookService } from '@/server';
 import {
-  CreateTextbookDto,
-  TextbookListQueryDto,
+  CreateTextbookSchema,
+  TextbookListQuerySchema,
   TextbookListResponseSchema,
-  TextbookResponseDto,
-} from '@/server/dto/textbook';
+  TextbookResponseSchema,
+} from '@/lib/schemas/api';
+import { textbookService } from '@/server';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const parsed = TextbookListQueryDto.safeParse({
+    const parsed = TextbookListQuerySchema.safeParse({
       page: Number(searchParams.get('page')) || undefined,
       limit: Number(searchParams.get('limit')) || undefined,
       subject: searchParams.get('subject') || undefined,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = CreateTextbookDto.safeParse(body);
+    const parsed = CreateTextbookSchema.safeParse(body);
 
     if (!parsed.success) {
       logger.error('잘못된 요청 데이터입니다.', undefined, { details: parsed.error.errors });
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const textbook = await textbookService.createTextbook(parsed.data, session.user.id);
 
     // 응답 스키마 검증
-    const response = TextbookResponseDto.parse(textbook);
+    const response = TextbookResponseSchema.parse(textbook);
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {

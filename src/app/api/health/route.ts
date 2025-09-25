@@ -1,6 +1,6 @@
 import { performanceMiddleware } from '@/lib/performance';
+import { HealthResponseSchema } from '@/lib/schemas/api';
 import { getRequestId } from '@/lib/utils/request-context';
-import { HealthResponseSchema } from '@/server/dto/health';
 import { healthService } from '@/server/services/health.service';
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';

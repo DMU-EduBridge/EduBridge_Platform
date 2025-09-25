@@ -1,11 +1,11 @@
 import { performanceMiddleware } from '@/lib/performance';
-import { securityMiddleware } from '@/lib/security';
-import { getRequestId } from '@/lib/utils/request-context';
 import {
   AlertPostBodySchema,
   AlertStatusResponseSchema,
   AlertTestResponseSchema,
-} from '@/server/dto/alert';
+} from '@/lib/schemas/api';
+import { securityMiddleware } from '@/lib/security';
+import { getRequestId } from '@/lib/utils/request-context';
 import { alertService } from '@/server/services/alert.service';
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';

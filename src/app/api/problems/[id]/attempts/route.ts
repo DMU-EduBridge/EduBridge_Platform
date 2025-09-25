@@ -8,7 +8,6 @@ import {
   withErrorHandler,
 } from '@/lib/utils/error-handler';
 import { requireSession } from '@/server/auth/session';
-import { attemptService } from '@/server/services/attempt.service';
 import { AttemptPostResponseSchema, AttemptPostSchema, AttemptsResponseSchema } from '@/types/api';
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
@@ -21,7 +20,11 @@ async function getAttempts(request: NextRequest, { params }: { params: { id: str
   const url = new URL(request.url);
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 100);
 
-  const attempts = await attemptService.list(session.user.id, params.id, limit);
+  const attempts = await prisma.attempt.findMany({
+    where: { userId: session.user.id, problemId: params.id },
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+  });
   AttemptsResponseSchema.parse(attempts);
 
   logger.info('Attempts fetched', { problemId: params.id, count: attempts.length });
@@ -62,16 +65,46 @@ async function createAttempt(request: NextRequest, { params }: { params: { id: s
   const parsed = parseJsonBody(raw, postSchema);
   if (!parsed.success) return parsed.response;
 
-  // 레이트 리미트(간단): 1분 내 5회 제한
-  const limited = await attemptService.isRateLimited(session.user.id, params.id);
-  if (limited) {
+  // 레이트 리미트 체크 (간단한 구현)
+  const recentAttempts = await prisma.attempt.count({
+    where: {
+      userId: session.user.id,
+      problemId: params.id,
+      createdAt: {
+        gte: new Date(Date.now() - 60000), // 1분 전
+      },
+    },
+  });
+
+  if (recentAttempts >= 5) {
     throw new AppError('요청이 너무 많습니다. 잠시 후 다시 시도하세요.', 429);
   }
 
-  const result = await attemptService.create(dbUser.id, params.id, parsed.data.selected.trim());
-  if (!result.created && (result as any).notFound) {
+  // 문제 존재 확인
+  const problem = await prisma.problem.findUnique({
+    where: { id: params.id },
+    select: { correctAnswer: true },
+  });
+
+  if (!problem) {
     throw new NotFoundError('문제');
   }
+
+  const isCorrect = parsed.data.selected.trim() === problem.correctAnswer;
+
+  const attempt = await prisma.attempt.create({
+    data: {
+      userId: dbUser.id,
+      problemId: params.id,
+      selectedAnswer: parsed.data.selected.trim(),
+      isCorrect,
+      timeSpent: parsed.data.timeSpent || 0,
+      hintsUsed: parsed.data.hintsUsed || 0,
+      attemptsCount: recentAttempts + 1,
+    },
+  });
+
+  const result = { created: true, isCorrect };
   logger.info('Attempt created', { problemId: params.id, isCorrect: result.isCorrect });
   const payload = { correct: result.isCorrect };
   AttemptPostResponseSchema.parse(payload);

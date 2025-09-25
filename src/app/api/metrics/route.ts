@@ -1,11 +1,11 @@
 import { performanceMiddleware } from '@/lib/performance';
-import { getRequestId } from '@/lib/utils/request-context';
 import {
   MetricsCacheSchema,
   MetricsLogsSchema,
   MetricsOverviewSchema,
   MetricsTrendsSchema,
-} from '@/server/dto/metric';
+} from '@/lib/schemas/api';
+import { getRequestId } from '@/lib/utils/request-context';
 import { metricService } from '@/server/services/metric.service';
 import { NextRequest, NextResponse } from 'next/server';
 

@@ -1,7 +1,7 @@
 import { parseJsonBody } from '@/lib/config/validation';
+import { ProblemDetailResponseSchema } from '@/lib/schemas/api';
 import { getRequestId } from '@/lib/utils/request-context';
-import { ProblemDetailResponseSchema } from '@/server/dto/problem';
-import { ProblemService } from '@/server/services/problem.service';
+import { ProblemCrudService } from '@/server/services/problem';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -20,7 +20,7 @@ const updateProblemSchema = z.object({
 });
 
 // 개별 문제 조회, 수정, 삭제
-const problemService = new ProblemService();
+const problemService = new ProblemCrudService();
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -56,17 +56,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       isActive,
     } = parsed.data;
 
-    const problem = await problemService.update(params.id, {
+    const problem = await problemService.updateProblem(params.id, {
       title,
       description,
       subject,
       type,
       difficulty,
-      options,
+      ...(options !== undefined && { options }),
       correctAnswer,
-      hints,
-      tags,
-      isActive,
+      ...(hints !== undefined && { hints }),
+      ...(tags !== undefined && { tags }),
+      ...(isActive !== undefined && { isActive }),
     });
 
     return NextResponse.json(problem);
@@ -76,9 +76,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await problemService.remove(params.id);
+    await problemService.deleteProblem(params.id);
 
     return NextResponse.json({ message: 'Problem deleted successfully' });
   } catch (error) {
