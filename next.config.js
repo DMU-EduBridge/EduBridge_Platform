@@ -1,5 +1,10 @@
+const withNextIntl = require('next-intl/plugin')(
+  // next-intl 설정 파일 경로
+  './src/i18n.ts',
+);
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig = withNextIntl({
   // Docker를 위한 standalone 출력
   output: 'standalone',
 
@@ -112,6 +117,16 @@ const nextConfig = {
       },
     ];
   },
-};
+
+  // 경로 리다이렉트 (오타/구형 경로 보정)
+  async redirects() {
+    return [
+      { source: '/profiles', destination: '/profile', permanent: false },
+      { source: '/my/report', destination: '/my/reports', permanent: false },
+      // 학생 기본 랜딩 변경: 과거 '/problems'로 들어오는 링크를 '/my/learning'로 유도
+      { source: '/home-student', destination: '/my/learning', permanent: false },
+    ];
+  },
+});
 
 module.exports = nextConfig;

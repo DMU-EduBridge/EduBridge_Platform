@@ -1,4 +1,5 @@
 import { api } from '@/lib/core/api';
+import type { StudyItem } from '@/types/domain/learning';
 
 export interface LearningMaterialPayload {
   title: string;
@@ -26,4 +27,11 @@ export const learningService = {
   deleteMaterial: (id: string) => api.delete(`/learning-materials/${id}`),
 
   getMaterialStats: () => api.get('/learning-materials/stats'),
+
+  // StudyItem 관련 메서드들 (기존 API를 StudyItem 형태로 변환)
+  getStudyItems: () => api.get<{ items: StudyItem[] }>('/learning-materials'),
+
+  getStudyItem: (id: string) => api.get<StudyItem>(`/learning-materials/${id}`),
+
+  getStudyProgress: (studyId: string) => api.get(`/learning-materials/${studyId}/progress`),
 };

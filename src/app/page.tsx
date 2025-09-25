@@ -6,6 +6,12 @@ import { Stats } from '@/components/landing/stats';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { authOptions } from '@/lib/core/auth';
+import {
+  createJsonLdScript,
+  getEducationalOrganizationSchema,
+  getOrganizationSchema,
+  getWebSiteSchema,
+} from '@/lib/seo/structured-data';
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
@@ -33,7 +39,7 @@ export default async function HomePage() {
   if (session) {
     // 역할에 따라 기본 랜딩 경로 분기
     if (session.user.role === 'STUDENT') {
-      redirect('/problems');
+      redirect('/my/learning');
     }
     if (session.user.role === 'ADMIN') {
       redirect('/admin');
@@ -41,17 +47,38 @@ export default async function HomePage() {
     redirect('/dashboard');
   }
 
+  // 구조화된 데이터 생성
+  const organizationSchema = getOrganizationSchema();
+  const webSiteSchema = getWebSiteSchema();
+  const educationalOrgSchema = getEducationalOrganizationSchema();
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Header />
-      <main>
-        <Hero />
-        <Features />
-        <HowItWorks />
-        <Stats />
-        <CTA />
-      </main>
-      <Footer />
-    </div>
+    <>
+      {/* 구조화된 데이터 (JSON-LD) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={createJsonLdScript(organizationSchema)}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={createJsonLdScript(webSiteSchema)}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={createJsonLdScript(educationalOrgSchema)}
+      />
+
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Header />
+        <main>
+          <Hero />
+          <Features />
+          <HowItWorks />
+          <Stats />
+          <CTA />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 }

@@ -61,6 +61,7 @@ export class VectorEmbeddingService {
     subject: string;
     difficulty: string;
     tags?: string[];
+    problemType?: string;
     createdAt: Date;
   }): Promise<void> {
     try {
@@ -83,6 +84,7 @@ export class VectorEmbeddingService {
         tags: JSON.stringify(problem.tags || []), // 배열을 JSON 문자열로 변환
         createdAt: problem.createdAt.toISOString(),
         title: problem.title,
+        problemType: problem.problemType,
       };
 
       // ChromaDB에 저장
@@ -113,6 +115,7 @@ export class VectorEmbeddingService {
     subject: string;
     difficulty: string;
     tags?: string[];
+    gradeLevel?: string;
     createdAt: Date;
   }): Promise<void> {
     try {
@@ -135,6 +138,7 @@ export class VectorEmbeddingService {
         tags: JSON.stringify(material.tags || []), // 배열을 JSON 문자열로 변환
         createdAt: material.createdAt.toISOString(),
         title: material.title,
+        gradeLevel: material.gradeLevel,
       };
 
       // ChromaDB에 저장

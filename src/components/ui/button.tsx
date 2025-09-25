@@ -1,7 +1,7 @@
-import * as React from 'react';
+import { cn } from '@/lib/utils/utils';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils/utils';
+import * as React from 'react';
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -38,8 +38,30 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
+
+    // 접근성을 위한 기본 속성 추가
+    const accessibilityProps = {
+      // 아이콘 버튼인 경우 aria-label 추가
+      ...(size === 'icon' &&
+        !props['aria-label'] &&
+        !props.children && {
+          'aria-label': '버튼',
+        }),
+      // 비활성화된 버튼에 대한 설명
+      ...(props.disabled && {
+        'aria-disabled': true,
+      }),
+      // 기본 포커스 가능성 보장
+      tabIndex: props.tabIndex ?? 0,
+    };
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...accessibilityProps}
+        {...props}
+      />
     );
   },
 );

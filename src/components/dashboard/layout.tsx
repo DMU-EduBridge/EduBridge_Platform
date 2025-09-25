@@ -1,24 +1,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import {
-  Bell,
-  Bot,
-  Calendar,
-  FileText,
-  FolderOpen,
-  LayoutDashboard,
-  LogOut,
-  Search,
-  Settings,
-  Shield,
-  User,
-  Users,
-} from 'lucide-react';
+import { Bell, LogOut, Search, Settings } from 'lucide-react';
 import { Session } from 'next-auth';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { getAdminNav, getStudentNav, getTeacherNav } from './nav';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -60,29 +48,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
-  const studentNav = [
-    { name: '대시보드', href: '/dashboard', icon: LayoutDashboard },
-    { name: '문제', href: '/problems', icon: FileText },
-    { name: '내 리포트', href: '/my/reports', icon: Calendar },
-    { name: '프로필', href: '/profile', icon: User },
-  ];
-
-  const teacherNav = [
-    { name: '대시보드', href: '/dashboard', icon: LayoutDashboard },
-    { name: '문제', href: '/problems', icon: FileText },
-    { name: '학습 관리', href: '/learning-materials', icon: FolderOpen },
-    { name: '학생 관리', href: '/students', icon: Users },
-    { name: '분석 리포트', href: '/reports', icon: Calendar },
-    { name: 'AI 교사 리포트', href: '/teacher-reports', icon: Bot },
-    { name: '의미적 검색', href: '/vector-search', icon: Search },
-    { name: '프로필', href: '/profile', icon: User },
-  ];
-
-  const adminNav = [
-    { name: '관리자 대시보드', href: '/admin', icon: Shield },
-    { name: '사용자 관리', href: '/admin/users', icon: Users },
-    { name: '시스템 설정', href: '/admin/settings', icon: Settings },
-  ];
+  const studentNav = getStudentNav();
+  const teacherNav = getTeacherNav();
+  const adminNav = getAdminNav();
 
   return (
     <div className="flex h-screen bg-gray-50">

@@ -1,6 +1,10 @@
 import { api } from '@/lib/core/api';
 import { AttemptPostBody, AttemptPostResponse, SolutionResponse } from '@/types/api';
-import type { Problem } from '@/types/domain/problem';
+import type {
+  LLMProblemGenerationRequest,
+  LLMProblemGenerationResponse,
+  Problem,
+} from '@/types/domain/problem';
 
 export const problemsService = {
   getProblems: (params?: {
@@ -15,6 +19,9 @@ export const problemsService = {
 
   createProblem: (data: Omit<Problem, 'id' | 'createdAt' | 'attempts' | 'successRate'>) =>
     api.post<Problem>('/problems', data),
+
+  createProblems: (data: Omit<Problem, 'id' | 'createdAt' | 'attempts' | 'successRate'>[]) =>
+    api.post<Problem[]>('/problems/batch', data),
 
   updateProblem: (id: string, data: Partial<Problem>) => api.put<Problem>(`/problems/${id}`, data),
 
@@ -31,4 +38,11 @@ export const problemsService = {
 
   createProblemSolution: (id: string, data: SolutionResponse) =>
     api.post(`/problems/${id}/solution`, data),
+
+  // LLM 문제 생성 관련
+  generateProblems: (request: LLMProblemGenerationRequest) =>
+    api.post<LLMProblemGenerationResponse>('/problems/generate', request),
+
+  generateAndSaveProblems: (request: LLMProblemGenerationRequest) =>
+    api.post<Problem[]>('/problems/generate-and-save', request),
 };

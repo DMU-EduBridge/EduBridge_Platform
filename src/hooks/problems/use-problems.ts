@@ -2,8 +2,13 @@ import { problemsService } from '@/services/problems';
 import type { AttemptPostResponse, SolutionResponse } from '@/types/api';
 import type { Problem } from '@/types/domain/problem';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { problemKeys } from './keys/problems';
+import { problemKeys } from '../keys/problems';
 
+/**
+ * 문제 관리용 통합 훅
+ * 관리 페이지에서 사용하는 모든 기능을 제공
+ * @param params 검색 및 필터 파라미터
+ */
 export function useProblems(params?: {
   search?: string;
   subject?: string;

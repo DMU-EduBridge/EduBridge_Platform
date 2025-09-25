@@ -1,3 +1,4 @@
+import { WebVitalsReporter } from '@/components/analytics/web-vitals-reporter';
 import { PerformanceProvider } from '@/lib/performance-provider';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
@@ -51,7 +52,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={inter.className}>
         <PerformanceProvider>
-          <Providers>{children}</Providers>
+          <Providers>
+            <WebVitalsReporter />
+            {children}
+          </Providers>
         </PerformanceProvider>
       </body>
     </html>

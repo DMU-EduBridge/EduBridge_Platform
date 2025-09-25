@@ -3,6 +3,7 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { StudentQuickActions } from '@/components/dashboard/student-quick-actions';
 import { StudentStatsCards } from '@/components/dashboard/student-stats-cards';
+import { CardLoading } from '@/components/ui/loading';
 import { authOptions } from '@/lib/core/auth';
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
       {role === 'STUDENT' ? (
         <StudentStatsCards />
       ) : (
-        <Suspense fallback={<div className="h-32 animate-pulse rounded-lg bg-gray-200"></div>}>
+        <Suspense fallback={<CardLoading />}>
           <StatsCards />
         </Suspense>
       )}
@@ -50,7 +51,7 @@ export default async function DashboardPage() {
           <StudentQuickActions />
         ) : (
           <>
-            <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-200"></div>}>
+            <Suspense fallback={<CardLoading />}>
               <RecentActivity />
             </Suspense>
             <QuickActions />

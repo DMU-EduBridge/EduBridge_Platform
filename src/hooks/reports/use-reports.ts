@@ -1,7 +1,12 @@
 import { reportsService } from '@/services/reports';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { reportKeys } from './keys/reports';
+import { reportKeys } from '../keys/reports';
 
+/**
+ * 리포트 관리용 통합 훅
+ * 관리 페이지에서 사용하는 모든 기능을 제공
+ * @param params 검색 및 필터 파라미터
+ */
 export function useReports(params?: {
   type?: string;
   status?: string;
