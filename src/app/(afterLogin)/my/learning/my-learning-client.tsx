@@ -3,6 +3,7 @@
 import { StudyCard } from '@/components/learning/study-card';
 import { StudyFilters } from '@/components/learning/study-filters';
 import { useStudyItems } from '@/hooks/learning';
+import { StudyItem } from '@/types/domain/learning';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
@@ -55,7 +56,7 @@ export default function MyLearningClient() {
   const filteredItems = useMemo(() => {
     if (!studyItems) return [];
 
-    return studyItems.filter((item) => {
+    return studyItems.filter((item: StudyItem) => {
       const matchesQuery =
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         item.summary.toLowerCase().includes(query.toLowerCase());
@@ -114,7 +115,7 @@ export default function MyLearningClient() {
       {/* 카드 그리드 */}
       {filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filteredItems.map((item) => (
+          {filteredItems.map((item: StudyItem) => (
             <StudyCard
               key={item.id}
               item={item}

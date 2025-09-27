@@ -1,10 +1,10 @@
-const withNextIntl = require('next-intl/plugin')(
-  // next-intl 설정 파일 경로
-  './src/i18n.ts',
-);
+// const withNextIntl = require('next-intl/plugin')(
+//   // next-intl 설정 파일 경로
+//   './src/i18n.ts',
+// );
 
 /** @type {import('next').NextConfig} */
-const nextConfig = withNextIntl({
+const nextConfig = {
   // Docker를 위한 standalone 출력
   output: 'standalone',
 
@@ -127,6 +127,6 @@ const nextConfig = withNextIntl({
       { source: '/home-student', destination: '/my/learning', permanent: false },
     ];
   },
-});
+};
 
 module.exports = nextConfig;
