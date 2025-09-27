@@ -27,10 +27,10 @@ export interface UpdateMaterialRequest {
 export interface MaterialQueryParams {
   page?: number;
   limit?: number;
-  search?: string;
-  subject?: string;
-  difficulty?: string;
-  status?: string;
+  search?: string | undefined;
+  subject?: string | undefined;
+  difficulty?: string | undefined;
+  status?: string | undefined;
 }
 
 export class MaterialService {

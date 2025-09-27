@@ -8,7 +8,11 @@ import { useQuery } from '@tanstack/react-query';
 export function useStudyItems() {
   return useQuery({
     queryKey: ['studyItems'],
-    queryFn: () => learningService.getStudyItems().then((r) => r.data.items),
+    queryFn: async () => {
+      const response = await learningService.getStudyItems();
+      // API 응답 구조: { success: true, data: { items: [...] } }
+      return response.data.data?.items || [];
+    },
     staleTime: 5 * 60 * 1000, // 5분
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),

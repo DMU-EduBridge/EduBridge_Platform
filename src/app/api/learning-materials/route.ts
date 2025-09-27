@@ -1,11 +1,32 @@
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
 import { materialService } from '@/server/services/material.service';
+import { STUDY_LEVELS, StudyItem, StudyLevel } from '@/types/domain/learning';
 import { CreateMaterialRequest, MaterialQueryParams } from '@/types/domain/material';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+
+// LearningMaterial을 StudyItem으로 변환하는 함수
+function convertToStudyItem(material: any): StudyItem {
+  // difficulty를 StudyLevel로 매핑
+  const difficultyMap: Record<string, string> = {
+    EASY: STUDY_LEVELS.EASY,
+    MEDIUM: STUDY_LEVELS.MEDIUM,
+    HARD: STUDY_LEVELS.HARD,
+    EXPERT: STUDY_LEVELS.HARD,
+  };
+
+  return {
+    id: material.id,
+    title: material.title,
+    summary: material.description || material.content?.substring(0, 100) + '...' || '',
+    level: (difficultyMap[material.difficulty] || STUDY_LEVELS.MEDIUM) as StudyLevel,
+    estimatedTimeMin: material.estimatedTime || 30,
+    createdAt: material.createdAt,
+  };
+}
 
 /**
  * 학습 자료 목록 조회
@@ -19,21 +40,31 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || undefined;
+    const subject = searchParams.get('subject') || undefined;
+    const difficulty = searchParams.get('difficulty') || undefined;
+    const status = searchParams.get('status') || undefined;
+
     const query: MaterialQueryParams = {
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
-      search: searchParams.get('search') || undefined,
-      subject: searchParams.get('subject') || undefined,
-      difficulty: searchParams.get('difficulty') || undefined,
-      status: searchParams.get('status') || undefined,
-    };
+      page,
+      limit,
+      ...(search ? { search } : {}),
+      ...(subject ? { subject } : {}),
+      ...(difficulty ? { difficulty } : {}),
+      ...(status ? { status } : {}),
+    } as MaterialQueryParams;
 
     const result = await materialService.getMaterials(query);
+
+    // LearningMaterial을 StudyItem으로 변환
+    const studyItems = result.materials.map(convertToStudyItem);
 
     return NextResponse.json({
       success: true,
       data: {
-        materials: result.materials,
+        items: studyItems,
         pagination: result.pagination,
         total: result.total,
       },

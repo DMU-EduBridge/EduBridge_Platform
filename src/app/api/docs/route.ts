@@ -330,11 +330,11 @@ export async function GET() {
           },
         },
       },
-      '/problems/{id}': {
+      '/problems/{problemId}': {
         get: {
           tags: ['Problems'],
           summary: '문제 상세 조회',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          parameters: [{ name: 'problemId', in: 'path', required: true, schema: { type: 'string' } }],
           responses: {
             '200': {
               description: 'OK',
@@ -349,7 +349,7 @@ export async function GET() {
         put: {
           tags: ['Problems'],
           summary: '문제 수정',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          parameters: [{ name: 'problemId', in: 'path', required: true, schema: { type: 'string' } }],
           requestBody: { required: true },
           responses: {
             '200': { description: 'OK' },
@@ -361,7 +361,7 @@ export async function GET() {
         delete: {
           tags: ['Problems'],
           summary: '문제 삭제',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          parameters: [{ name: 'problemId', in: 'path', required: true, schema: { type: 'string' } }],
           responses: {
             '200': { description: 'OK' },
             '401': { $ref: '#/components/responses/UnauthorizedError' },

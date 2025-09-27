@@ -29,7 +29,8 @@ export const learningService = {
   getMaterialStats: () => api.get('/learning-materials/stats'),
 
   // StudyItem 관련 메서드들 (기존 API를 StudyItem 형태로 변환)
-  getStudyItems: () => api.get<{ items: StudyItem[] }>('/learning-materials'),
+  getStudyItems: () =>
+    api.get<{ success: boolean; data: { items: StudyItem[] } }>('/learning-materials'),
 
   getStudyItem: (id: string) => api.get<StudyItem>(`/learning-materials/${id}`),
 
