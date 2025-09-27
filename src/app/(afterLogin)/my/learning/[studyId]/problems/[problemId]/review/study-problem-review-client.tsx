@@ -67,7 +67,7 @@ const StudyProblemReviewClient = memo(function StudyProblemReviewClient({
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="container">
       {/* 헤더 */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -195,12 +195,9 @@ const StudyProblemReviewClient = memo(function StudyProblemReviewClient({
           <RotateCcw className="mr-2 h-4 w-4" />
           다시 풀기
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => router.push(`/my/learning/${encodeURIComponent(studyId)}/problems`)}
-        >
+        <Button variant="outline" onClick={() => router.push('/my/learning')}>
           <BookOpen className="mr-2 h-4 w-4" />
-          단원 목록으로
+          학습 목록으로
         </Button>
       </div>
     </div>

@@ -119,6 +119,6 @@ export default async function StudyProblemReviewPage({
     );
   } catch (error) {
     console.error('Error in StudyProblemReviewPage:', error);
-    redirect(`/my/learning/${params.studyId}/problems?error=server-error`);
+    redirect('/my/learning?error=server-error');
   }
 }
