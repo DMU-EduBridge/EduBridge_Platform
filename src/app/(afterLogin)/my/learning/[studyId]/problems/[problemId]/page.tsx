@@ -53,25 +53,10 @@ export default async function ProblemDetailPage({ params }: ProblemDetailPagePro
     // 현재 문제의 인덱스 찾기
     const currentIndex = allProblems.findIndex((p) => p.id === params.problemId);
 
-    // 디버깅 로그
-    console.log('=== 문제 인덱스 디버깅 ===');
-    console.log('allProblems.length:', allProblems.length);
-    console.log('currentIndex:', currentIndex);
-    console.log('params.problemId:', params.problemId);
-    console.log(
-      'allProblems IDs:',
-      allProblems.map((p) => p.id),
-    );
-    console.log('조건: currentIndex < allProblems.length - 1');
-    console.log('조건 결과:', currentIndex < allProblems.length - 1);
-
     const nextProblem =
       currentIndex >= 0 && currentIndex < allProblems.length - 1
         ? allProblems[currentIndex + 1]
         : null;
-
-    console.log('nextProblem:', nextProblem ? nextProblem.id : 'null');
-    console.log('=== 디버깅 끝 ===');
 
     // 학생의 이전 시도 기록 가져오기 (선택사항)
     // const previousAttempts = await attemptService.getAttemptsByProblemAndUser(

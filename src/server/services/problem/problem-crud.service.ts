@@ -19,10 +19,7 @@ export class ProblemCrudService {
     options: { page?: number; limit?: number } = {},
   ): Promise<Problem[]> {
     try {
-      const { page = 1, limit = 10 } = options;
-      const skip = (page - 1) * limit;
-
-      // 학습 자료에 연결된 문제들 조회
+      // 학습 자료에 연결된 모든 문제를 가져오기 위해 페이지네이션 제거
       const problems = await prisma.problem.findMany({
         where: {
           materialProblems: {
@@ -30,11 +27,10 @@ export class ProblemCrudService {
               learningMaterialId: studyId,
             },
           },
+          isActive: true, // 활성화된 문제만
         },
-        skip,
-        take: limit,
         orderBy: {
-          createdAt: 'asc',
+          createdAt: 'asc', // 생성 순서대로 정렬
         },
         include: {
           creator: {

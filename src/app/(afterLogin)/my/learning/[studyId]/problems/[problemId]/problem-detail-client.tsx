@@ -85,20 +85,8 @@ export default function ProblemDetailClient({
   const handleSubmit = useCallback(() => {
     if (!problem || !selectedAnswer) return;
 
-    // 디버깅을 위한 상세 로그
-    debugLog('=== 문제 제출 디버깅 ===');
-    debugLog('문제 ID:', problem.id);
-    debugLog('문제 제목:', problem.title);
-    debugLog('선택한 답:', selectedAnswer, '(타입:', typeof selectedAnswer, ')');
-    debugLog('정답:', problem.correctAnswer, '(타입:', typeof problem.correctAnswer, ')');
-    debugLog('옵션들:', problem.options);
-    debugLog('현재 completedProblems:', completedProblems);
-    debugLog('totalCount:', totalCount);
-
     // 로컬에서 정답 확인
     const correct = selectedAnswer === problem.correctAnswer;
-    debugLog('정답 여부:', correct);
-    debugLog('=== 디버깅 끝 ===');
 
     setIsCorrect(correct);
     setShowResult(true);
@@ -117,43 +105,20 @@ export default function ProblemDetailClient({
 
       // 완료된 문제 수 확인 (현재 문제 포함)
       const actualCompletedCount = completedProblems.length + 1;
-      debugLog('업데이트된 완료 문제 수:', actualCompletedCount);
-      debugLog('총 문제 수:', totalCount);
-      debugLog('모든 문제 완료 여부:', actualCompletedCount >= totalCount);
 
       // 모든 문제를 다 풀었는지 확인
-      debugLog('=== 완료 조건 확인 ===');
-      debugLog('actualCompletedCount:', actualCompletedCount);
-      debugLog('totalCount:', totalCount);
-      debugLog('조건: actualCompletedCount >= totalCount');
-      debugLog('결과:', actualCompletedCount >= totalCount);
-
       if (actualCompletedCount >= totalCount) {
-        debugLog('🎉 모든 문제 완료! 3초 후 결과 페이지로 이동');
-        debugLog('이동할 URL:', `/my/learning/${encodeURIComponent(studyId)}/results`);
         // 결과 표시 후 잠시 대기 후 결과 페이지로 이동
         setTimeout(() => {
-          debugLog('⏰ 3초 경과! 결과 페이지로 이동 시작');
           router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
         }, 3000);
-      } else {
-        debugLog('📝 아직 문제가 남았습니다. 다음 문제로 이동 가능');
-        debugLog(`남은 문제: ${totalCount - actualCompletedCount}개`);
       }
-    } else {
-      debugLog('이미 완료된 문제입니다.');
     }
-  }, [problem, selectedAnswer, studyId, totalCount, router, completedProblems]);
+  }, [problem, selectedAnswer, studyId, totalCount, router, completedProblems, addCompletedProblem]);
 
   const handleNext = useCallback(() => {
     // 해설 숨기기
     setShowExplanation(false);
-
-    debugLog('=== 다음 문제 이동 ===');
-    debugLog('현재 completedProblems.length:', completedProblems.length);
-    debugLog('totalCount:', totalCount);
-    debugLog('nextProblem 존재 여부:', !!nextProblem);
-    debugLog('현재 문제 ID:', problem?.id);
 
     // 현재 문제를 포함한 완료된 문제 수 계산
     const currentProblemCompleted = problem?.id && completedProblems.includes(problem.id);
@@ -161,22 +126,13 @@ export default function ProblemDetailClient({
       ? completedProblems.length
       : completedProblems.length + 1;
 
-    debugLog('=== handleNext 완료 조건 확인 ===');
-    debugLog('actualCompletedCount:', actualCompletedCount);
-    debugLog('totalCount:', totalCount);
-    debugLog('모든 문제 완료 여부:', actualCompletedCount >= totalCount);
-
     // 모든 문제를 다 풀었는지 확인
     if (actualCompletedCount >= totalCount) {
-      debugLog('🎉 handleNext에서 모든 문제 완료 감지! 결과 페이지로 이동');
       router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
     } else if (nextProblem) {
-      debugLog('다음 문제로 이동:', nextProblem.id);
       router.push(`/my/learning/${encodeURIComponent(studyId)}/problems/${nextProblem.id}`);
     } else {
-      debugLog('⚠️ 다음 문제가 없지만 아직 모든 문제를 완료하지 않음');
-      debugLog('완료된 문제:', actualCompletedCount, '/ 총 문제:', totalCount);
-      debugLog('결과 페이지로 이동 시도');
+      // 다음 문제가 없지만 아직 모든 문제를 완료하지 않은 경우
       router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
     }
   }, [nextProblem, router, studyId, completedProblems, totalCount, problem]);
@@ -277,10 +233,9 @@ export default function ProblemDetailClient({
                 return options.map((option: string, index: number) => (
                   <button
                     key={index}
-                    onClick={() => {
-                      debugLog('옵션 선택됨:', option, '(인덱스:', index, ')');
-                      setSelectedAnswer(option);
-                    }}
+                        onClick={() => {
+                          setSelectedAnswer(option);
+                        }}
                     disabled={showResult}
                     className={`
                       w-full rounded-lg border-2 p-4 text-left transition-all duration-200
