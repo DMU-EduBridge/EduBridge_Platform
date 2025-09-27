@@ -12,8 +12,117 @@ import { CreateProblemRequest, UpdateProblemRequest } from '../../../types/domai
 
 export class ProblemCrudService {
   /**
-   * 문제 상세 조회
+   * 학습 자료별 문제 목록 조회
    */
+  async getProblemsByStudyId(
+    studyId: string,
+    options: { page?: number; limit?: number } = {},
+  ): Promise<Problem[]> {
+    try {
+      const { page = 1, limit = 10 } = options;
+      const skip = (page - 1) * limit;
+
+      // 학습 자료에 연결된 문제들 조회
+      const problems = await prisma.problem.findMany({
+        where: {
+          materialProblems: {
+            some: {
+              learningMaterialId: studyId,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'asc',
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return problems;
+    } catch (error) {
+      logger.error('학습 자료별 문제 조회 실패', undefined, {
+        studyId,
+        options,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('학습 자료별 문제 조회에 실패했습니다.');
+    }
+  }
+
+  /**
+   * 정답 검증
+   */
+  async checkAnswer(problemId: string, userAnswer: string): Promise<boolean> {
+    try {
+      const problem = await prisma.problem.findUnique({
+        where: { id: problemId },
+        select: {
+          correctAnswer: true,
+          type: true,
+          options: true,
+        },
+      });
+
+      if (!problem) {
+        throw new Error('문제를 찾을 수 없습니다.');
+      }
+
+      // 문제 타입별 정답 검증 로직
+      switch (problem.type) {
+        case 'MULTIPLE_CHOICE':
+          // 객관식: 정확히 일치하는지 확인
+          return problem.correctAnswer?.toLowerCase().trim() === userAnswer.toLowerCase().trim();
+
+        case 'SHORT_ANSWER':
+          // 주관식: 부분 일치 허용 (공백 제거 후 비교)
+          const correctAnswer = problem.correctAnswer?.toLowerCase().replace(/\s+/g, '');
+          const userAnswerNormalized = userAnswer.toLowerCase().replace(/\s+/g, '');
+          return correctAnswer === userAnswerNormalized;
+
+        case 'ESSAY':
+          // 서술형: 키워드 기반 검증 (간단한 구현)
+          const keywords =
+            problem.correctAnswer
+              ?.toLowerCase()
+              .split(',')
+              .map((k) => k.trim()) || [];
+          const userText = userAnswer.toLowerCase();
+          return keywords.some((keyword) => userText.includes(keyword));
+
+        case 'TRUE_FALSE':
+          // 참/거짓: 정확히 일치
+          return problem.correctAnswer?.toLowerCase().trim() === userAnswer.toLowerCase().trim();
+
+        case 'CODING':
+          // 코딩 문제: 정답 코드와 실행 결과 비교 (향후 구현)
+          return problem.correctAnswer?.toLowerCase().trim() === userAnswer.toLowerCase().trim();
+
+        case 'MATH':
+          // 수학 문제: 수식 계산 결과 비교 (향후 구현)
+          return problem.correctAnswer?.toLowerCase().trim() === userAnswer.toLowerCase().trim();
+
+        default:
+          // 기본: 정확히 일치
+          return problem.correctAnswer?.toLowerCase().trim() === userAnswer.toLowerCase().trim();
+      }
+    } catch (error) {
+      logger.error('정답 검증 실패', undefined, {
+        problemId,
+        userAnswer,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error('정답 검증에 실패했습니다.');
+    }
+  }
   async getProblemById(id: string): Promise<Problem | null> {
     try {
       return await prisma.problem.findUnique({
@@ -275,3 +384,5 @@ export class ProblemCrudService {
     }
   }
 }
+
+export const problemService = new ProblemCrudService();

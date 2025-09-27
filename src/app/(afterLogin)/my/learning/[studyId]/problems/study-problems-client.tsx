@@ -2,9 +2,9 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ProblemDifficulty, ProblemType } from '@prisma/client';
-import { ArrowLeft, CheckCircle, Clock, Play, RotateCcw } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Play, RotateCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { memo } from 'react';
 
@@ -23,16 +23,24 @@ interface ProblemWithAttempt {
   };
 }
 
+interface LearningMaterial {
+  id: string;
+  title: string;
+  description: string | null;
+  subject: string;
+  difficulty: string;
+}
+
 interface StudyProblemsClientProps {
   studyId: string;
+  learningMaterial: LearningMaterial;
   problems: ProblemWithAttempt[];
-  userId: string;
 }
 
 const StudyProblemsClient = memo(function StudyProblemsClient({
   studyId,
+  learningMaterial,
   problems,
-  userId,
 }: StudyProblemsClientProps) {
   const router = useRouter();
 
@@ -87,7 +95,7 @@ const StudyProblemsClient = memo(function StudyProblemsClient({
   const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
+    <div className="container mx-auto w-full">
       {/* 헤더 */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -101,8 +109,12 @@ const StudyProblemsClient = memo(function StudyProblemsClient({
             학습 목록으로
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{studyId}</h1>
-            <p className="text-gray-600">단원별 문제 풀이</p>
+            <h1 className="text-2xl font-bold text-gray-900">{learningMaterial.title}</h1>
+            <p className="text-gray-600">{learningMaterial.description || '학습 자료 문제 풀이'}</p>
+            <div className="mt-2 flex gap-2">
+              <Badge variant="outline">{learningMaterial.subject}</Badge>
+              <Badge variant="secondary">{learningMaterial.difficulty}</Badge>
+            </div>
           </div>
         </div>
 
@@ -126,68 +138,90 @@ const StudyProblemsClient = memo(function StudyProblemsClient({
         </div>
       </div>
 
-      {/* 문제 목록 */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {problems.map((problem) => (
-          <Card key={problem.id} className="transition-shadow hover:shadow-md">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <CardTitle className="line-clamp-2 text-lg">{problem.title}</CardTitle>
-                {getStatusBadge(problem)}
-              </div>
-              <div className="flex gap-2">
-                <Badge variant="outline">{problem.subject}</Badge>
-                <Badge className={getDifficultyColor(problem.difficulty)}>
-                  {problem.difficulty}
-                </Badge>
-                <Badge variant="secondary">{getTypeLabel(problem.type)}</Badge>
-              </div>
-            </CardHeader>
+      {/* 문제 풀기 시작 안내 */}
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="text-center">
+            <h3 className="mb-4 text-xl font-semibold text-gray-900">
+              {learningMaterial.title} 문제 풀기
+            </h3>
+            <p className="mb-6 text-gray-600">
+              총 <span className="font-semibold text-blue-600">{totalCount}개</span>의 문제를
+              순서대로 풀어보세요.
+              <br />각 문제를 풀고 정답을 확인한 후 다음 문제로 넘어갑니다.
+            </p>
 
-            <CardContent className="pt-0">
-              {problem.description && (
-                <p className="mb-4 line-clamp-2 text-sm text-gray-600">{problem.description}</p>
-              )}
-
-              <div className="mb-4 flex items-center gap-4 text-sm text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  {problem.timeLimit ? `${problem.timeLimit}분` : '제한없음'}
+            <div className="mb-6 flex justify-center">
+              <div className="rounded-lg bg-blue-50 p-4">
+                <div className="text-sm text-blue-800">
+                  <div className="mb-2 font-semibold">학습 진행 상황</div>
+                  <div className="text-lg">
+                    완료: <span className="font-bold text-blue-600">{completedCount}</span> /{' '}
+                    {totalCount}
+                  </div>
+                  <div className="text-sm text-blue-600">진행률: {progressPercentage}%</div>
                 </div>
-                <div>{problem.points}점</div>
               </div>
+            </div>
 
-              <div className="flex gap-2">
-                <Button
-                  onClick={() =>
-                    router.push(
-                      `/my/learning/${encodeURIComponent(studyId)}/problems/${problem.id}`,
-                    )
-                  }
-                  className="flex-1"
-                  size="sm"
-                >
-                  <Play className="mr-1 h-4 w-4" />
-                  {problem.attempt ? '다시 풀기' : '문제 풀기'}
-                </Button>
+            <Button
+              onClick={() => {
+                console.log('문제 풀기 시작 버튼 클릭됨');
+                console.log('studyId:', studyId);
+                console.log('problems.length:', problems.length);
 
-                {problem.attempt && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      router.push(
-                        `/my/learning/${encodeURIComponent(studyId)}/problems/${problem.id}/review`,
-                      )
-                    }
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                )}
+                if (problems.length > 0 && problems[0]) {
+                  console.log('첫 번째 문제로 직접 이동:', problems[0].id);
+                  router.push(`/my/learning/${studyId}/problems/${problems[0].id}`);
+                } else {
+                  console.log('문제가 없습니다');
+                }
+              }}
+              size="lg"
+              className="px-8 py-3 text-lg"
+            >
+              <Play className="mr-2 h-5 w-5" />
+              {completedCount > 0 ? '학습 계속하기' : '문제 풀기 시작'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 문제 목록 (간단한 미리보기) */}
+      <div className="mb-6">
+        <h4 className="mb-4 text-lg font-semibold text-gray-900">문제 목록</h4>
+        <div className="space-y-2">
+          {problems.map((problem, index) => (
+            <div
+              key={problem.id}
+              className="flex items-center justify-between rounded-lg border p-3"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-600">
+                  {index + 1}
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">{problem.title}</div>
+                  <div className="flex gap-2 text-sm text-gray-500">
+                    <Badge variant="outline" className="text-xs">
+                      {problem.subject}
+                    </Badge>
+                    <Badge className={`text-xs ${getDifficultyColor(problem.difficulty)}`}>
+                      {problem.difficulty}
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      {getTypeLabel(problem.type)}
+                    </Badge>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div className="flex items-center gap-2">
+                {getStatusBadge(problem)}
+                <div className="text-sm text-gray-500">{problem.points}점</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {problems.length === 0 && (

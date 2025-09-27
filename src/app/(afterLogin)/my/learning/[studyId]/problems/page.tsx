@@ -41,11 +41,33 @@ export default async function StudyProblemsPage({ params }: { params: { studyId:
 
     const studyId = decodeURIComponent(params.studyId);
 
-    // 해당 단원의 문제들 조회
+    // 학습 자료 정보 조회
+    const learningMaterial = await prisma.learningMaterial.findFirst({
+      where: {
+        id: studyId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        subject: true,
+        difficulty: true,
+      },
+    });
+
+    if (!learningMaterial) {
+      redirect('/my/learning?error=material-not-found');
+    }
+
+    // 해당 학습 자료의 문제들 조회
     const problems = await prisma.problem.findMany({
       where: {
-        // 현재는 unit 필드로 필터링 (실제 구현 시 studyId와 매핑 필요)
-        unit: studyId,
+        materialProblems: {
+          some: {
+            learningMaterialId: studyId,
+          },
+        },
         isActive: true,
       },
       select: {
@@ -97,8 +119,8 @@ export default async function StudyProblemsPage({ params }: { params: { studyId:
     return (
       <StudyProblemsClient
         studyId={studyId}
+        learningMaterial={learningMaterial}
         problems={problemsWithAttempts}
-        userId={session.user.id}
       />
     );
   } catch (error) {

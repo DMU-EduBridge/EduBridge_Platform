@@ -1,154 +1,87 @@
+import { ProblemErrorBoundary, ProblemLoadingSkeleton } from '@/components/problems/error-boundary';
 import { authOptions } from '@/lib/core/auth';
-import { prisma } from '@/lib/core/prisma';
-import { parseJsonArray } from '@/lib/utils/json';
-import { Metadata } from 'next';
+import { problemService } from '@/server/services/problem/problem-crud.service';
 import { getServerSession } from 'next-auth';
-import { notFound, redirect } from 'next/navigation';
-import StudyProblemSolveClient from './study-problem-solve-client';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import ProblemDetailClient from './problem-detail-client';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { studyId: string; problemId: string };
-}): Promise<Metadata> {
-  try {
-    const problem = await prisma.problem.findUnique({
-      where: { id: params.problemId },
-      select: { title: true, subject: true },
-    });
-
-    if (!problem) {
-      return {
-        title: '문제를 찾을 수 없습니다 | EduBridge',
-      };
-    }
-
-    const studyTitle = decodeURIComponent(params.studyId);
-
-    return {
-      title: `${problem.title} - ${studyTitle} | EduBridge`,
-      description: `${studyTitle} 단원의 ${problem.title} 문제를 풀어보세요.`,
-      robots: 'noindex, nofollow',
-    };
-  } catch {
-    return {
-      title: '문제 풀기 | EduBridge',
-    };
-  }
+interface ProblemDetailPageProps {
+  params: {
+    studyId: string;
+    problemId: string;
+  };
 }
 
-export default async function StudyProblemSolvePage({
-  params,
-}: {
-  params: { studyId: string; problemId: string };
-}) {
+export default async function ProblemDetailPage({ params }: ProblemDetailPageProps) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    redirect('/login');
+  }
+
+  // 학생만 접근 가능
+  if (session.user.role !== 'STUDENT') {
+    redirect('/dashboard');
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      redirect('/login');
-    }
-
-    // 학생만 문제 풀이 가능
-    if (session.user.role !== 'STUDENT') {
-      redirect('/dashboard');
-    }
-
-    const studyId = decodeURIComponent(params.studyId);
-    const problemId = params.problemId;
-
-    // 문제가 해당 단원에 속하는지 확인
-    const problem = await prisma.problem.findUnique({
-      where: {
-        id: problemId,
-        unit: studyId, // 단원이 일치하는지 확인
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        content: true,
-        type: true,
-        difficulty: true,
-        subject: true,
-        options: true,
-        correctAnswer: true,
-        explanation: true,
-        hints: true,
-        points: true,
-        timeLimit: true,
-      },
-    });
+    // 문제 정보 가져오기
+    const problem = await problemService.getProblemById(params.problemId);
 
     if (!problem) {
-      notFound();
+      return (
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900">문제를 찾을 수 없습니다</h1>
+            <p className="mt-2 text-gray-600">요청하신 문제가 존재하지 않습니다.</p>
+          </div>
+        </div>
+      );
     }
 
-    // 학생의 이전 시도 기록 조회
-    const attempt = await prisma.attempt.findFirst({
-      where: {
-        problemId: problemId,
-        userId: session.user.id,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      select: {
-        selected: true,
-        isCorrect: true,
-        createdAt: true,
-      },
+    // 해당 학습 자료의 모든 문제 목록 가져오기 (순서대로)
+    const allProblems = await problemService.getProblemsByStudyId(params.studyId, {
+      page: 1,
+      limit: 100, // 충분히 큰 수
     });
 
-    // 단원 내 다른 문제들 조회 (진행률 계산용)
-    const unitProblems = await prisma.problem.findMany({
-      where: {
-        unit: studyId,
-        isActive: true,
-      },
-      select: {
-        id: true,
-      },
-    });
+    // 현재 문제의 인덱스 찾기
+    const currentIndex = allProblems.findIndex((p) => p.id === params.problemId);
+    const nextProblem =
+      currentIndex >= 0 && currentIndex < allProblems.length - 1
+        ? allProblems[currentIndex + 1]
+        : null;
 
-    const unitAttempts = await prisma.attempt.findMany({
-      where: {
-        userId: session.user.id,
-        problemId: {
-          in: unitProblems.map((p) => p.id),
-        },
-        isCorrect: true,
-      },
-      select: {
-        problemId: true,
-      },
-    });
-
-    const completedProblems = new Set(unitAttempts.map((a) => a.problemId));
-    const progressPercentage =
-      unitProblems.length > 0
-        ? Math.round((completedProblems.size / unitProblems.length) * 100)
-        : 0;
+    // 학생의 이전 시도 기록 가져오기 (선택사항)
+    // const previousAttempts = await attemptService.getAttemptsByProblemAndUser(
+    //   params.problemId,
+    //   session.user.id
+    // );
 
     return (
-      <StudyProblemSolveClient
-        studyId={studyId}
-        problem={{
-          ...problem,
-          options: parseJsonArray(problem.options as string),
-          hints: parseJsonArray(problem.hints as string),
-        }}
-        {...(attempt ? { attempt } : {})}
-        progress={{
-          completed: completedProblems.size,
-          total: unitProblems.length,
-          percentage: progressPercentage,
-        }}
-        userId={session.user.id}
-      />
+      <ProblemErrorBoundary>
+        <Suspense fallback={<ProblemLoadingSkeleton />}>
+          <ProblemDetailClient
+            studyId={params.studyId}
+            problemId={params.problemId}
+            initialProblem={problem}
+            nextProblem={nextProblem}
+            currentIndex={currentIndex + 1}
+            totalCount={allProblems.length}
+          />
+        </Suspense>
+      </ProblemErrorBoundary>
     );
   } catch (error) {
-    console.error('Error in StudyProblemSolvePage:', error);
-    redirect(`/my/learning/${encodeURIComponent(params.studyId)}/problems?error=server-error`);
+    console.error('문제 로드 실패:', error);
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">문제를 불러올 수 없습니다</h1>
+          <p className="mt-2 text-gray-600">잠시 후 다시 시도해주세요.</p>
+        </div>
+      </div>
+    );
   }
 }
