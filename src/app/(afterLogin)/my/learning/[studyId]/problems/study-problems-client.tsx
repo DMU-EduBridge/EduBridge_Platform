@@ -40,21 +40,42 @@ const StudyProblemsClient = memo(function StudyProblemsClient({
 }: StudyProblemsClientProps) {
   const router = useRouter();
 
-  // 페이지 로드 시 자동으로 첫 번째 문제로 이동
+  // 페이지 로드 시 자동으로 적절한 문제로 이동
   useEffect(() => {
     if (problems.length > 0 && problems[0]) {
-      // 새로운 학습 세션 시작 시 진행률 초기화
+      // localStorage에서 진행 상태 확인
       if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem(`completed-problems-${studyId}`);
-        if (saved) {
-          const completed = JSON.parse(saved);
+        const savedProgress = localStorage.getItem(`problem-progress-${studyId}`);
+        const savedCompleted = localStorage.getItem(`completed-problems-${studyId}`);
+        
+        if (savedProgress) {
+          const progress = JSON.parse(savedProgress);
+          // 진행 중인 문제가 있는 경우 해당 문제로 이동
+          const progressProblemIds = Object.keys(progress);
+          if (progressProblemIds.length > 0) {
+            const firstProgressProblem = progressProblemIds[0];
+            router.replace(`/my/learning/${encodeURIComponent(studyId)}/problems/${firstProgressProblem}`);
+            return;
+          }
+        }
+        
+        if (savedCompleted) {
+          const completed = JSON.parse(savedCompleted);
+          // 모든 문제가 완료된 경우 결과 페이지로 이동
           if (completed.length >= problems.length) {
-            console.log('🔄 새로운 학습 세션 시작 - 진행률 초기화');
-            localStorage.removeItem(`completed-problems-${studyId}`);
-            localStorage.removeItem(`problem-answers-${studyId}`);
+            router.replace(`/my/learning/${encodeURIComponent(studyId)}/results`);
+            return;
+          }
+          // 완료되지 않은 첫 번째 문제 찾기
+          const incompleteProblem = problems.find(p => !completed.includes(p.id));
+          if (incompleteProblem) {
+            router.replace(`/my/learning/${encodeURIComponent(studyId)}/problems/${incompleteProblem.id}`);
+            return;
           }
         }
       }
+      
+      // 기본적으로 첫 번째 문제로 이동
       router.replace(`/my/learning/${encodeURIComponent(studyId)}/problems/${problems[0].id}`);
     }
   }, [problems, router, studyId]);
