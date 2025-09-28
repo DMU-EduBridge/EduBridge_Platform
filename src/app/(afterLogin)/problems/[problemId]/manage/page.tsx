@@ -1,12 +1,16 @@
+import ProblemManageClient from '@/components/problems/problem-manage-client';
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
 import { parseJsonArray } from '@/lib/utils/json';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { notFound, redirect } from 'next/navigation';
-import ProblemManageClient from './problem-manage-client';
 
-export async function generateMetadata({ params }: { params: { problemId: string } }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { problemId: string };
+}): Promise<Metadata> {
   try {
     const problem = await prisma.problem.findUnique({
       where: { id: params.problemId },

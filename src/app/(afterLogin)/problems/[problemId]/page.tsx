@@ -1,12 +1,16 @@
+import ProblemDetailClient from '@/app/(afterLogin)/my/learning/[studyId]/problems/[problemId]/problem-detail-client';
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
 import { parseJsonArray } from '@/lib/utils/json';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { notFound, redirect } from 'next/navigation';
-import SolveClient, { ProblemViewModel } from './solve-client';
 
-export async function generateMetadata({ params }: { params: { problemId: string } }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { problemId: string };
+}): Promise<Metadata> {
   try {
     const problem = await prisma.problem.findUnique({
       where: { id: params.problemId },
@@ -62,7 +66,7 @@ export default async function ProblemDetailPage({ params }: { params: { problemI
       notFound();
     }
 
-    const vm: ProblemViewModel = {
+    const problemData = {
       id: problem.id,
       title: problem.title,
       description: problem.description,
@@ -73,7 +77,15 @@ export default async function ProblemDetailPage({ params }: { params: { problemI
       hints: parseJsonArray(problem.hints as string),
     };
 
-    return <SolveClient problem={vm} />;
+    return (
+      <ProblemDetailClient
+        studyId=""
+        problemId={problem.id}
+        initialProblem={problemData}
+        currentIndex={1}
+        totalCount={1}
+      />
+    );
   } catch (error) {
     console.error('Error in ProblemDetailPage:', error);
     redirect('/my/learning?error=server-error');
