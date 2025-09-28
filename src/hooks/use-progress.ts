@@ -43,8 +43,8 @@ export function useProgress(studyId: string): {
   learningStatus: LearningStatus | null;
   isLoading: boolean;
   addCompletedProblem: (problemId: string, answer: ProblemAnswer) => Promise<void>;
-  saveProgress: (problemId: string, selectedAnswer: string, startTime: Date) => void;
-  getProgress: (problemId: string) => ProblemProgress | null;
+  saveProgress: (problemId: string, selectedAnswer: string, startTime: Date) => Promise<void>;
+  getProgress: (problemId: string) => Promise<ProblemProgress | null>;
   clearProgress: () => Promise<void>;
   initializeProgress: (studyId: string, currentIndex: number, totalCount: number) => Promise<void>;
   loadLearningStatus: () => Promise<void>;
@@ -119,26 +119,76 @@ export function useProgress(studyId: string): {
     [loadLearningStatus],
   );
 
-  const saveProgress = useCallback((problemId: string, selectedAnswer: string, startTime: Date) => {
-    // 로컬 상태만 저장 (서버 요청 없음)
-    const progressData: ProblemProgress = {
-      selectedAnswer,
-      startTime: startTime.toISOString(),
-      lastAccessed: new Date().toISOString(),
-    };
+  const saveProgress = useCallback(
+    async (problemId: string, selectedAnswer: string, startTime: Date) => {
+      // 로컬 상태 저장
+      let validStartTime: Date;
+      try {
+        validStartTime = startTime instanceof Date ? startTime : new Date(startTime);
+        if (isNaN(validStartTime.getTime())) {
+          validStartTime = new Date();
+        }
+      } catch {
+        validStartTime = new Date();
+      }
 
-    setProblemProgress((prev) => ({
-      ...prev,
-      [problemId]: progressData,
-    }));
-  }, []);
+      const progressData: ProblemProgress = {
+        selectedAnswer,
+        startTime: validStartTime.toISOString(),
+        lastAccessed: new Date().toISOString(),
+      };
+
+      setProblemProgress((prev) => ({
+        ...prev,
+        [problemId]: progressData,
+      }));
+
+      // 서버에 임시 진행 상태 저장 (새로고침 시 복원용)
+      try {
+        await progressService.saveProgress(studyId, problemId, selectedAnswer, validStartTime);
+      } catch (error) {
+        console.error('진행 상태 서버 저장 실패:', error);
+      }
+    },
+    [studyId],
+  );
 
   const getProgress = useCallback(
-    (problemId: string): ProblemProgress | null => {
-      // 로컬 상태에서만 확인 (서버 요청 없음)
-      return problemProgress[problemId] || null;
+    async (problemId: string): Promise<ProblemProgress | null> => {
+      // 로컬 상태 먼저 확인
+      const localProgress = problemProgress[problemId];
+      if (localProgress) {
+        return localProgress;
+      }
+
+      // 로컬에 없으면 서버에서 조회
+      try {
+        const result = await progressService.getProgress(studyId, problemId);
+        if (result.success && result.progress && result.progress.length > 0) {
+          const progressData = result.progress[0];
+          if (progressData) {
+            const serverProgress: ProblemProgress = {
+              selectedAnswer: progressData.selectedAnswer,
+              startTime: progressData.startTime,
+              lastAccessed: progressData.lastAccessed,
+            };
+
+            // 로컬 상태에 저장
+            setProblemProgress((prev) => ({
+              ...prev,
+              [problemId]: serverProgress,
+            }));
+
+            return serverProgress;
+          }
+        }
+      } catch (error) {
+        console.error('진행 상태 서버 조회 실패:', error);
+      }
+
+      return null;
     },
-    [problemProgress],
+    [problemProgress, studyId],
   );
 
   const clearProgress = useCallback(async () => {
