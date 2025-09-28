@@ -47,18 +47,20 @@ const StudyProblemsClient = memo(function StudyProblemsClient({
       if (typeof window !== 'undefined') {
         const savedProgress = localStorage.getItem(`problem-progress-${studyId}`);
         const savedCompleted = localStorage.getItem(`completed-problems-${studyId}`);
-        
+
         if (savedProgress) {
           const progress = JSON.parse(savedProgress);
           // 진행 중인 문제가 있는 경우 해당 문제로 이동
           const progressProblemIds = Object.keys(progress);
           if (progressProblemIds.length > 0) {
             const firstProgressProblem = progressProblemIds[0];
-            router.replace(`/my/learning/${encodeURIComponent(studyId)}/problems/${firstProgressProblem}`);
+            router.replace(
+              `/my/learning/${encodeURIComponent(studyId)}/problems/${firstProgressProblem}`,
+            );
             return;
           }
         }
-        
+
         if (savedCompleted) {
           const completed = JSON.parse(savedCompleted);
           // 모든 문제가 완료된 경우 결과 페이지로 이동
@@ -67,14 +69,16 @@ const StudyProblemsClient = memo(function StudyProblemsClient({
             return;
           }
           // 완료되지 않은 첫 번째 문제 찾기
-          const incompleteProblem = problems.find(p => !completed.includes(p.id));
+          const incompleteProblem = problems.find((p) => !completed.includes(p.id));
           if (incompleteProblem) {
-            router.replace(`/my/learning/${encodeURIComponent(studyId)}/problems/${incompleteProblem.id}`);
+            router.replace(
+              `/my/learning/${encodeURIComponent(studyId)}/problems/${incompleteProblem.id}`,
+            );
             return;
           }
         }
       }
-      
+
       // 기본적으로 첫 번째 문제로 이동
       router.replace(`/my/learning/${encodeURIComponent(studyId)}/problems/${problems[0].id}`);
     }

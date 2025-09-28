@@ -3,7 +3,6 @@ import { prisma } from '@/lib/core/prisma';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import StudyProblemsClient from './study-problems-client';
 
 export async function generateMetadata({
   params,
@@ -40,7 +39,7 @@ export default async function StudyProblemsPage({ params }: { params: { studyId:
 
   const studyId = decodeURIComponent(params.studyId);
 
-  // 학습 자료 정보 조회
+  // 학습 자료 정보 조회 (존재 여부 확인 용도)
   const learningMaterial = await prisma.learningMaterial.findFirst({
     where: {
       id: studyId,
@@ -48,10 +47,6 @@ export default async function StudyProblemsPage({ params }: { params: { studyId:
     },
     select: {
       id: true,
-      title: true,
-      description: true,
-      subject: true,
-      difficulty: true,
     },
   });
 
@@ -119,11 +114,19 @@ export default async function StudyProblemsPage({ params }: { params: { studyId:
     return attempt ? { ...problem, attempt } : { ...problem };
   });
 
-  return (
-    <StudyProblemsClient
-      studyId={studyId}
-      learningMaterial={learningMaterial}
-      problems={problemsWithAttempts}
-    />
+  const encodedStudyId = encodeURIComponent(studyId);
+
+  const hasCompletedAll = problemsWithAttempts.every(
+    (problem) => problem.attempt?.isCorrect === true,
   );
+
+  if (hasCompletedAll) {
+    redirect(`/my/learning/${encodedStudyId}/results`);
+  }
+
+  const nextProblem = problemsWithAttempts.find((problem) => problem.attempt?.isCorrect !== true);
+
+  const targetProblem = nextProblem ?? problemsWithAttempts[0];
+
+  redirect(`/my/learning/${encodedStudyId}/problems/${targetProblem.id}`);
 }
