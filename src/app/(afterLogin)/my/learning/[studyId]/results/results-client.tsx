@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { calculatePercentage, calculateScore, getGrade } from '@/lib/utils/learning-utils';
 import { CheckCircle, Home, RotateCcw, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface Problem {
   id: string;
@@ -29,58 +30,72 @@ interface ResultsClientProps {
   userId: string;
 }
 
-export default function ResultsClient({
-  studyId,
-  problems,
-  learningMaterial,
-  userId,
-}: ResultsClientProps) {
+export default function ResultsClient({ studyId, problems, learningMaterial }: ResultsClientProps) {
   const router = useRouter();
 
-  // localStorage에서 실제 완료된 문제 목록과 정답/오답 정보 가져오기
-  const getCompletedProblems = () => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`completed-problems-${studyId}`);
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  };
+  // API에서 학습 완료 상태 가져오기
+  const [learningStatus, setLearningStatus] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const getProblemAnswers = () => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`problem-answers-${studyId}`);
-      return saved ? JSON.parse(saved) : {};
-    }
-    return {};
-  };
+  useEffect(() => {
+    const fetchLearningStatus = async () => {
+      try {
+        const response = await fetch(
+          `/api/learning/complete?studyId=${encodeURIComponent(studyId)}`,
+        );
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setLearningStatus(result.data);
+          }
+        }
+      } catch (error) {
+        console.error('학습 상태 조회 실패:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const completedProblems = getCompletedProblems();
-  const problemAnswers = getProblemAnswers();
+    fetchLearningStatus();
+  }, [studyId]);
 
-  // 실제 정답/오답 계산
-  const correctAnswers = Object.values(problemAnswers).filter(
-    (answer: any) => answer.isCorrect,
-  ).length;
-  const wrongAnswers = completedProblems.length - correctAnswers;
+  // API 데이터 사용
+  const correctAnswers = learningStatus?.correctAnswers || 0;
+  const wrongAnswers = learningStatus?.wrongAnswers || 0;
+  const totalProblems = learningStatus?.totalProblems || problems.length;
 
   const totalPoints = problems.reduce((sum, p) => sum + p.points, 0);
-  const earnedPoints = calculateScore(correctAnswers, problems.length, totalPoints);
-  const percentage = calculatePercentage(correctAnswers, completedProblems.length);
+  const earnedPoints = calculateScore(correctAnswers, totalProblems, totalPoints);
+  const percentage = calculatePercentage(correctAnswers, totalProblems);
 
   const handleBackToLearning = () => {
     router.push('/my/learning');
   };
 
-  const handleRetry = () => {
-    // localStorage 초기화
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(`completed-problems-${studyId}`);
-      localStorage.removeItem(`problem-answers-${studyId}`);
+  const handleRetry = async () => {
+    // API로 진행 상태 초기화
+    try {
+      await fetch(`/api/progress?studyId=${encodeURIComponent(studyId)}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('진행 상태 초기화 실패:', error);
     }
     router.push(`/my/learning/${encodeURIComponent(studyId)}/problems/${problems[0]?.id}`);
   };
 
   const gradeInfo = getGrade(percentage);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
+          <p className="text-gray-600">결과를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -124,7 +139,7 @@ export default function ResultsClient({
                 <span className={`text-3xl font-bold ${gradeInfo.color}`}>{gradeInfo.grade}</span>
               </div>
               <p className="mt-2 text-lg text-gray-600">
-                {percentage}점 ({correctAnswers}/{completedProblems.length} 정답)
+                {percentage}점 ({correctAnswers}/{totalProblems} 정답)
               </p>
             </div>
 
@@ -148,26 +163,21 @@ export default function ResultsClient({
           <div className="flex-1">
             <h4 className="mb-4 text-lg font-bold text-gray-800">문제별 상세 결과</h4>
             <div className="space-y-3">
-              {problems.map((problem, index) => {
-                const answerInfo = problemAnswers[problem.id];
-                const isCompleted = completedProblems.includes(problem.id);
-                const isCorrect = answerInfo?.isCorrect || false;
+              {learningStatus?.attempts?.map((attempt: any, index: number) => {
+                const problem = problems.find((p) => p.id === attempt.problemId);
+                if (!problem) return null;
+
+                const isCorrect = attempt.isCorrect;
 
                 return (
                   <div
                     key={problem.id}
                     className={`flex items-center justify-between rounded-lg border p-4 ${
-                      isCompleted
-                        ? isCorrect
-                          ? 'border-green-200 bg-green-50'
-                          : 'border-red-200 bg-red-50'
-                        : 'bg-gray-50'
+                      isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      {!isCompleted ? (
-                        <div className="h-5 w-5 rounded-full border-2 border-gray-300"></div>
-                      ) : isCorrect ? (
+                      {isCorrect ? (
                         <CheckCircle className="h-5 w-5 text-green-500" />
                       ) : (
                         <XCircle className="h-5 w-5 text-red-500" />
@@ -178,17 +188,13 @@ export default function ResultsClient({
                         </div>
                         <div className="text-sm text-gray-500">
                           정답: {problem.correctAnswer}
-                          {answerInfo && !isCorrect && (
-                            <span className="ml-2 text-red-600">
-                              (선택: {answerInfo.selectedAnswer})
-                            </span>
+                          {!isCorrect && (
+                            <span className="ml-2 text-red-600">(선택: {attempt.selected})</span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500">
-                      {isCompleted ? (isCorrect ? problem.points : 0) : '-'}점
-                    </div>
+                    <div className="text-sm text-gray-500">{isCorrect ? problem.points : 0}점</div>
                   </div>
                 );
               })}

@@ -1,19 +1,21 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { ProblemActions } from '@/components/problems/problem-actions';
+import { ProblemContent } from '@/components/problems/problem-content';
+import { ProblemExplanation } from '@/components/problems/problem-explanation';
+import { ProblemHeader } from '@/components/problems/problem-header';
+import { ProblemOptions } from '@/components/problems/problem-options';
 import { useProgress } from '@/hooks/use-progress';
-import { debugLog, formatTime } from '@/lib/utils/learning-utils';
-import { ArrowLeft, ArrowRight, Home, RotateCcw } from 'lucide-react';
+// attemptService import 제거 - deleteAttempt 메서드 제거됨
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface Problem {
   id: string;
   title: string;
   description?: string | undefined;
   content: string;
-  type: 'MULTIPLE_CHOICE';
+  type: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'TRUE_FALSE' | 'CODING' | 'MATH';
   difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
   subject: string;
   options: string[];
@@ -28,59 +30,134 @@ interface ProblemDetailClientProps {
   studyId: string;
   problemId: string;
   initialProblem?: Problem | undefined;
-  nextProblem?: Problem | undefined;
-  currentIndex?: number;
-  totalCount?: number;
+  currentIndex: number;
+  totalCount: number;
+  nextProblem?: { id: string } | undefined;
 }
 
-export default function ProblemDetailClient({
+export function ProblemDetailClient({
   studyId,
+  problemId,
   initialProblem,
+  currentIndex,
+  totalCount,
   nextProblem,
-  currentIndex = 1,
-  totalCount = 1,
 }: ProblemDetailClientProps) {
   const router = useRouter();
-  const [problem, setProblem] = useState<Problem | null>(null);
+  const [problem, setProblem] = useState<Problem | undefined>(initialProblem);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [elapsedTime, setElapsedTime] = useState<number>(0);
-  const [showResult, setShowResult] = useState<boolean>(false);
-  const [isCorrect, setIsCorrect] = useState<boolean>(false);
-  const [showExplanation, setShowExplanation] = useState<boolean>(false);
-  // Custom Hook 사용
-  const { completedProblems, addCompletedProblem, initializeProgress } = useProgress(studyId);
+  const [showResult, setShowResult] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [startTime, setStartTime] = useState<Date>(new Date());
+  const [_elapsedTime, setElapsedTime] = useState(0);
 
-  // 문제 설정 및 진행률 초기화
-  useEffect(() => {
-    if (initialProblem) {
-      debugLog('Problem data:', initialProblem);
-      debugLog('Options type:', typeof initialProblem.options);
-      debugLog('Options value:', initialProblem.options);
-      setProblem(initialProblem);
-      setStartTime(new Date());
-      // 새 문제로 변경될 때 해설 숨기기
-      setShowExplanation(false);
-      setShowResult(false);
-      setSelectedAnswer('');
+  const {
+    completedProblems,
+    setCompletedProblems,
+    addCompletedProblem,
+    initializeProgress,
+    saveProgress,
+    getProgress,
+    learningStatus,
+    loadLearningStatus,
+  } = useProgress(studyId);
 
-      // 진행률 초기화 (필요한 경우)
-      initializeProgress(studyId, currentIndex, totalCount);
+  // 진행률 계산 (메모이제이션)
+  const progressData = useMemo(() => {
+    // 현재 문제를 제외한 완료된 문제 수 계산
+    const actualCompleted = problem
+      ? completedProblems.filter((id) => id !== problem.id).length
+      : completedProblems.length;
+
+    // learningStatus가 있으면 서버 데이터와 비교하여 더 정확한 값 사용
+    if (learningStatus) {
+      const serverCompleted = learningStatus.completedProblems;
+      const serverTotal = learningStatus.totalProblems;
+
+      // 서버 데이터를 우선 사용하되, 로컬 데이터가 더 많으면 로컬 사용
+      const finalCompleted = Math.max(actualCompleted, serverCompleted);
+      const finalTotal = Math.max(totalCount, serverTotal);
+
+      return {
+        total: finalTotal,
+        completed: finalCompleted,
+        percentage: finalTotal > 0 ? Math.round((finalCompleted / finalTotal) * 100) : 0,
+      };
     }
-  }, [initialProblem, studyId, currentIndex, totalCount, initializeProgress]);
+
+    // learningStatus가 없으면 로컬 상태 사용
+    return {
+      total: totalCount,
+      completed: actualCompleted,
+      percentage: totalCount > 0 ? Math.round((actualCompleted / totalCount) * 100) : 0,
+    };
+  }, [learningStatus, totalCount, completedProblems, problem]);
+
+  // 문제 데이터 로드 및 진행 상태 복원
+  useEffect(() => {
+    const loadProblemData = async () => {
+      if (initialProblem) {
+        setProblem(initialProblem);
+
+        // 이미 결과를 표시 중이면 진행 상태를 복원하지 않음
+        if (showResult) {
+          return;
+        }
+
+        // 이전 진행 상태 복원
+        const savedProgress = getProgress(initialProblem.id);
+        if (savedProgress) {
+          setSelectedAnswer(savedProgress.selectedAnswer);
+          setStartTime(new Date(savedProgress.startTime));
+          // 이미 답을 선택했다면 결과 표시하지 않음
+          setShowResult(false);
+        } else {
+          // 새로운 문제인 경우
+          setStartTime(new Date());
+          setSelectedAnswer('');
+          setShowResult(false);
+        }
+
+        // 진행률 초기화 (필요한 경우)
+        await initializeProgress(studyId, currentIndex, totalCount);
+      }
+    };
+
+    loadProblemData();
+  }, [
+    initialProblem,
+    studyId,
+    currentIndex,
+    totalCount,
+    getProgress,
+    initializeProgress,
+    showResult,
+  ]);
 
   // 타이머 업데이트
   useEffect(() => {
-    if (!startTime) return;
+    if (!showResult) {
+      const timer = setInterval(() => {
+        setElapsedTime(Math.floor((new Date().getTime() - startTime.getTime()) / 1000));
+      }, 1000);
 
-    const interval = setInterval(() => {
-      const now = new Date();
-      const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-      setElapsedTime(elapsed);
-    }, 1000);
+      return () => clearInterval(timer);
+    }
+    return undefined;
+  }, [startTime, showResult]);
 
-    return () => clearInterval(interval);
-  }, [startTime]);
+  const onAnswerSelect = useCallback(
+    (answer: string) => {
+      if (!showResult) {
+        setSelectedAnswer(answer);
+        // 로컬 진행 상태 저장 (서버 요청 없음)
+        if (startTime) {
+          saveProgress(problemId, answer, startTime);
+        }
+      }
+    },
+    [showResult, startTime, saveProgress, problemId],
+  );
 
   const handleSubmit = useCallback(() => {
     if (!problem || !selectedAnswer) return;
@@ -101,33 +178,33 @@ export default function ProblemDetailClient({
         completedAt: new Date().toISOString(),
       };
 
+      // 비동기로 문제 완료 처리 (진행률 즉시 업데이트)
       addCompletedProblem(problem.id, answerData);
 
-      // 완료된 문제 수 확인 (현재 문제 포함)
-      const actualCompletedCount = completedProblems.length + 1;
-
-      // 모든 문제를 다 풀었는지 확인
-      if (actualCompletedCount >= totalCount) {
+      // 모든 문제를 다 풀었는지 확인 (로컬 상태 기준)
+      const newCompletedCount = completedProblems.length + 1;
+      if (newCompletedCount >= totalCount) {
         // 결과 표시 후 잠시 대기 후 결과 페이지로 이동
         setTimeout(() => {
           router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
         }, 3000);
       }
     }
-  }, [problem, selectedAnswer, studyId, totalCount, router, completedProblems, addCompletedProblem]);
+  }, [
+    problem,
+    selectedAnswer,
+    studyId,
+    router,
+    addCompletedProblem,
+    completedProblems,
+    totalCount,
+  ]);
 
   const handleNext = useCallback(() => {
     // 해설 숨기기
-    setShowExplanation(false);
-
-    // 현재 문제를 포함한 완료된 문제 수 계산
-    const currentProblemCompleted = problem?.id && completedProblems.includes(problem.id);
-    const actualCompletedCount = currentProblemCompleted
-      ? completedProblems.length
-      : completedProblems.length + 1;
 
     // 모든 문제를 다 풀었는지 확인
-    if (actualCompletedCount >= totalCount) {
+    if (learningStatus?.isCompleted) {
       router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
     } else if (nextProblem) {
       router.push(`/my/learning/${encodeURIComponent(studyId)}/problems/${nextProblem.id}`);
@@ -135,23 +212,25 @@ export default function ProblemDetailClient({
       // 다음 문제가 없지만 아직 모든 문제를 완료하지 않은 경우
       router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
     }
-  }, [nextProblem, router, studyId, completedProblems, totalCount, problem]);
+  }, [nextProblem, router, studyId, learningStatus]);
 
-  const handlePrevious = useCallback(() => {
-    // 이전 문제 로직 (필요시 구현)
-  }, []);
-
-  const handleBackToList = useCallback(() => {
-    router.push('/my/learning');
-  }, [router]);
-
-  const handleReset = useCallback(() => {
+  const handleRetry = useCallback(async () => {
     setSelectedAnswer('');
     setShowResult(false);
     setIsCorrect(false);
     setStartTime(new Date());
     setElapsedTime(0);
-  }, []);
+
+    // 문제를 다시 풀기 위해 completedProblems에서 제거
+    if (problem && completedProblems.includes(problem.id)) {
+      const updatedCompleted = completedProblems.filter((id) => id !== problem.id);
+      setCompletedProblems(updatedCompleted);
+
+      // 모든 시도 기록은 보존 - 새로운 시도로 기록됨
+      // 학습 상태 다시 로드 (서버 데이터와 동기화)
+      await loadLearningStatus();
+    }
+  }, [problem, completedProblems, setCompletedProblems, loadLearningStatus]);
 
   if (!problem) {
     return (
@@ -164,210 +243,43 @@ export default function ProblemDetailClient({
   }
 
   return (
-    <>
-      {/* Main Content */}
-      <div className="flex-1">
-        {/* Page Title and Timer */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={handleBackToList} className="px-4 py-2">
-              <Home className="mr-2 h-4 w-4" />
-              문제 목록
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-800">단원별 학습하기</h1>
-          </div>
-          <div className="rounded-full bg-[#d9e5ff] px-3 py-1 text-sm font-medium text-[#2463eb]">
-            {formatTime(elapsedTime)}
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="mx-auto max-w-4xl px-4">
+        <ProblemHeader
+          studyId={studyId}
+          currentIndex={currentIndex}
+          totalCount={totalCount}
+          progressData={progressData}
+        />
 
-        {/* Problem Context Bar */}
-        <div className="mb-8 rounded-lg bg-[#2463eb] px-6 py-4 text-white">
-          <div className="flex items-center justify-between">
-            <div className="text-lg font-medium">2025 수능 - 수학 (확률과 통계)</div>
-            <div className="flex items-center gap-6 text-sm">
-              <span>총 문항 수: {totalCount} 문제</span>
-              <span>완료된 문항: {completedProblems.length} 문제</span>
-              <span>남은 문항 수: {totalCount - completedProblems.length}문제</span>
-            </div>
-          </div>
-          {/* Progress Bar */}
-          <div className="mt-3">
-            <div className="h-2 w-full rounded-full bg-blue-200">
-              <div
-                className="h-2 rounded-full bg-white transition-all duration-300"
-                style={{ width: `${(completedProblems.length / totalCount) * 100}%` }}
-              />
-            </div>
-            <div className="mt-1 text-xs text-blue-100">
-              진행률: {Math.round((completedProblems.length / totalCount) * 100)}%
-            </div>
-          </div>
-        </div>
+        <ProblemContent problem={problem} />
 
-        {/* Problem Content */}
-        <div className="rounded-lg border border-gray-200 bg-white p-8">
-          <div className="mb-6">
-            <h2 className="mb-4 text-xl font-bold text-gray-800">
-              {currentIndex}. {problem.title}
-            </h2>
-            <div className="mb-8 text-lg leading-relaxed text-black">{problem.content}</div>
-          </div>
+        <ProblemOptions
+          problem={problem}
+          selectedAnswer={selectedAnswer}
+          showResult={showResult}
+          onAnswerSelect={onAnswerSelect}
+        />
 
-          {/* Answer Options - 객관식만 지원 */}
-          <div className="mb-8">
-            <div className="space-y-3">
-              {(() => {
-                let options: string[] = [];
-                if (Array.isArray(problem.options)) {
-                  options = problem.options;
-                } else if (typeof problem.options === 'string') {
-                  try {
-                    options = JSON.parse(problem.options);
-                  } catch {
-                    options = ['옵션 1', '옵션 2', '옵션 3', '옵션 4', '옵션 5'];
-                  }
-                } else {
-                  options = ['옵션 1', '옵션 2', '옵션 3', '옵션 4', '옵션 5'];
-                }
-                return options.map((option: string, index: number) => (
-                  <button
-                    key={index}
-                        onClick={() => {
-                          setSelectedAnswer(option);
-                        }}
-                    disabled={showResult}
-                    className={`
-                      w-full rounded-lg border-2 p-4 text-left transition-all duration-200
-                      ${
-                        selectedAnswer === option
-                          ? showResult
-                            ? option === problem.correctAnswer
-                              ? 'border-green-500 bg-green-100 text-green-700'
-                              : 'border-red-500 bg-red-100 text-red-700'
-                            : 'border-blue-500 bg-blue-100 text-blue-700'
-                          : showResult && option === problem.correctAnswer
-                            ? 'border-green-500 bg-green-100 text-green-700'
-                            : 'border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50'
-                      }
-                      ${!showResult && 'cursor-pointer'}
-                      flex items-center gap-3 text-lg font-medium
-                    `}
-                  >
-                    <div
-                      className={`
-                      flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-medium
-                      ${
-                        selectedAnswer === option
-                          ? showResult
-                            ? option === problem.correctAnswer
-                              ? 'border-green-500 bg-green-500 text-white'
-                              : 'border-red-500 bg-red-500 text-white'
-                            : 'border-blue-500 bg-blue-500 text-white'
-                          : showResult && option === problem.correctAnswer
-                            ? 'border-green-500 bg-green-500 text-white'
-                            : 'border-gray-300'
-                      }
-                    `}
-                    >
-                      {String.fromCharCode(9312 + index)}
-                    </div>
-                    <span>{option}</span>
-                  </button>
-                ));
-              })()}
-            </div>
-          </div>
+        <ProblemActions
+          selectedAnswer={selectedAnswer}
+          showResult={showResult}
+          isCorrect={isCorrect}
+          isLastProblem={currentIndex === totalCount}
+          onSubmit={handleSubmit}
+          onNext={handleNext}
+          onRetry={handleRetry}
+        />
 
-          {/* Action Buttons */}
-          <div className="mt-8 flex items-center justify-between border-t border-gray-200 pt-6">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={true}
-              className="px-6 py-2"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              이전 문제
-            </Button>
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleReset} className="px-6 py-2">
-                <RotateCcw className="mr-2 h-4 w-4" />
-                다시 풀기
-              </Button>
-
-              {!showResult ? (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!selectedAnswer}
-                  className="rounded-lg bg-blue-600 px-8 py-3 text-white hover:bg-blue-700"
-                >
-                  정답 확인
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleNext}
-                  className="rounded-lg bg-green-600 px-8 py-3 text-white hover:bg-green-700"
-                >
-                  다음 문제
-                </Button>
-              )}
-            </div>
-
-            <Button
-              variant="outline"
-              onClick={handleNext}
-              disabled={!nextProblem}
-              className="px-6 py-2"
-            >
-              다음 문제
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Result and Explanation */}
-        {showResult && (
-          <Card className="mt-8 max-w-4xl p-6">
-            <div className="mb-4">
-              <div
-                className={`mb-2 text-xl font-medium ${
-                  isCorrect ? 'text-green-600' : 'text-red-600'
-                }`}
-              >
-                {isCorrect ? '✓ 정답입니다!' : '✗ 틀렸습니다.'}
-              </div>
-              <div className="text-gray-600">정답: {problem.correctAnswer}</div>
-              {selectedAnswer && selectedAnswer !== problem.correctAnswer && (
-                <div className="text-gray-600">선택한 답: {selectedAnswer}</div>
-              )}
-            </div>
-
-            {problem.explanation && (
-              <div className="border-t pt-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-lg font-medium">해설</h4>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowExplanation(!showExplanation)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    {showExplanation ? '접기' : '펼치기'}
-                    <span className="ml-1">{showExplanation ? '▲' : '▼'}</span>
-                  </Button>
-                </div>
-                {showExplanation && (
-                  <div className="whitespace-pre-line leading-relaxed text-gray-700">
-                    {problem.explanation}
-                  </div>
-                )}
-              </div>
-            )}
-          </Card>
-        )}
+        <ProblemExplanation
+          problem={problem}
+          showResult={showResult}
+          isCorrect={isCorrect}
+          selectedAnswer={selectedAnswer}
+        />
       </div>
-    </>
+    </div>
   );
 }
+
+export default ProblemDetailClient;
