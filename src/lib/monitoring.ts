@@ -631,25 +631,31 @@ export class AdvancedHealthChecker {
       await prisma.$queryRaw`SELECT 1`;
       return { message: 'Database connection successful' };
     } catch (error) {
+      console.error('Database health check failed:', error);
       throw new Error(`Database connection failed: ${error}`);
     }
   }
 
   private static async checkMemory() {
-    const usage = process.memoryUsage();
-    const heapUsedMB = usage.heapUsed / 1024 / 1024;
-    const heapTotalMB = usage.heapTotal / 1024 / 1024;
-    const usagePercent = (heapUsedMB / heapTotalMB) * 100;
+    try {
+      const usage = process.memoryUsage();
+      const heapUsedMB = usage.heapUsed / 1024 / 1024;
+      const heapTotalMB = usage.heapTotal / 1024 / 1024;
+      const usagePercent = (heapUsedMB / heapTotalMB) * 100;
 
-    if (usagePercent > 90) {
-      throw new Error(`High memory usage: ${usagePercent.toFixed(2)}%`);
+      if (usagePercent > 90) {
+        throw new Error(`High memory usage: ${usagePercent.toFixed(2)}%`);
+      }
+
+      return {
+        heapUsed: `${heapUsedMB.toFixed(2)}MB`,
+        heapTotal: `${heapTotalMB.toFixed(2)}MB`,
+        usagePercent: `${usagePercent.toFixed(2)}%`,
+      };
+    } catch (error) {
+      console.error('Memory check failed:', error);
+      throw new Error(`Memory check failed: ${error}`);
     }
-
-    return {
-      heapUsed: `${heapUsedMB.toFixed(2)}MB`,
-      heapTotal: `${heapTotalMB.toFixed(2)}MB`,
-      usagePercent: `${usagePercent.toFixed(2)}%`,
-    };
   }
 
   private static async checkDiskSpace() {

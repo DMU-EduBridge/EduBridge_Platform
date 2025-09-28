@@ -5,7 +5,7 @@ import { healthService } from '@/server/services/health.service';
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0; // 항상 최신 상태 확인
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // 고급 헬스 체크 엔드포인트
 export const GET = performanceMiddleware(async (request: NextRequest) => {
