@@ -56,14 +56,24 @@ const sendToAnalytics = (metric: Metric) => {
 // 성능 메트릭 수집 및 보고
 export const reportWebVitals = () => {
   try {
-    // Core Web Vitals
-    getCLS(sendToAnalytics); // Cumulative Layout Shift
-    getFID(sendToAnalytics); // First Input Delay
-    getLCP(sendToAnalytics); // Largest Contentful Paint
+    // Core Web Vitals - 함수 존재 여부 확인
+    if (typeof getCLS === 'function') {
+      getCLS(sendToAnalytics); // Cumulative Layout Shift
+    }
+    if (typeof getFID === 'function') {
+      getFID(sendToAnalytics); // First Input Delay
+    }
+    if (typeof getLCP === 'function') {
+      getLCP(sendToAnalytics); // Largest Contentful Paint
+    }
 
     // Other Important Metrics
-    getFCP(sendToAnalytics); // First Contentful Paint
-    getTTFB(sendToAnalytics); // Time to First Byte
+    if (typeof getFCP === 'function') {
+      getFCP(sendToAnalytics); // First Contentful Paint
+    }
+    if (typeof getTTFB === 'function') {
+      getTTFB(sendToAnalytics); // Time to First Byte
+    }
   } catch (error) {
     console.error('Error collecting web vitals:', error);
   }
