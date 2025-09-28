@@ -253,12 +253,16 @@ export const UploadResponseSchema = z.object({
 export const HealthResponseSchema = z.object({
   status: z.enum(['healthy', 'unhealthy']),
   timestamp: z.string(),
-  services: z.object({
-    database: z.enum(['up', 'down']),
-    redis: z.enum(['up', 'down']).optional(),
-    vector: z.enum(['up', 'down']).optional(),
-  }),
-  version: z.string(),
+  checks: z
+    .array(
+      z.object({
+        name: z.string(),
+        status: z.enum(['healthy', 'unhealthy']),
+        details: z.any(),
+      }),
+    )
+    .optional(),
+  error: z.string().optional(),
 });
 
 // 메트릭 관련 스키마
