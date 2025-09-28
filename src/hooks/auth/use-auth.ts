@@ -18,11 +18,8 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       authService.login(email, password),
-    onSuccess: (response) => {
-      // 토큰 저장
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('auth-token', response.data.token);
-      }
+    onSuccess: () => {
+      // NextAuth가 httpOnly 쿠키로 토큰을 관리하므로 별도 저장 불필요
       // 프로필 정보 다시 가져오기
       queryClient.invalidateQueries({ queryKey: authKeys.profile });
     },
@@ -38,10 +35,8 @@ export const useAuth = () => {
   const logoutMutation = useMutation({
     mutationFn: authService.logout,
     onSuccess: () => {
-      // 클라이언트사이드 정리
+      // 클라이언트사이드 정리 (세션 스토리지만)
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth-token');
-        localStorage.removeItem('user-profile');
         sessionStorage.clear();
       }
       // 모든 쿼리 캐시 정리
@@ -51,8 +46,6 @@ export const useAuth = () => {
       console.error('Logout mutation error:', error);
       // 오류가 발생해도 클라이언트 정리와 캐시 정리는 수행
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth-token');
-        localStorage.removeItem('user-profile');
         sessionStorage.clear();
       }
       queryClient.clear();
