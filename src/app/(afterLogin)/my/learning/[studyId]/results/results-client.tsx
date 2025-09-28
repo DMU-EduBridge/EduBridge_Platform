@@ -78,9 +78,16 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
       await fetch(`/api/progress?studyId=${encodeURIComponent(studyId)}`, {
         method: 'DELETE',
       });
+
+      // 학습 완료 상태도 초기화
+      await fetch(`/api/learning/complete?studyId=${encodeURIComponent(studyId)}`, {
+        method: 'DELETE',
+      });
     } catch (error) {
       console.error('진행 상태 초기화 실패:', error);
     }
+
+    // 첫 번째 문제로 이동
     router.push(`/my/learning/${encodeURIComponent(studyId)}/problems/${problems[0]?.id}`);
   };
 
