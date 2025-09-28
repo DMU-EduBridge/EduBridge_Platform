@@ -13,7 +13,7 @@ export const PROBLEM_TYPES = [
   'MATH',
 ] as const;
 export const REVIEW_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'NEEDS_REVISION'] as const;
-export const PROGRESS_STATUSES = ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'FAILED'] as const;
+// PROGRESS_STATUSES 제거 - StudentProgress 모델과 함께 제거됨
 export const CLASS_MEMBER_ROLES = ['STUDENT', 'TEACHER', 'ASSISTANT'] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
@@ -21,7 +21,7 @@ export type UserStatus = (typeof USER_STATUSES)[number];
 export type ProblemDifficulty = (typeof PROBLEM_DIFFICULTIES)[number];
 export type ProblemType = (typeof PROBLEM_TYPES)[number];
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
-export type ProgressStatus = (typeof PROGRESS_STATUSES)[number];
+// ProgressStatus 타입 제거 - StudentProgress 모델과 함께 제거됨
 export type ClassMemberRole = (typeof CLASS_MEMBER_ROLES)[number];
 
 // ===== Zod 스키마들 =====
@@ -30,7 +30,7 @@ export const UserStatusSchema = z.enum(USER_STATUSES);
 export const ProblemDifficultySchema = z.enum(PROBLEM_DIFFICULTIES);
 export const ProblemTypeSchema = z.enum(PROBLEM_TYPES);
 export const ReviewStatusSchema = z.enum(REVIEW_STATUSES);
-export const ProgressStatusSchema = z.enum(PROGRESS_STATUSES);
+// ProgressStatusSchema 제거 - StudentProgress 모델과 함께 제거됨
 export const ClassMemberRoleSchema = z.enum(CLASS_MEMBER_ROLES);
 
 // ===== 기본 타입들 =====
@@ -304,9 +304,7 @@ export const isValidReviewStatus = (status: string): status is ReviewStatus => {
   return REVIEW_STATUSES.includes(status as ReviewStatus);
 };
 
-export const isValidProgressStatus = (status: string): status is ProgressStatus => {
-  return PROGRESS_STATUSES.includes(status as ProgressStatus);
-};
+// isValidProgressStatus 함수 제거 - StudentProgress 모델과 함께 제거됨
 
 export const isValidClassMemberRole = (role: string): role is ClassMemberRole => {
   return CLASS_MEMBER_ROLES.includes(role as ClassMemberRole);

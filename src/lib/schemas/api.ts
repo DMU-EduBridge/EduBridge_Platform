@@ -309,16 +309,7 @@ export const AlertTestResponseSchema = z.object({
   results: z.array(z.any()),
 });
 
-// AI 통계 관련 스키마
-export const AIApiUsageListResponseSchema = z.object({
-  usage: z.array(z.any()),
-  pagination: PaginationSchema,
-});
-
-export const AIPerformanceMetricListResponseSchema = z.object({
-  metrics: z.array(z.any()),
-  pagination: PaginationSchema,
-});
+// AI 통계 관련 스키마 제거 - 사용되지 않음
 
 // 메트릭스 관련 스키마
 export const MetricsOverviewSchema = z.object({
