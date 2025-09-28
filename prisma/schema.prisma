@@ -77,12 +77,7 @@ enum SyncStatus {
   FAILED
 }
 
-enum ProgressStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-  FAILED
-}
+// ProgressStatus enum 제거 - StudentProgress 모델과 함께 제거됨
 
 enum AnalysisType {
   BASIC_STATISTICS
@@ -93,13 +88,7 @@ enum AnalysisType {
   TREND_ANALYSIS
 }
 
-enum TemplateType {
-  EXCELLENT
-  NORMAL
-  PROBLEMATIC
-  MIXED
-  PREDEFINED
-}
+// TemplateType enum 제거 - SampleDataTemplate 모델과 함께 제거됨
 
 model User {
   id               String             @id @default(cuid())
@@ -119,28 +108,18 @@ model User {
   lastLoginAt      DateTime?          // 마지막 로그인 시간
   passwordResetToken String?          // 비밀번호 재설정 토큰
   passwordResetExpires DateTime?      // 비밀번호 재설정 만료 시간
-  reports          AnalysisReport[]
   attempts         Attempt[]
-  counseling       CareerCounseling[]
   reviewedProblems Problem[]          @relation("ProblemReviewer")
-  progress         StudentProgress[]
   preferences      UserPreferences?
   
   // Educational AI System 관련 관계
   textbooks        Textbook[]
   problems         Problem[]          @relation("ProblemCreator")
   searchQueries    SearchQuery[]
-  aiApiUsage       AIApiUsage[]
-  aiPerformanceMetrics AIPerformanceMetric[]
-  aiUsageStatistics AIUsageStatistics[]
   
   // Teacher Report System 관련 관계
   teacherReports   TeacherReport[]
   aiServerSyncs    AIServerSync[]
-  
-  // 실제 AI 서버 데이터 구조 관련 관계
-  sampleDataTemplates SampleDataTemplate[]
-  questionHistory     QuestionHistory[]
 
   // 클래스 관련 관계
   createdClasses    Class[]            @relation("ClassCreator")
@@ -282,12 +261,8 @@ model Problem {
   attempts         Attempt[]
   materialProblems LearningMaterialProblem[]
   reviewer         User?                     @relation("ProblemReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
-  aiGeneration     AIGeneration?             @relation(fields: [aiGenerationId], references: [id], onDelete: SetNull)
-  progress         StudentProgress[]
   textbook         Textbook?                 @relation(fields: [textbookId], references: [id], onDelete: SetNull)
   creator          User?                     @relation("ProblemCreator", fields: [createdBy], references: [id], onDelete: SetNull)
-  questionOptions  QuestionOption[]
-  questionTags     QuestionTag[]
   assignments      ProblemAssignment[]
 
   @@index([subject])
@@ -308,56 +283,9 @@ model Problem {
   @@map("problems")
 }
 
-model StudentProgress {
-  id        String         @id @default(cuid())
-  studentId String
-  problemId String?
-  status    ProgressStatus @default(NOT_STARTED)
-  score     Int?           @default(0)
-  timeSpent Int            @default(0)
-  attempts  Int            @default(0)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  problem   Problem?       @relation(fields: [problemId], references: [id], onDelete: SetNull)
-  student   User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+// StudentProgress 모델 제거 - Attempt 모델로 대체됨
 
-  @@unique([studentId, problemId])
-  @@index([studentId])
-  @@index([problemId])
-  @@index([status])
-  @@index([studentId, status, updatedAt]) // 학생별 진행상황 조회
-  @@index([problemId, status]) // 문제별 학생 진행상황
-  @@map("student_progress")
-}
-
-model AnalysisReport {
-  id                    String                 @id @default(cuid())
-  studentId             String
-  type                  String
-  title                 String
-  period                String
-  insights              String?
-  recommendations       String?
-  strengths             String?
-  weaknesses            String?
-  status                String                 @default("COMPLETED")
-  aiGenerationId        String?
-  createdAt             DateTime               @default(now())
-  deletedAt             DateTime?
-  aiGeneration          AIGeneration?          @relation(fields: [aiGenerationId], references: [id])
-  student               User                   @relation(fields: [studentId], references: [id])
-  reportInsights        ReportInsight[]
-  reportRecommendations ReportRecommendation[]
-
-  @@index([studentId])
-  @@index([type])
-  @@index([status])
-  @@index([createdAt])
-  @@index([studentId, type, status, createdAt])
-  @@index([aiGenerationId])
-  @@index([deletedAt])
-  @@map("analysis_reports")
-}
+// AnalysisReport 모델 제거 - 사용되지 않음
 
 model TeacherReport {
   id                String   @id @default(cuid())
@@ -379,8 +307,6 @@ model TeacherReport {
   
   user              User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   reportAnalyses    ReportAnalysis[]
-  studentData       StudentData[]
-  classInfoData     ClassInfo[]
 
   @@index([createdBy])
   @@index([status])
@@ -388,29 +314,7 @@ model TeacherReport {
   @@map("teacher_reports")
 }
 
-model CareerCounseling {
-  id                        String        @id @default(cuid())
-  studentId                 String
-  type                      String
-  title                     String
-  content                   String
-  careerSuggestions         String?
-  universityRecommendations String?
-  skillGaps                 String?
-  status                    String        @default("COMPLETED")
-  aiGenerationId            String?
-  createdAt                 DateTime      @default(now())
-  deletedAt                 DateTime?
-  aiGeneration              AIGeneration? @relation(fields: [aiGenerationId], references: [id])
-  student                   User          @relation(fields: [studentId], references: [id])
-
-  @@index([studentId])
-  @@index([type])
-  @@index([status])
-  @@index([aiGenerationId])
-  @@index([deletedAt])
-  @@map("career_counseling")
-}
+// CareerCounseling 모델 제거 - 사용되지 않음
 
 model LearningMaterialProblem {
   id                 String           @id @default(cuid())
@@ -426,62 +330,9 @@ model LearningMaterialProblem {
   @@map("learning_material_problems")
 }
 
-model AIModel {
-  id          String         @id @default(cuid())
-  name        String
-  version     String
-  provider    String
-  isActive    Boolean        @default(true)
-  createdAt   DateTime       @default(now())
-  generations AIGeneration[]
+// AIModel, AIGeneration 모델 제거 - 사용되지 않음
 
-  @@map("ai_models")
-}
-
-model AIGeneration {
-  id         String             @id @default(cuid())
-  modelId    String
-  prompt     String
-  response   String
-  tokensUsed Int?
-  cost       Float?
-  duration   Int?
-  createdAt  DateTime           @default(now())
-  model      AIModel            @relation(fields: [modelId], references: [id])
-  reports    AnalysisReport[]
-  counseling CareerCounseling[]
-  problems   Problem[]
-
-  @@index([modelId])
-  @@index([createdAt])
-  @@map("ai_generations")
-}
-
-model ReportInsight {
-  id        String         @id @default(cuid())
-  reportId  String
-  category  String
-  content   String
-  priority  String
-  createdAt DateTime       @default(now())
-  report    AnalysisReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  @@index([reportId])
-  @@map("report_insights")
-}
-
-model ReportRecommendation {
-  id        String         @id @default(cuid())
-  reportId  String
-  type      String
-  content   String
-  priority  String
-  createdAt DateTime       @default(now())
-  report    AnalysisReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  @@index([reportId])
-  @@map("report_recommendations")
-}
+// ReportInsight, ReportRecommendation 모델 제거 - 사용되지 않음
 
 model Attempt {
   id           String   @id @default(cuid())
@@ -619,85 +470,9 @@ model SearchResult {
   @@map("search_results")
 }
 
-model QuestionOption {
-  id           String   @id @default(cuid())
-  problemId    String
-  optionNumber Int
-  optionText   String
-  isCorrect    Boolean
-  createdAt    DateTime @default(now())
-  
-  problem      Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+// QuestionOption, QuestionTag 모델 제거 - 사용되지 않음
 
-  @@index([problemId])
-  @@map("question_options")
-}
-
-model QuestionTag {
-  id         String  @id @default(cuid())
-  problemId  String
-  tagName    String
-  createdAt  DateTime @default(now())
-  
-  problem    Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
-
-  @@index([problemId])
-  @@map("question_tags")
-}
-
-model AIApiUsage {
-  id               String   @id @default(cuid())
-  userId           String
-  apiType          String
-  modelName        String
-  tokensUsed       Int
-  costUsd          Float
-  requestCount     Int      @default(1)
-  responseTimeMs   Int?
-  success          Boolean  @default(true)
-  errorMessage     String?
-  createdAt        DateTime @default(now())
-  
-  user             User     @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([createdAt])
-  @@map("ai_api_usage")
-}
-
-model AIPerformanceMetric {
-  id              String   @id @default(cuid())
-  operationType   String
-  durationMs      Int
-  success         Boolean
-  errorMessage    String?
-  metadata        String   @default("{}")
-  userId          String?
-  createdAt       DateTime @default(now())
-  
-  user            User?    @relation(fields: [userId], references: [id])
-
-  @@index([operationType])
-  @@index([createdAt])
-  @@map("ai_performance_metrics")
-}
-
-model AIUsageStatistics {
-  id                   String   @id @default(cuid())
-  userId               String
-  date                 String
-  questionsGenerated   Int      @default(0)
-  textbooksUploaded    Int      @default(0)
-  searchesPerformed    Int      @default(0)
-  totalCostUsd         Float    @default(0)
-  createdAt            DateTime @default(now())
-  
-  user                 User     @relation(fields: [userId], references: [id])
-
-  @@unique([userId, date])
-  @@index([userId, date])
-  @@map("ai_usage_statistics")
-}
+// AIApiUsage, AIPerformanceMetric, AIUsageStatistics 모델 제거 - 사용되지 않음
 
 // Teacher Report System Models - 실제 메모리 기반 구조 반영
 
@@ -715,45 +490,7 @@ model ReportAnalysis {
   @@map("report_analyses")
 }
 
-model StudentData {
-  id                String   @id @default(cuid())
-  studentId        Int
-  name              String
-  math              Float?
-  korean            Float?
-  english           Float?
-  science           Float?
-  social            Float?
-  assignmentRate    Float?
-  attendanceRate    Float?
-  reportId          String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  report            TeacherReport? @relation(fields: [reportId], references: [id])
-
-  @@index([reportId])
-  @@index([studentId])
-  @@map("student_data")
-}
-
-model ClassInfo {
-  id                String   @id @default(cuid())
-  grade             Int?
-  classNum          Int?
-  subject           String?
-  semester          String?
-  year              Int?
-  teacher           String?
-  totalStudents     Int?
-  reportId          String?
-  createdAt         DateTime @default(now())
-  
-  report            TeacherReport? @relation(fields: [reportId], references: [id])
-
-  @@index([reportId])
-  @@map("class_info")
-}
+// StudentData, ClassInfo 모델 제거 - 사용되지 않음
 
 model AIServerStatus {
   id                String   @id @default(cuid())
@@ -798,75 +535,6 @@ model AIServerSync {
 
 // 실제 AI 서버 데이터 구조를 반영한 추가 테이블들
 
-model ChromaDBCollection {
-  id                String   @id @default(cuid())
-  collectionName    String   @unique // "textbook_embeddings"
-  description       String?
-  persistDirectory  String   // "./data/vector_db"
-  totalDocuments    Int      @default(0)
-  totalEmbeddings   Int      @default(0)
-  lastUpdated       DateTime @default(now())
-  createdAt         DateTime @default(now())
-  
-  embeddings        ChromaDBEmbedding[]
+// ChromaDBCollection, ChromaDBEmbedding 모델 제거 - 사용되지 않음
 
-  @@index([collectionName])
-  @@map("chromadb_collections")
-}
-
-model ChromaDBEmbedding {
-  id                String   @id @default(cuid())
-  collectionId      String
-  documentId        String   // ChromaDB의 실제 문서 ID
-  content           String   // 원본 텍스트 내용
-  embedding         String   // JSON string - 1536차원 벡터
-  metadata          Json?    // ChromaDB 메타데이터
-  similarityScore   Float?   // 검색 시 유사도 점수
-  distance          Float?   // 검색 시 거리
-  createdAt         DateTime @default(now())
-  
-  collection        ChromaDBCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-
-  @@index([collectionId])
-  @@index([documentId])
-  @@index([similarityScore])
-  @@map("chromadb_embeddings")
-}
-
-model SampleDataTemplate {
-  id                String   @id @default(cuid())
-  templateName      String   // "excellent_class", "normal_class", "problematic_class"
-  templateType      TemplateType // enum 사용
-  description       String?
-  dataStructure     Json?    // JSON object - 실제 샘플 데이터 구조
-  isActive          Boolean  @default(true)
-  createdBy         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  user              User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
-
-  @@index([templateName])
-  @@index([templateType])
-  @@map("sample_data_templates")
-}
-
-model QuestionHistory {
-  id                String   @id @default(cuid())
-  questionId        String   // 실제 생성된 문제의 ID
-  questionText      String
-  subject           String
-  difficulty        String
-  generatedAt       DateTime @default(now())
-  modelUsed         String?
-  tokensUsed        Int?
-  costUsd           Float?
-  userId            String?
-  
-  user              User?    @relation(fields: [userId], references: [id])
-
-  @@index([questionId])
-  @@index([subject])
-  @@index([generatedAt])
-  @@map("question_history")
-}
+// SampleDataTemplate, QuestionHistory 모델 제거 - 사용되지 않음
