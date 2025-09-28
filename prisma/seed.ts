@@ -1111,35 +1111,35 @@ async function main() {
       }),
     ]);
 
-    // 24. 시도 기록 데이터 생성
-    const attempts = await Promise.all([
-      prisma.attempt.create({
+    // 24. 문제 진행 상태 데이터 생성 (StudySession/Attempt 대체)
+    const problemProgress = await Promise.all([
+      prisma.problemProgress.create({
         data: {
           userId: users[5].id, // 김민수
+          studyId: learningMaterials[0].id,
           problemId: problems[0].id,
-          classId: classes[0].id,
+          attemptNumber: 1,
+          selectedAnswer: 'x = 2, 3',
           isCorrect: true,
-          timeSpent: 300,
-          startedAt: new Date(Date.now() - 10 * 60 * 1000), // 10분 전
-          completedAt: new Date(),
-          selected: 'x = 2, 3',
+          completedAt: new Date(Date.now() - 10 * 60 * 1000), // 10분 전
+          lastAccessed: new Date(Date.now() - 10 * 60 * 1000),
         },
       }),
-      prisma.attempt.create({
+      prisma.problemProgress.create({
         data: {
           userId: users[6].id, // 이지영
+          studyId: learningMaterials[0].id,
           problemId: problems[0].id,
-          classId: classes[0].id,
+          attemptNumber: 1,
+          selectedAnswer: 'x = 2, 3',
           isCorrect: true,
-          timeSpent: 250,
-          startedAt: new Date(Date.now() - 5 * 60 * 1000), // 5분 전
-          completedAt: new Date(),
-          selected: 'x = 2, 3',
+          completedAt: new Date(Date.now() - 5 * 60 * 1000), // 5분 전
+          lastAccessed: new Date(Date.now() - 5 * 60 * 1000),
         },
       }),
     ]);
 
-    // 25. 분석 리포트 데이터 생성 (제거된 모델로 인해 주석 처리)
+    // 26. 분석 리포트 데이터 생성 (제거된 모델로 인해 주석 처리)
     // const analysisReports = await Promise.all([
     //   prisma.analysisReport.create({
     //     data: {
@@ -1427,7 +1427,7 @@ async function main() {
       learningMaterialProblems: learningMaterialProblems.length,
       // studentProgress: studentProgress.length, // 제거된 모델
       problemAssignments: problemAssignments.length,
-      attempts: attempts.length,
+      problemProgress: problemProgress.length,
       // analysisReports: analysisReports.length, // 제거된 모델
       // careerCounseling: careerCounseling.length, // 제거된 모델
       // aiModels: aiModels.length, // 제거된 모델
