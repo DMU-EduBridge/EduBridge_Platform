@@ -132,17 +132,6 @@ export class ProblemCrudService {
               role: true,
             },
           },
-          attempts: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                },
-              },
-            },
-          },
         },
       });
     } catch (error) {

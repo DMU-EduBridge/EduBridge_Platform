@@ -14,9 +14,7 @@ export class UserProfileService {
         orderBy: { createdAt: 'desc' },
         include: {
           _count: {
-            select: {
-              attempts: true,
-            },
+            select: {},
           },
         },
       });
@@ -42,9 +40,7 @@ export class UserProfileService {
         orderBy: { createdAt: 'desc' },
         include: {
           _count: {
-            select: {
-              attempts: true,
-            },
+            select: {},
           },
         },
       });
@@ -78,9 +74,7 @@ export class UserProfileService {
         orderBy: { createdAt: 'desc' },
         include: {
           _count: {
-            select: {
-              attempts: true,
-            },
+            select: {},
           },
         },
       });

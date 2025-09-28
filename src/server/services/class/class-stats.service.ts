@@ -26,25 +26,16 @@ export class ClassStatsService {
           prisma.problemAssignment.count({
             where: { classId, isActive: true },
           }),
-          prisma.attempt.count({
-            where: { classId },
-          }),
-          prisma.attempt.aggregate({
-            where: { classId },
-            _avg: { timeSpent: true },
-          }),
-          prisma.attempt.count({
-            where: { classId, isCorrect: true },
-          }),
+          Promise.resolve(0), // 임시로 0 반환
+          Promise.resolve({ _avg: { timeSpent: 0 } }), // 임시로 0 반환
+          Promise.resolve(0), // 임시로 0 반환
         ]);
 
       if (!classInfo) {
         throw new Error('클래스를 찾을 수 없습니다.');
       }
 
-      const totalAttempts = await prisma.attempt.count({
-        where: { classId },
-      });
+      const totalAttempts = 0; // 임시로 0으로 설정
 
       const completionRateValue = totalAttempts > 0 ? (completionRate / totalAttempts) * 100 : 0;
 
@@ -143,43 +134,13 @@ export class ClassStatsService {
 
       const performanceData = await Promise.all(
         students.map(async (student) => {
-          const attempts = await prisma.attempt.findMany({
-            where: {
-              userId: student.userId,
-              classId,
-            },
-            include: {
-              problem: {
-                select: {
-                  id: true,
-                  title: true,
-                  difficulty: true,
-                },
-              },
-            },
-          });
-
-          const totalAttempts = attempts.length;
-          const correctAttempts = attempts.filter((attempt) => attempt.isCorrect).length;
-          const averageScore =
-            totalAttempts > 0
-              ? attempts.reduce((sum, attempt) => sum + (attempt.timeSpent || 0), 0) / totalAttempts
-              : 0;
-
-          const difficultyStats = attempts.reduce(
-            (stats, attempt) => {
-              const difficulty = attempt.problem.difficulty;
-              if (!stats[difficulty]) {
-                stats[difficulty] = { total: 0, correct: 0 };
-              }
-              stats[difficulty].total++;
-              if (attempt.isCorrect) {
-                stats[difficulty].correct++;
-              }
-              return stats;
-            },
-            {} as Record<string, { total: number; correct: number }>,
-          );
+          // attempts 테이블 제거됨 - ProblemProgress로 대체
+          // 임시로 빈 데이터 반환
+          const attempts: any[] = [];
+          const totalAttempts = 0;
+          const correctAttempts = 0;
+          const averageScore = 0;
+          const difficultyStats = {};
 
           return {
             student: {
@@ -249,13 +210,7 @@ export class ClassStatsService {
             },
           });
 
-          const completedAttempts = await prisma.attempt.count({
-            where: {
-              problemId: assignment.problemId,
-              classId: assignment.classId,
-              isCorrect: true,
-            },
-          });
+          const completedAttempts = 0; // 임시로 0으로 설정
 
           const completionRate = totalStudents > 0 ? (completedAttempts / totalStudents) * 100 : 0;
 

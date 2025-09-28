@@ -91,11 +91,11 @@ export function optimizeWhereClause<T extends Record<string, any>>(
  */
 export interface OptimizedIncludeOptions {
   includeCreator?: boolean;
-  includeMembers?: boolean;
+  // includeMembers?: boolean;
   includeAssignments?: boolean;
   includeAttempts?: boolean;
   includeStats?: boolean;
-  memberLimit?: number;
+  // memberLimit?: number;
   assignmentLimit?: number;
   attemptLimit?: number;
 }
@@ -103,13 +103,9 @@ export interface OptimizedIncludeOptions {
 export function getOptimizedInclude(options: OptimizedIncludeOptions = {}) {
   const {
     includeCreator = false,
-    includeMembers = false,
     includeAssignments = false,
-    includeAttempts = false,
     includeStats = false,
-    memberLimit = 50,
     assignmentLimit = 20,
-    attemptLimit = 100,
   } = options;
 
   const include: any = {};
@@ -117,20 +113,6 @@ export function getOptimizedInclude(options: OptimizedIncludeOptions = {}) {
   if (includeCreator) {
     include.creator = {
       select: DEFAULT_USER_SELECT,
-    };
-  }
-
-  if (includeMembers) {
-    include.members = {
-      take: memberLimit,
-      include: {
-        user: {
-          select: DEFAULT_USER_SELECT,
-        },
-      },
-      orderBy: {
-        joinedAt: 'desc',
-      },
     };
   }
 
@@ -151,26 +133,12 @@ export function getOptimizedInclude(options: OptimizedIncludeOptions = {}) {
     };
   }
 
-  if (includeAttempts) {
-    include.attempts = {
-      take: attemptLimit,
-      include: {
-        user: {
-          select: DEFAULT_USER_SELECT,
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    };
-  }
-
   if (includeStats) {
     include._count = {
       select: {
-        members: true,
         assignments: true,
-        attempts: true,
+        materialProblems: true,
+        progressEntries: true, // ProblemProgress 관계 추가
       },
     };
   }

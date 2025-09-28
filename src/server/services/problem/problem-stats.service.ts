@@ -204,9 +204,8 @@ export class ProblemStatsService {
             where: { subject },
             _count: { type: true },
           }),
-          prisma.attempt.aggregate({
+          prisma.problemProgress.aggregate({
             where: { problem: { subject } },
-            _avg: { timeSpent: true },
             _count: { id: true },
           }),
         ]);
@@ -234,7 +233,7 @@ export class ProblemStatsService {
         byDifficulty: difficultyStats,
         byType: typeStats,
         totalAttempts: averageAttempts._count.id,
-        averageTimeSpent: averageAttempts._avg.timeSpent || 0,
+        // averageTimeSpent: averageAttempts._avg.timeSpent || 0, // ProblemProgress에는 timeSpent 필드가 없음
       };
     } catch (error) {
       logger.error('과목별 문제 통계 조회 실패', undefined, {

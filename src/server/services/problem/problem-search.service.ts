@@ -144,9 +144,7 @@ export class ProblemSearchService {
             },
           },
           _count: {
-            select: {
-              attempts: true,
-            },
+            select: {},
           },
         },
       });
@@ -213,7 +211,7 @@ export class ProblemSearchService {
           },
           _count: {
             select: {
-              attempts: true,
+              // attempts: true, // 제거됨
             },
           },
         },
@@ -283,7 +281,7 @@ export class ProblemSearchService {
           },
           _count: {
             select: {
-              attempts: true,
+              // attempts: true, // 제거됨
             },
           },
         },

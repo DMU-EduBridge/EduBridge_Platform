@@ -113,9 +113,7 @@ export class ProblemReviewService {
               },
             },
             _count: {
-              select: {
-                attempts: true,
-              },
+              select: {},
             },
           },
         }),
@@ -185,7 +183,7 @@ export class ProblemReviewService {
             },
             _count: {
               select: {
-                attempts: true,
+                // attempts: true, // 제거됨
               },
             },
           },
