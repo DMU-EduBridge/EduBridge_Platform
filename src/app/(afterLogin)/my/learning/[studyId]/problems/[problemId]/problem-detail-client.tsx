@@ -105,10 +105,19 @@ export function ProblemDetailClient({
         }
 
         // 이전 진행 상태 복원
-        const savedProgress = getProgress(initialProblem.id);
+        const savedProgress = await getProgress(initialProblem.id);
         if (savedProgress) {
           setSelectedAnswer(savedProgress.selectedAnswer);
-          setStartTime(new Date(savedProgress.startTime));
+          try {
+            const restoredStartTime = new Date(savedProgress.startTime);
+            if (!isNaN(restoredStartTime.getTime())) {
+              setStartTime(restoredStartTime);
+            } else {
+              setStartTime(new Date());
+            }
+          } catch {
+            setStartTime(new Date());
+          }
           // 이미 답을 선택했다면 결과 표시하지 않음
           setShowResult(false);
         } else {
@@ -147,12 +156,12 @@ export function ProblemDetailClient({
   }, [startTime, showResult]);
 
   const onAnswerSelect = useCallback(
-    (answer: string) => {
+    async (answer: string) => {
       if (!showResult) {
         setSelectedAnswer(answer);
-        // 로컬 진행 상태 저장 (서버 요청 없음)
+        // 로컬 + 서버에 임시 진행 상태 저장
         if (startTime) {
-          saveProgress(problemId, answer, startTime);
+          await saveProgress(problemId, answer, startTime);
         }
       }
     },
@@ -180,39 +189,34 @@ export function ProblemDetailClient({
 
       // 비동기로 문제 완료 처리 (진행률 즉시 업데이트)
       addCompletedProblem(problem.id, answerData);
-
-      // 모든 문제를 다 풀었는지 확인 (로컬 상태 기준)
-      const newCompletedCount = completedProblems.length + 1;
-      if (newCompletedCount >= totalCount) {
-        // 결과 표시 후 잠시 대기 후 결과 페이지로 이동
-        setTimeout(() => {
-          router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
-        }, 3000);
-      }
     }
-  }, [
-    problem,
-    selectedAnswer,
-    studyId,
-    router,
-    addCompletedProblem,
-    completedProblems,
-    totalCount,
-  ]);
+  }, [problem, selectedAnswer, addCompletedProblem, completedProblems]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     // 해설 숨기기
 
-    // 모든 문제를 다 풀었는지 확인
-    if (learningStatus?.isCompleted) {
-      router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
-    } else if (nextProblem) {
+    // 모든 문제를 다 풀었는지 확인 (서버 상태 기준)
+    try {
+      const response = await fetch(`/api/learning/complete?studyId=${encodeURIComponent(studyId)}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data.isCompleted) {
+          router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('학습 완료 상태 확인 실패:', error);
+    }
+
+    // 다음 문제로 이동
+    if (nextProblem) {
       router.push(`/my/learning/${encodeURIComponent(studyId)}/problems/${nextProblem.id}`);
     } else {
-      // 다음 문제가 없지만 아직 모든 문제를 완료하지 않은 경우
+      // 다음 문제가 없으면 결과 페이지로 이동
       router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
     }
-  }, [nextProblem, router, studyId, learningStatus]);
+  }, [nextProblem, router, studyId]);
 
   const handleRetry = useCallback(async () => {
     setSelectedAnswer('');
