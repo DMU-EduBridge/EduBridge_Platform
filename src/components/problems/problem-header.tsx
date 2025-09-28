@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Home } from 'lucide-react';
+import { Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ProblemHeaderProps {
@@ -28,15 +28,6 @@ export function ProblemHeader({
       {/* 네비게이션 버튼들 */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/my/learning/${encodeURIComponent(studyId)}`)}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            학습 홈으로 이동
-          </Button>
           <Button
             variant="outline"
             size="sm"
