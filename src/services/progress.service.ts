@@ -1,6 +1,8 @@
 import { logger } from '@/lib/logger';
 
 export interface ProgressData {
+  problemId: string;
+  attemptId: string;
   selectedAnswer: string;
   startTime: string;
   lastAccessed: string;
@@ -22,6 +24,7 @@ class ProgressService {
     problemId: string,
     selectedAnswer: string,
     startTime: Date,
+    attemptId?: string,
   ): Promise<ProgressResponse> {
     try {
       logger.info(
@@ -44,6 +47,7 @@ class ProgressService {
           problemId,
           selectedAnswer,
           startTime: startTime.toISOString(),
+          attemptId,
         }),
       });
 
