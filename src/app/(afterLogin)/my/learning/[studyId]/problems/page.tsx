@@ -25,7 +25,13 @@ export async function generateMetadata({
   }
 }
 
-export default async function StudyProblemsPage({ params }: { params: { studyId: string } }) {
+export default async function StudyProblemsPage({
+  params,
+  searchParams,
+}: {
+  params: { studyId: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -83,50 +89,87 @@ export default async function StudyProblemsPage({ params }: { params: { studyId:
     redirect('/my/learning?error=no-problems');
   }
 
-  // 학생의 이전 시도 기록 조회
-  const attempts = await prisma.attempt.findMany({
-    where: {
-      userId: session.user.id,
-      problemId: {
-        in: problems.map((p) => p.id),
-      },
-    },
-    select: {
-      problemId: true,
-      isCorrect: true,
-      createdAt: true,
-    },
-  });
-
-  // 문제별 시도 기록 매핑
-  const attemptMap = new Map(
-    attempts.map((attempt) => [
-      attempt.problemId,
-      {
-        isCorrect: attempt.isCorrect,
-        attemptedAt: attempt.createdAt,
-      },
-    ]),
-  );
-
-  const problemsWithAttempts = problems.map((problem) => {
-    const attempt = attemptMap.get(problem.id);
-    return attempt ? { ...problem, attempt } : { ...problem };
-  });
-
   const encodedStudyId = encodeURIComponent(studyId);
 
-  const hasCompletedAll = problemsWithAttempts.every(
-    (problem) => problem.attempt?.isCorrect === true,
-  );
+  // 현재 진행 상황 확인
+  const progressEntries = await prisma.problemProgress.findMany({
+    where: {
+      userId: session.user.id,
+      studyId,
+    },
+    orderBy: {
+      lastAccessed: 'desc',
+    },
+  });
 
-  if (hasCompletedAll) {
-    redirect(`/my/learning/${encodedStudyId}/results`);
+  // 최신 시도에서 각 문제의 완료 상태 확인
+  const latestAttempts = new Map<string, any>();
+  progressEntries.forEach((entry) => {
+    if (
+      !latestAttempts.has(entry.problemId) ||
+      entry.attemptNumber > latestAttempts.get(entry.problemId).attemptNumber ||
+      (entry.attemptNumber === latestAttempts.get(entry.problemId).attemptNumber &&
+        entry.completedAt &&
+        entry.completedAt > latestAttempts.get(entry.problemId).completedAt)
+    ) {
+      latestAttempts.set(entry.problemId, entry);
+    }
+  });
+
+  // 모든 문제가 완료되었는지 확인 (시도한 모든 문제를 완료로 계산)
+  const completedProblems = Array.from(latestAttempts.values()).length;
+
+  const allProblemsCompleted = completedProblems === problems.length;
+
+  console.log('문제풀기 페이지 진입:', {
+    studyId,
+    totalProblems: problems.length,
+    completedProblems,
+    allProblemsCompleted,
+    latestAttempts: Array.from(latestAttempts.values()).map((entry) => ({
+      problemId: entry.problemId,
+      attemptNumber: entry.attemptNumber,
+      isCorrect: entry.isCorrect,
+    })),
+  });
+
+  const firstProblem = problems[0];
+
+  if (!firstProblem) {
+    redirect('/my/learning?error=no-problems');
   }
 
-  const nextProblem = problemsWithAttempts.find((problem) => problem.attempt?.isCorrect !== true);
+  const retryRequested =
+    (typeof searchParams?.retry === 'string' && searchParams.retry === '1') ||
+    (Array.isArray(searchParams?.retry) && searchParams.retry.includes('1'));
 
-  const targetProblem = nextProblem ?? problemsWithAttempts[0];
+  if (retryRequested) {
+    redirect(`/my/learning/${encodedStudyId}/problems/${firstProblem.id}?startNewAttempt=1`);
+  }
 
-  redirect(`/my/learning/${encodedStudyId}/problems/${targetProblem.id}`);
+  const attemptNumbers = Array.from(
+    new Set(progressEntries.map((entry) => entry.attemptNumber)),
+  ).sort((a, b) => a - b);
+
+  const latestAttemptNumber =
+    attemptNumbers.length > 0 ? attemptNumbers[attemptNumbers.length - 1] : 0;
+
+  const latestAttemptEntries = progressEntries.filter(
+    (entry) => entry.attemptNumber === latestAttemptNumber,
+  );
+
+  if (latestAttemptEntries.length === 0) {
+    redirect(`/my/learning/${encodedStudyId}/problems/${firstProblem.id}`);
+  }
+
+  const completedSet = new Set(latestAttemptEntries.map((entry) => entry.problemId));
+  const totalProblems = problems.length;
+
+  if (totalProblems > 0 && completedSet.size < totalProblems) {
+    const nextProblem =
+      problems.find((problem) => !completedSet.has(problem.id)) ?? firstProblem;
+    redirect(`/my/learning/${encodedStudyId}/problems/${nextProblem.id}`);
+  }
+
+  redirect(`/my/learning/${encodedStudyId}/results`);
 }

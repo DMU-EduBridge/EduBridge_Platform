@@ -5,21 +5,20 @@ import { Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ProblemHeaderProps {
-  studyId: string;
   currentIndex: number;
   totalCount: number;
   progressData: {
     total: number;
     completed: number;
-    percentage: number;
   };
+  attemptNumber?: number;
 }
 
 export function ProblemHeader({
-  studyId,
   currentIndex,
   totalCount,
   progressData,
+  attemptNumber,
 }: ProblemHeaderProps) {
   const router = useRouter();
 
@@ -48,22 +47,25 @@ export function ProblemHeader({
           <span>남은 문항 수: {progressData.total - progressData.completed} 문제</span>
         </div>
 
-        {/* 진행률 바 */}
-        <div className="mb-2 h-2 w-full rounded-full bg-blue-200">
-          <div
-            className="h-2 rounded-full bg-white transition-all duration-300"
-            style={{
-              width: `${progressData.percentage}%`,
-            }}
-          />
+        {/* 진행 상황 표시 */}
+        <div className="mb-2">
+          <div className="text-center text-sm text-blue-600">
+            {progressData.completed} / {progressData.total} 문제 완료
+          </div>
+          {typeof attemptNumber === 'number' && attemptNumber > 0 && (
+            <div className="mt-1 text-center text-xs text-blue-500">
+              {attemptNumber}번째 시도 진행 중
+            </div>
+          )}
         </div>
-
-        <div className="text-center text-sm text-blue-600">진행률: {progressData.percentage}%</div>
       </div>
 
       {/* 현재 문제 정보 */}
       <div className="text-center text-gray-600">
         문제 {currentIndex} / {totalCount}
+        {progressData.completed === progressData.total && (
+          <span className="ml-2 font-medium text-green-600">(모든 문제 완료)</span>
+        )}
       </div>
     </div>
   );

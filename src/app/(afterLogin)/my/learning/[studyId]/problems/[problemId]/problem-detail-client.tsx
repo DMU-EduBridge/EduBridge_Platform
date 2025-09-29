@@ -5,10 +5,9 @@ import { ProblemContent } from '@/components/problems/problem-content';
 import { ProblemExplanation } from '@/components/problems/problem-explanation';
 import { ProblemHeader } from '@/components/problems/problem-header';
 import { ProblemOptions } from '@/components/problems/problem-options';
-import { useProgress } from '@/hooks/use-progress';
-// attemptService import 제거 - deleteAttempt 메서드 제거됨
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useProgress } from '@/hooks/learning/use-progress';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Problem {
   id: string;
@@ -44,6 +43,7 @@ export function ProblemDetailClient({
   nextProblem,
 }: ProblemDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [problem, setProblem] = useState<Problem | undefined>(initialProblem);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
   const [showResult, setShowResult] = useState(false);
@@ -51,47 +51,51 @@ export function ProblemDetailClient({
   const [startTime, setStartTime] = useState<Date>(new Date());
   const [_elapsedTime, setElapsedTime] = useState(0);
 
-  const {
-    completedProblems,
-    setCompletedProblems,
-    addCompletedProblem,
-    initializeProgress,
-    saveProgress,
-    getProgress,
-    learningStatus,
-    loadLearningStatus,
-  } = useProgress(studyId);
+  const startNewAttemptParam = useMemo(() => {
+    const value = searchParams?.get('startNewAttempt');
+    return value === '1' || value === 'true';
+  }, [searchParams]);
 
-  // 진행률 계산 (메모이제이션)
-  const progressData = useMemo(() => {
-    // 현재 문제를 제외한 완료된 문제 수 계산
-    const actualCompleted = problem
-      ? completedProblems.filter((id) => id !== problem.id).length
-      : completedProblems.length;
+  const [shouldStartNewAttempt, setShouldStartNewAttempt] = useState(startNewAttemptParam);
+  const initialStartNewAttemptRef = useRef(startNewAttemptParam);
 
-    // learningStatus가 있으면 서버 데이터와 비교하여 더 정확한 값 사용
-    if (learningStatus) {
-      const serverCompleted = learningStatus.completedProblems;
-      const serverTotal = learningStatus.totalProblems;
+  const { progressData, addCompletedProblem, activeAttemptNumber, isLoading } = useProgress(
+    studyId,
+    shouldStartNewAttempt,
+  );
 
-      // 서버 데이터를 우선 사용하되, 로컬 데이터가 더 많으면 로컬 사용
-      const finalCompleted = Math.max(actualCompleted, serverCompleted);
-      const finalTotal = Math.max(totalCount, serverTotal);
+  useEffect(() => {
+    if (startNewAttemptParam) {
+      initialStartNewAttemptRef.current = true;
+      setShouldStartNewAttempt(true);
+    }
+  }, [startNewAttemptParam]);
 
-      return {
-        total: finalTotal,
-        completed: finalCompleted,
-        percentage: finalTotal > 0 ? Math.round((finalCompleted / finalTotal) * 100) : 0,
-      };
+  useEffect(() => {
+    if (!startNewAttemptParam) {
+      return;
     }
 
-    // learningStatus가 없으면 로컬 상태 사용
-    return {
-      total: totalCount,
-      completed: actualCompleted,
-      percentage: totalCount > 0 ? Math.round((actualCompleted / totalCount) * 100) : 0,
-    };
-  }, [learningStatus, totalCount, completedProblems, problem]);
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('startNewAttempt');
+      window.history.replaceState(null, '', url.toString());
+    } catch (error) {
+      console.warn('startNewAttempt 쿼리 제거 실패:', error);
+    }
+  }, [startNewAttemptParam]);
+  console.log('ProblemDetailClient 렌더링:', {
+    studyId,
+    problemId,
+    currentIndex,
+    totalCount,
+    startNewAttemptParam,
+    activeAttemptNumber,
+  });
 
   // 문제 데이터 로드 및 진행 상태 복원
   useEffect(() => {
@@ -104,43 +108,20 @@ export function ProblemDetailClient({
           return;
         }
 
-        // 이전 진행 상태 복원
-        const savedProgress = await getProgress(initialProblem.id);
-        if (savedProgress) {
-          setSelectedAnswer(savedProgress.selectedAnswer);
-          try {
-            const restoredStartTime = new Date(savedProgress.startTime);
-            if (!isNaN(restoredStartTime.getTime())) {
-              setStartTime(restoredStartTime);
-            } else {
-              setStartTime(new Date());
-            }
-          } catch {
-            setStartTime(new Date());
-          }
-          // 이미 답을 선택했다면 결과 표시하지 않음
-          setShowResult(false);
-        } else {
-          // 새로운 문제인 경우
-          setStartTime(new Date());
-          setSelectedAnswer('');
-          setShowResult(false);
-        }
+        setStartTime(new Date());
+        setSelectedAnswer('');
+        setShowResult(false);
 
-        // 진행률 초기화 (필요한 경우)
-        await initializeProgress(studyId, currentIndex, totalCount);
+        // 진행률은 React Query에서 자동 관리됨
       }
     };
 
     loadProblemData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    initialProblem,
+    initialProblem?.id, // problemId만 의존성으로 사용하여 무한 루프 방지
     studyId,
-    currentIndex,
-    totalCount,
-    getProgress,
-    initializeProgress,
-    showResult,
+    problemId,
   ]);
 
   // 타이머 업데이트
@@ -156,20 +137,19 @@ export function ProblemDetailClient({
   }, [startTime, showResult]);
 
   const onAnswerSelect = useCallback(
-    async (answer: string) => {
+    (answer: string) => {
       if (!showResult) {
         setSelectedAnswer(answer);
-        // 로컬 + 서버에 임시 진행 상태 저장
-        if (startTime) {
-          await saveProgress(problemId, answer, startTime);
-        }
+        // 로컬 상태만 저장 (서버 저장은 정답 확인 시에만)
       }
     },
-    [showResult, startTime, saveProgress, problemId],
+    [showResult],
   );
 
-  const handleSubmit = useCallback(() => {
-    if (!problem || !selectedAnswer) return;
+  const handleSubmit = useCallback(async () => {
+    if (!problem || !selectedAnswer || activeAttemptNumber <= 0 || isLoading) return;
+
+    console.log('문제 제출 시작:', problem.id, selectedAnswer);
 
     // 로컬에서 정답 확인
     const correct = selectedAnswer === problem.correctAnswer;
@@ -177,38 +157,49 @@ export function ProblemDetailClient({
     setIsCorrect(correct);
     setShowResult(true);
 
-    // 문제 완료 상태 추가 및 정답/오답 정보 저장
-    if (!completedProblems.includes(problem.id)) {
-      const answerData = {
-        isCorrect: correct,
-        selectedAnswer: selectedAnswer,
-        correctAnswer: problem.correctAnswer,
-        problemTitle: problem.title,
-        completedAt: new Date().toISOString(),
-      };
+    const elapsedSeconds = Math.max(
+      Math.floor((new Date().getTime() - startTime.getTime()) / 1000),
+      0,
+    );
 
-      // 비동기로 문제 완료 처리 (진행률 즉시 업데이트)
-      addCompletedProblem(problem.id, answerData);
+    // 문제 완료 상태 추가 및 정답/오답 정보 저장 (재시도 포함)
+    const answerData = {
+      isCorrect: correct,
+      selectedAnswer: selectedAnswer,
+      correctAnswer: problem.correctAnswer,
+      problemTitle: problem.title,
+      completedAt: new Date().toISOString(),
+    };
+
+    console.log('답안 데이터:', answerData);
+
+    // 문제 완료 처리 (React Query가 자동으로 상태 업데이트)
+    // 재시도 시에도 새로운 시도로 기록됨
+    try {
+      const result = await addCompletedProblem({
+        problemId: problem.id,
+        answer: answerData,
+        attemptNumber: activeAttemptNumber,
+        startTime: startTime.toISOString(),
+        timeSpent: elapsedSeconds,
+        forceNewAttempt: initialStartNewAttemptRef.current,
+      });
+      console.log('문제 완료 처리 결과:', result);
+      initialStartNewAttemptRef.current = false;
+      setShouldStartNewAttempt(false);
+    } catch (error) {
+      console.error('문제 완료 처리 실패:', error);
     }
-  }, [problem, selectedAnswer, addCompletedProblem, completedProblems]);
+  }, [
+    problem,
+    selectedAnswer,
+    addCompletedProblem,
+    activeAttemptNumber,
+    startTime,
+    isLoading,
+  ]);
 
   const handleNext = useCallback(async () => {
-    // 해설 숨기기
-
-    // 모든 문제를 다 풀었는지 확인 (서버 상태 기준)
-    try {
-      const response = await fetch(`/api/learning/complete?studyId=${encodeURIComponent(studyId)}`);
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data.isCompleted) {
-          router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('학습 완료 상태 확인 실패:', error);
-    }
-
     // 다음 문제로 이동
     if (nextProblem) {
       router.push(`/my/learning/${encodeURIComponent(studyId)}/problems/${nextProblem.id}`);
@@ -219,22 +210,22 @@ export function ProblemDetailClient({
   }, [nextProblem, router, studyId]);
 
   const handleRetry = useCallback(async () => {
+    console.log('재시도 시작:', problem?.id);
+
+    // 로컬 상태만 초기화 (시도 히스토리는 보존)
     setSelectedAnswer('');
     setShowResult(false);
     setIsCorrect(false);
     setStartTime(new Date());
     setElapsedTime(0);
+    // currentAttempt는 이미 maxAttempt + 1로 설정되어 있으므로 증가시키지 않음
 
-    // 문제를 다시 풀기 위해 completedProblems에서 제거
-    if (problem && completedProblems.includes(problem.id)) {
-      const updatedCompleted = completedProblems.filter((id) => id !== problem.id);
-      setCompletedProblems(updatedCompleted);
+    // 다음 제출을 새로운 시도로 기록하도록 플래그 설정
+    initialStartNewAttemptRef.current = true;
+    setShouldStartNewAttempt(true);
 
-      // 모든 시도 기록은 보존 - 새로운 시도로 기록됨
-      // 학습 상태 다시 로드 (서버 데이터와 동기화)
-      await loadLearningStatus();
-    }
-  }, [problem, completedProblems, setCompletedProblems, loadLearningStatus]);
+    console.log('재시도 완료 - 새로운 시도로 기록됨');
+  }, [problem]);
 
   if (!problem) {
     return (
@@ -250,10 +241,10 @@ export function ProblemDetailClient({
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-4xl px-4">
         <ProblemHeader
-          studyId={studyId}
           currentIndex={currentIndex}
           totalCount={totalCount}
-          progressData={progressData}
+          progressData={progressData} // 전체 진행률만 사용
+          attemptNumber={activeAttemptNumber}
         />
 
         <ProblemContent problem={problem} />

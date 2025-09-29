@@ -40,49 +40,11 @@ const StudyProblemsClient = memo(function StudyProblemsClient({
 }: StudyProblemsClientProps) {
   const router = useRouter();
 
-  // 페이지 로드 시 자동으로 적절한 문제로 이동
+  // 항상 첫 번째 문제로 이동 (새로운 시도 시작)
   useEffect(() => {
-    const findNextProblem = async () => {
-      if (problems.length > 0 && problems[0]) {
-        try {
-          // 서버에서 완료 상태 확인
-          const response = await fetch(
-            `/api/learning/complete?studyId=${encodeURIComponent(studyId)}`,
-          );
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              // 모든 문제가 완료된 경우 결과 페이지로 이동
-              if (result.data.isCompleted) {
-                router.replace(`/my/learning/${encodeURIComponent(studyId)}/results`);
-                return;
-              }
-
-              // 완료된 문제 ID 목록
-              const completedProblemIds = result.data.attempts.map(
-                (attempt: any) => attempt.problemId,
-              );
-
-              // 완료되지 않은 첫 번째 문제 찾기
-              const incompleteProblem = problems.find((p) => !completedProblemIds.includes(p.id));
-              if (incompleteProblem) {
-                router.replace(
-                  `/my/learning/${encodeURIComponent(studyId)}/problems/${incompleteProblem.id}`,
-                );
-                return;
-              }
-            }
-          }
-        } catch (error) {
-          console.error('학습 완료 상태 확인 실패:', error);
-        }
-
-        // 기본적으로 첫 번째 문제로 이동
-        router.replace(`/my/learning/${encodeURIComponent(studyId)}/problems/${problems[0].id}`);
-      }
-    };
-
-    findNextProblem();
+    if (problems.length > 0 && problems[0]) {
+      router.replace(`/my/learning/${encodeURIComponent(studyId)}/problems/${problems[0].id}`);
+    }
   }, [problems, router, studyId]);
 
   // 로딩 중이거나 문제가 없는 경우

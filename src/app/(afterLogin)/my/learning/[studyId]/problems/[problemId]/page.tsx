@@ -1,6 +1,7 @@
 import { LearningErrorBoundary } from '@/components/learning/error-boundary';
 import { ProblemLoadingSkeleton } from '@/components/problems/error-boundary';
 import { authOptions } from '@/lib/core/auth';
+import { prisma } from '@/lib/core/prisma';
 import { problemService } from '@/server/services/problem/problem-crud.service';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
@@ -12,26 +13,28 @@ interface ProblemDetailPageProps {
     studyId: string;
     problemId: string;
   };
+  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default async function ProblemDetailPage({ params }: ProblemDetailPageProps) {
+export default async function ProblemDetailPage({
+  params,
+  searchParams,
+}: ProblemDetailPageProps) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
     redirect('/login');
   }
 
-  // 학생만 접근 가능
   if (session.user.role !== 'STUDENT') {
     redirect('/dashboard');
   }
 
   try {
-    // studyId 디코딩
     const studyId = decodeURIComponent(params.studyId);
+    const problemId = params.problemId;
 
-    // 문제 정보 가져오기
-    const problem = await problemService.getProblemById(params.problemId);
+    const problem = await problemService.getProblemById(problemId);
 
     if (!problem) {
       return (
@@ -44,27 +47,61 @@ export default async function ProblemDetailPage({ params }: ProblemDetailPagePro
       );
     }
 
-    // 해당 학습 자료의 모든 문제 목록 가져오기 (순서대로)
     const allProblems = await problemService.getProblemsByStudyId(studyId, {
       page: 1,
-      limit: 100, // 충분히 큰 수
+      limit: 100,
     });
 
-    // 현재 문제의 인덱스 찾기
-    const currentIndex = allProblems.findIndex((p) => p.id === params.problemId);
+    const currentIndex = allProblems.findIndex((p) => p.id === problemId);
 
     const nextProblem =
       currentIndex >= 0 && currentIndex < allProblems.length - 1
         ? allProblems[currentIndex + 1]
         : null;
 
-    // 학생의 이전 시도 기록 가져오기 (선택사항)
-    // const previousAttempts = await attemptService.getAttemptsByProblemAndUser(
-    //   params.problemId,
-    //   session.user.id
-    // );
+    const progressEntries = await prisma.problemProgress.findMany({
+      where: {
+        userId: session.user.id,
+        studyId,
+      },
+      orderBy: [{ attemptNumber: 'asc' }, { completedAt: 'asc' }],
+    });
 
-    // Convert to ProblemDetailClient compatible type
+    const attemptNumbers = Array.from(
+      new Set(progressEntries.map((entry) => entry.attemptNumber)),
+    ).sort((a, b) => a - b);
+
+    const latestAttemptNumber =
+      attemptNumbers.length > 0 ? attemptNumbers[attemptNumbers.length - 1] : 0;
+
+    const latestAttemptEntries = progressEntries.filter(
+      (entry) => entry.attemptNumber === latestAttemptNumber,
+    );
+
+    const totalProblems = allProblems.length;
+    const latestCompleted =
+      totalProblems > 0 && latestAttemptEntries.length >= totalProblems;
+
+    const startNewAttemptParam =
+      (typeof searchParams?.startNewAttempt === 'string' &&
+        searchParams.startNewAttempt === '1') ||
+      (Array.isArray(searchParams?.startNewAttempt) &&
+        searchParams.startNewAttempt.includes('1'));
+
+    if (!startNewAttemptParam && latestCompleted && latestAttemptEntries.length > 0) {
+      redirect(`/my/learning/${encodeURIComponent(studyId)}/results`);
+    }
+
+    if (!startNewAttemptParam && latestAttemptEntries.length > 0) {
+      const existingEntry = latestAttemptEntries.find((entry) => entry.problemId === problemId);
+
+      if (existingEntry) {
+        redirect(
+          `/my/learning/${encodeURIComponent(studyId)}/problems/${problemId}/review`,
+        );
+      }
+    }
+
     const formattedProblem = {
       id: problem.id,
       title: problem.title,
@@ -124,7 +161,7 @@ export default async function ProblemDetailPage({ params }: ProblemDetailPagePro
         <Suspense fallback={<ProblemLoadingSkeleton />}>
           <ProblemDetailClient
             studyId={studyId}
-            problemId={params.problemId}
+            problemId={problemId}
             initialProblem={formattedProblem}
             nextProblem={formattedNextProblem}
             currentIndex={currentIndex + 1}
@@ -134,6 +171,11 @@ export default async function ProblemDetailPage({ params }: ProblemDetailPagePro
       </LearningErrorBoundary>
     );
   } catch (error) {
+    const digest = (error as { digest?: string })?.digest;
+    if (digest && digest.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+
     console.error('문제 로드 실패:', error);
     return (
       <div className="flex min-h-screen items-center justify-center">
