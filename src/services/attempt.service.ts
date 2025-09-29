@@ -6,6 +6,8 @@ export interface CreateAttemptRequest {
   isCorrect: boolean;
   timeSpent?: number;
   startTime?: string;
+  studyId?: string;
+  attemptNumber?: number;
 }
 
 export interface Attempt {
