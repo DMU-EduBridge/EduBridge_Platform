@@ -24,7 +24,12 @@ class ProgressService {
     problemId: string,
     selectedAnswer: string,
     startTime: Date,
-    attemptId?: string,
+    options: {
+      isCorrect: boolean;
+      attemptNumber: number;
+      timeSpent?: number;
+      forceNewAttempt?: boolean;
+    },
   ): Promise<ProgressResponse> {
     try {
       logger.info(
@@ -46,8 +51,11 @@ class ProgressService {
           studyId,
           problemId,
           selectedAnswer,
+          isCorrect: options.isCorrect,
+          attemptNumber: options.attemptNumber,
           startTime: startTime.toISOString(),
-          attemptId,
+          timeSpent: options.timeSpent,
+          forceNewAttempt: options.forceNewAttempt,
         }),
       });
 
@@ -124,7 +132,7 @@ class ProgressService {
         {
           studyId,
           problemId,
-          count: result.progress?.length || 0,
+          count: result.data?.progress?.length || 0,
         },
         'PROGRESS_SERVICE',
       );

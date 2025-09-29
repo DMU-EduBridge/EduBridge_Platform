@@ -9,6 +9,8 @@ export interface CreateAttemptRequest {
   isCorrect: boolean;
   timeSpent: number; // 초 단위
   studyId?: string;
+  attemptNumber?: number;
+  startedAt?: Date;
 }
 
 export interface UpdateAttemptRequest {
@@ -30,7 +32,10 @@ export class AttemptService {
           selected: data.answer, // answer -> selected로 변경
           isCorrect: data.isCorrect,
           timeSpent: data.timeSpent,
-          completedAt: new Date(), // 완료 시간 설정
+          studyId: data.studyId ?? null,
+          attemptNumber: data.attemptNumber && data.attemptNumber > 0 ? data.attemptNumber : 1,
+          startedAt: data.startedAt ?? new Date(),
+          completedAt: new Date(),
         },
         include: {
           user: {
@@ -57,6 +62,8 @@ export class AttemptService {
         problemId: data.problemId,
         isCorrect: data.isCorrect,
         timeSpent: data.timeSpent,
+        studyId: data.studyId,
+        attemptNumber: attempt.attemptNumber,
       });
 
       return attempt;
