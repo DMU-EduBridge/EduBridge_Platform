@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { problemId, selectedAnswer, isCorrect, timeSpent, startTime } = body;
+    const { problemId, selectedAnswer, isCorrect, timeSpent, startTime, studyId, attemptNumber } = body;
 
     logger.info(
       '시도 기록 생성 요청',
@@ -76,21 +76,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 시도 기록 생성
+    let resolvedStudyId = studyId as string | undefined;
+
+    if (!resolvedStudyId) {
+      const mapping = await prisma.learningMaterialProblem.findFirst({
+        where: { problemId },
+        select: { learningMaterialId: true },
+      });
+      resolvedStudyId = mapping?.learningMaterialId;
+    }
+
+    const resolvedAttemptNumber = Number(attemptNumber) >= 1 ? Number(attemptNumber) : 1;
+
     logger.info(
       'Prisma 시도 기록 생성 시작',
-      { problemId, userId: session.user.id },
+      { problemId, userId: session.user.id, studyId: resolvedStudyId, attemptNumber: resolvedAttemptNumber },
       'ATTEMPTS_API',
     );
+
     const attempt = await prisma.attempt.create({
       data: {
         userId: session.user.id,
         problemId,
+        studyId: resolvedStudyId ?? null,
+        attemptNumber: resolvedAttemptNumber,
         selected: selectedAnswer, // 스키마에 맞게 수정
         isCorrect: isCorrect || false,
         timeSpent: timeSpent || 0,
-        startedAt: startTime ? new Date(startTime) : new Date(), // 시작 시간 설정
-        completedAt: new Date(), // 완료 시간 설정
+        startedAt: startTime ? new Date(startTime) : new Date(),
+        completedAt: new Date(),
       },
       include: {
         problem: {
@@ -106,7 +120,13 @@ export async function POST(request: NextRequest) {
 
     logger.info(
       '시도 기록 생성 성공',
-      { attemptId: attempt.id, problemId, userId: session.user.id },
+      {
+        attemptId: attempt.id,
+        problemId,
+        userId: session.user.id,
+        studyId: resolvedStudyId,
+        attemptNumber: resolvedAttemptNumber,
+      },
       'ATTEMPTS_API',
     );
     return NextResponse.json({ success: true, attempt });
@@ -153,17 +173,18 @@ export async function GET(request: NextRequest) {
 
     if (studyId) {
       // 특정 학습 자료의 모든 문제에 대한 시도 기록
-      whereClause.problem = {
-        materialProblems: {
-          some: {
-            learningMaterialId: studyId,
-          },
-        },
-      };
+      whereClause.studyId = studyId;
     } else if (problemId) {
       // 특정 문제에 대한 시도 기록
       whereClause.problemId = problemId;
     }
+
+    // 레거시 임시 진행 기록(_temp) 제외
+    whereClause.id = {
+      not: {
+        contains: '_temp',
+      },
+    };
 
     const attempts = await prisma.attempt.findMany({
       where: whereClause,

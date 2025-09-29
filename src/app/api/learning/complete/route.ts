@@ -34,41 +34,49 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // 완료된 문제 조회 (임시 진행 상태 제외)
-    const completedAttempts = await prisma.attempt.findMany({
+    // 완료된 문제 조회 (ProblemProgress 테이블 사용)
+    const completedAttempts = await prisma.problemProgress.findMany({
       where: {
         userId: session.user.id,
-        problemId: {
-          in: allProblems.map((p) => p.id),
-        },
-        // 임시 진행 상태 제외 (ID에 _temp가 포함되지 않은 것만)
-        id: {
-          not: {
-            contains: '_temp',
-          },
-        },
+        studyId: studyId,
       },
       select: {
         problemId: true,
+        attemptNumber: true,
         isCorrect: true,
-        selected: true, // 스키마에 맞게 수정
-        createdAt: true,
+        selectedAnswer: true,
+        completedAt: true,
+        timeSpent: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        completedAt: 'desc',
       },
     });
 
-    // 문제별 최신 시도 기록만 추출 (완료된 문제 판단용)
+    const attemptNumbers = Array.from(new Set(completedAttempts.map((attempt) => attempt.attemptNumber))).sort(
+      (a, b) => a - b,
+    );
+    const latestAttemptNumber = attemptNumbers.length > 0 ? attemptNumbers[attemptNumbers.length - 1] : 1;
+
+    const latestAttemptEntries = completedAttempts.filter(
+      (attempt) => attempt.attemptNumber === latestAttemptNumber,
+    );
+
     const latestAttempts = new Map();
-    completedAttempts.forEach((attempt) => {
-      if (!latestAttempts.has(attempt.problemId)) {
+    latestAttemptEntries.forEach((attempt) => {
+      if (
+        !latestAttempts.has(attempt.problemId) ||
+        (attempt.completedAt &&
+          latestAttempts.get(attempt.problemId)?.completedAt &&
+          attempt.completedAt > latestAttempts.get(attempt.problemId).completedAt)
+      ) {
         latestAttempts.set(attempt.problemId, attempt);
       }
     });
 
     const completedProblems = Array.from(latestAttempts.keys());
     const correctAnswers = Array.from(latestAttempts.values()).filter((a) => a.isCorrect).length;
+    const wrongAnswers = completedProblems.length - correctAnswers;
 
     // 모든 문제가 완료되었는지 확인 (정확한 개수 비교)
     const isCompleted = completedProblems.length === allProblems.length && allProblems.length > 0;
@@ -79,10 +87,18 @@ export async function GET(request: NextRequest) {
         totalProblems: allProblems.length,
         completedProblems: completedProblems.length,
         correctAnswers,
-        wrongAnswers: completedProblems.length - correctAnswers,
+        wrongAnswers: wrongAnswers,
         isCompleted,
-        attempts: Array.from(latestAttempts.values()), // 최신 시도만 (완료 상태 판단용)
-        allAttempts: completedAttempts, // 모든 시도 기록 (분석용)
+        attemptNumber: latestAttemptNumber,
+        attempts: Array.from(latestAttempts.values()).map((attempt) => ({
+          problemId: attempt.problemId,
+          isCorrect: attempt.isCorrect,
+          selected: attempt.selectedAnswer,
+          createdAt: attempt.completedAt,
+          attemptNumber: attempt.attemptNumber,
+          timeSpent: attempt.timeSpent,
+        })), // 최신 시도만 (결과 페이지용)
+        latestAttempts: Array.from(latestAttempts.values()), // 최신 시도만 (완료 상태 판단용)
       },
     });
   } catch (error) {
@@ -107,28 +123,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'studyId가 필요합니다.' }, { status: 400 });
     }
 
-    // 해당 학습 자료의 모든 문제 조회
-    const allProblems = await prisma.problem.findMany({
-      where: {
-        materialProblems: {
-          some: {
-            learningMaterialId: studyId,
-          },
-        },
-        isActive: true,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    // 해당 학습 자료의 모든 시도 기록 삭제 (완료된 문제들)
-    await prisma.attempt.deleteMany({
+    // 해당 학습 자료의 모든 진행 상태 삭제
+    await prisma.problemProgress.deleteMany({
       where: {
         userId: session.user.id,
-        problemId: {
-          in: allProblems.map((p) => p.id),
-        },
+        studyId: studyId,
       },
     });
 
