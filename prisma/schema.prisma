@@ -117,6 +117,7 @@ model User {
   problems        Problem[]         @relation("ProblemCreator")
   searchQueries   SearchQuery[]
   progressEntries ProblemProgress[]
+  attempts        Attempt[]
 
   // Teacher Report System 관련 관계
   teacherReports TeacherReport[]
@@ -217,6 +218,7 @@ model LearningMaterial {
   deletedAt        DateTime?
   materialProblems LearningMaterialProblem[]
   progressEntries  ProblemProgress[]
+  attempts         Attempt[]
   // studySessions 관계 제거됨
 
   @@index([subject, difficulty, isActive])
@@ -264,6 +266,7 @@ model Problem {
   // attempts 관계 제거됨
   materialProblems LearningMaterialProblem[]
   progressEntries  ProblemProgress[]
+  attempts         Attempt[]
   reviewer         User?                     @relation("ProblemReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
   textbook         Textbook?                 @relation(fields: [textbookId], references: [id], onDelete: SetNull)
   creator          User?                     @relation("ProblemCreator", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -345,10 +348,12 @@ model ProblemProgress {
   userId         String
   studyId        String
   problemId      String
-  attemptNumber  Int       @default(1) // 시도 번호
+  attemptNumber  Int       @default(1) // 학습 세션 시도 번호
   selectedAnswer String?
   isCorrect      Boolean   @default(false)
+  startedAt      DateTime?
   completedAt    DateTime?
+  timeSpent      Int       @default(0) // 초 단위 소요 시간
   lastAccessed   DateTime  @default(now())
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -357,10 +362,35 @@ model ProblemProgress {
   problem          Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
   learningMaterial LearningMaterial @relation(fields: [studyId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, problemId, attemptNumber])
+  @@unique([userId, studyId, problemId, attemptNumber])
   @@index([studyId])
   @@index([userId, studyId])
+  @@index([userId, studyId, attemptNumber])
   @@map("problem_progress")
+}
+
+model Attempt {
+  id            String    @id @default(cuid())
+  userId        String
+  studyId       String?
+  problemId     String
+  attemptNumber Int       @default(1)
+  selected      String
+  isCorrect     Boolean   @default(false)
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  timeSpent     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem          Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  learningMaterial LearningMaterial? @relation(fields: [studyId], references: [id], onDelete: Cascade)
+
+  @@index([userId, problemId])
+  @@index([userId, studyId])
+  @@index([problemId])
+  @@map("attempts")
 }
 
 // 클래스별 문제 할당
