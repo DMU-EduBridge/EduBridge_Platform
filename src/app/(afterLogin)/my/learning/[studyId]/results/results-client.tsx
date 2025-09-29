@@ -63,6 +63,7 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
   const correctAnswers = learningStatus?.correctAnswers || 0;
   const wrongAnswers = learningStatus?.wrongAnswers || 0;
   const totalProblems = learningStatus?.totalProblems || problems.length;
+  const attemptNumber = learningStatus?.attemptNumber || 1;
 
   const totalPoints = problems.reduce((sum, p) => sum + p.points, 0);
   const earnedPoints = calculateScore(correctAnswers, totalProblems, totalPoints);
@@ -73,22 +74,7 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
   };
 
   const handleRetry = async () => {
-    // API로 진행 상태 초기화
-    try {
-      await fetch(`/api/progress?studyId=${encodeURIComponent(studyId)}`, {
-        method: 'DELETE',
-      });
-
-      // 학습 완료 상태도 초기화
-      await fetch(`/api/learning/complete?studyId=${encodeURIComponent(studyId)}`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      console.error('진행 상태 초기화 실패:', error);
-    }
-
-    // 첫 번째 문제로 이동
-    router.push(`/my/learning/${encodeURIComponent(studyId)}/problems/${problems[0]?.id}`);
+    router.push(`/my/learning/${encodeURIComponent(studyId)}/problems?retry=1`);
   };
 
   const gradeInfo = getGrade(percentage);
@@ -114,6 +100,7 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
             학습 홈
           </Button>
           <h1 className="text-2xl font-bold text-gray-800">학습 결과</h1>
+          <span className="text-sm text-gray-500">{attemptNumber}번째 시도</span>
         </div>
       </div>
 
@@ -201,7 +188,30 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500">{isCorrect ? problem.points : 0}점</div>
+                    <div className="flex items-center gap-2">
+                <div className="text-sm text-gray-500 text-right">
+                  <div>{isCorrect ? problem.points : 0}점</div>
+                  {typeof attempt.timeSpent === 'number' && attempt.timeSpent > 0 && (
+                    <div className="text-xs text-gray-400">
+                      소요 시간: {attempt.timeSpent}초
+                    </div>
+                  )}
+                </div>
+                      {!isCorrect && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            router.push(
+                              `/my/learning/${encodeURIComponent(studyId)}/problems/${problem.id}/review`,
+                            )
+                          }
+                          className="text-xs"
+                        >
+                          오답체크
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
