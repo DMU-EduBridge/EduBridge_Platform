@@ -55,18 +55,39 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
 
   // 문제 완료 상태 저장
   const addCompletedProblemMutation = useMutation({
-    mutationFn: async (data: { problemId: string; selectedAnswer: string; isCorrect: boolean }) => {
+    mutationFn: async (data: {
+      problemId: string;
+      selectedAnswer: string;
+      isCorrect: boolean;
+      attemptNumber: number;
+      startTime?: string;
+      timeSpent?: number;
+      forceNewAttempt?: boolean;
+    }) => {
+      const payload: Record<string, unknown> = {
+        studyId,
+        problemId: data.problemId,
+        selectedAnswer: data.selectedAnswer,
+        isCorrect: data.isCorrect,
+        attemptNumber: data.attemptNumber,
+      };
+
+      if (typeof data.startTime === 'string') {
+        payload.startTime = data.startTime;
+      }
+      if (typeof data.timeSpent === 'number') {
+        payload.timeSpent = data.timeSpent;
+      }
+      if (typeof data.forceNewAttempt === 'boolean') {
+        payload.forceNewAttempt = data.forceNewAttempt;
+      }
+
       const response = await fetch('/api/progress', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          studyId,
-          problemId: data.problemId,
-          selectedAnswer: data.selectedAnswer,
-          isCorrect: data.isCorrect,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
         throw new Error('문제 완료 상태 저장 실패');
@@ -104,7 +125,7 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
     },
   });
 
-  // 진행률 계산 (최신 시도 기준)
+  // 진행률 계산 (최신 시도 기준) - 시도한 모든 문제를 완료로 계산
   const progressData = useCallback((): ProgressData => {
     const data = progressQuery.data;
     if (!data) {
@@ -113,7 +134,7 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
 
     return {
       total: data.totalProblems,
-      completed: data.completedProblems,
+      completed: data.attemptedProblems || data.completedProblems, // 시도한 문제 수
     };
   }, [progressQuery.data]);
 
@@ -123,6 +144,20 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
     if (!data?.progress) return [];
 
     return data.progress.map((entry: any) => entry.problemId);
+  }, [progressQuery.data]);
+
+  // 정답률 정보 가져오기
+  const correctnessInfo = useCallback(() => {
+    const data = progressQuery.data;
+    if (!data) {
+      return { correctnessRate: 0, correctAnswers: 0, attemptedProblems: 0 };
+    }
+
+    return {
+      correctnessRate: data.correctnessRate || 0,
+      correctAnswers: data.correctAnswers || 0,
+      attemptedProblems: data.attemptedProblems || 0,
+    };
   }, [progressQuery.data]);
 
   // 문제별 답안 정보
@@ -152,11 +187,24 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
 
   // 완료된 문제 추가
   const addCompletedProblem = useCallback(
-    async (data: { problemId: string; answer: ProblemAnswer }) => {
+    async (data: {
+      problemId: string;
+      answer: ProblemAnswer;
+      attemptNumber: number;
+      startTime?: string;
+      timeSpent?: number;
+      forceNewAttempt?: boolean;
+    }) => {
       return addCompletedProblemMutation.mutateAsync({
         problemId: data.problemId,
         selectedAnswer: data.answer.selectedAnswer,
         isCorrect: data.answer.isCorrect,
+        attemptNumber: data.attemptNumber,
+        ...(typeof data.startTime === 'string' ? { startTime: data.startTime } : {}),
+        ...(typeof data.timeSpent === 'number' ? { timeSpent: data.timeSpent } : {}),
+        ...(typeof data.forceNewAttempt === 'boolean'
+          ? { forceNewAttempt: data.forceNewAttempt }
+          : {}),
       });
     },
     [addCompletedProblemMutation],
@@ -185,6 +233,9 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
     progressData: progressData(),
     completedProblems: completedProblems(),
     problemAnswers: problemAnswers(),
+    correctnessInfo: correctnessInfo(),
+    activeAttemptNumber: progressQuery.data?.activeAttemptNumber ?? 1,
+    attemptHistory: progressQuery.data?.attemptHistory ?? [],
 
     // 상태
     isLoading: progressQuery.isLoading,
