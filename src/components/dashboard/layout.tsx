@@ -21,8 +21,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     if (window.confirm('정말 로그아웃하시겠습니까?')) {
       try {
         // authService.logout() 호출
-        const { authService } = await import('@/services/auth');
-        await authService.logout();
+        // const { authService } = await import('@/services/auth');
+        // await authService.logout();
 
         // NextAuth signOut으로 리다이렉트
         await signOut({
