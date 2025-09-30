@@ -166,8 +166,7 @@ export default async function StudyProblemsPage({
   const totalProblems = problems.length;
 
   if (totalProblems > 0 && completedSet.size < totalProblems) {
-    const nextProblem =
-      problems.find((problem) => !completedSet.has(problem.id)) ?? firstProblem;
+    const nextProblem = problems.find((problem) => !completedSet.has(problem.id)) ?? firstProblem;
     redirect(`/my/learning/${encodedStudyId}/problems/${nextProblem.id}`);
   }
 
