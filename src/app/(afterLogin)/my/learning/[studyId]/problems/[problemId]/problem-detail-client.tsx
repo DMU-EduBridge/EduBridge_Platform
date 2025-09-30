@@ -118,11 +118,7 @@ export function ProblemDetailClient({
 
     loadProblemData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    initialProblem?.id, // problemId만 의존성으로 사용하여 무한 루프 방지
-    studyId,
-    problemId,
-  ]);
+  }, [initialProblem?.id, studyId, problemId]);
 
   // 타이머 업데이트
   useEffect(() => {
@@ -190,14 +186,7 @@ export function ProblemDetailClient({
     } catch (error) {
       console.error('문제 완료 처리 실패:', error);
     }
-  }, [
-    problem,
-    selectedAnswer,
-    addCompletedProblem,
-    activeAttemptNumber,
-    startTime,
-    isLoading,
-  ]);
+  }, [problem, selectedAnswer, addCompletedProblem, activeAttemptNumber, startTime, isLoading]);
 
   const handleNext = useCallback(async () => {
     // 다음 문제로 이동
@@ -245,6 +234,7 @@ export function ProblemDetailClient({
           totalCount={totalCount}
           progressData={progressData} // 전체 진행률만 사용
           attemptNumber={activeAttemptNumber}
+          elapsedTime={_elapsedTime}
         />
 
         <ProblemContent problem={problem} />

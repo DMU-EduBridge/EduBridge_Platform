@@ -12,6 +12,7 @@ interface ProblemHeaderProps {
     completed: number;
   };
   attemptNumber?: number;
+  elapsedTime?: number; // 초 단위
 }
 
 export function ProblemHeader({
@@ -19,6 +20,7 @@ export function ProblemHeader({
   totalCount,
   progressData,
   attemptNumber,
+  elapsedTime,
 }: ProblemHeaderProps) {
   const router = useRouter();
 
@@ -44,7 +46,7 @@ export function ProblemHeader({
         <div className="mb-2 flex items-center justify-between text-sm text-blue-700">
           <span>총 문항 수: {progressData.total} 문제</span>
           <span>완료된 문항: {progressData.completed} 문제</span>
-          <span>남은 문항 수: {progressData.total - progressData.completed} 문제</span>
+          <span>남은 문항 수: {Math.max(0, progressData.total - progressData.completed)} 문제</span>
         </div>
 
         {/* 진행 상황 표시 */}
@@ -55,6 +57,11 @@ export function ProblemHeader({
           {typeof attemptNumber === 'number' && attemptNumber > 0 && (
             <div className="mt-1 text-center text-xs text-blue-500">
               {attemptNumber}번째 시도 진행 중
+            </div>
+          )}
+          {typeof elapsedTime === 'number' && (
+            <div className="mt-1 text-center text-xs text-blue-500">
+              경과 시간: {Math.floor(elapsedTime / 60)}분 {elapsedTime % 60}초
             </div>
           )}
         </div>

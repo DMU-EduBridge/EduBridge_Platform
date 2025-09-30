@@ -1121,7 +1121,9 @@ async function main() {
           attemptNumber: 1,
           selectedAnswer: 'x = 2, 3',
           isCorrect: true,
-          completedAt: new Date(Date.now() - 10 * 60 * 1000), // 10분 전
+          startedAt: new Date(Date.now() - 15 * 60 * 1000), // 15분 전 시작
+          completedAt: new Date(Date.now() - 10 * 60 * 1000), // 10분 전 완료
+          timeSpent: 300, // 5분 소요
           lastAccessed: new Date(Date.now() - 10 * 60 * 1000),
         },
       }),
@@ -1133,8 +1135,155 @@ async function main() {
           attemptNumber: 1,
           selectedAnswer: 'x = 2, 3',
           isCorrect: true,
-          completedAt: new Date(Date.now() - 5 * 60 * 1000), // 5분 전
+          startedAt: new Date(Date.now() - 10 * 60 * 1000), // 10분 전 시작
+          completedAt: new Date(Date.now() - 5 * 60 * 1000), // 5분 전 완료
+          timeSpent: 300, // 5분 소요
           lastAccessed: new Date(Date.now() - 5 * 60 * 1000),
+        },
+      }),
+      // 추가 진행 상태 데이터 (다양한 시나리오)
+      prisma.problemProgress.create({
+        data: {
+          userId: users[5].id, // 김민수
+          studyId: learningMaterials[0].id,
+          problemId: problems[7].id, // 일차방정식 문제
+          attemptNumber: 1,
+          selectedAnswer: 'x = 2',
+          isCorrect: true,
+          startedAt: new Date(Date.now() - 20 * 60 * 1000), // 20분 전 시작
+          completedAt: new Date(Date.now() - 18 * 60 * 1000), // 18분 전 완료
+          timeSpent: 120, // 2분 소요
+          lastAccessed: new Date(Date.now() - 18 * 60 * 1000),
+        },
+      }),
+      prisma.problemProgress.create({
+        data: {
+          userId: users[6].id, // 이지영
+          studyId: learningMaterials[1].id, // 과학 학습 자료
+          problemId: problems[3].id, // 광합성 문제
+          attemptNumber: 1,
+          selectedAnswer:
+            '빛에너지가 엽록소에 의해 흡수되어 ATP와 NADPH를 생성하고, 이를 이용해 포도당을 합성합니다.',
+          isCorrect: true,
+          startedAt: new Date(Date.now() - 30 * 60 * 1000), // 30분 전 시작
+          completedAt: new Date(Date.now() - 25 * 60 * 1000), // 25분 전 완료
+          timeSpent: 300, // 5분 소요
+          lastAccessed: new Date(Date.now() - 25 * 60 * 1000),
+        },
+      }),
+      // 재시도 시나리오 (2번째 시도)
+      prisma.problemProgress.create({
+        data: {
+          userId: users[7].id, // 박준호
+          studyId: learningMaterials[0].id,
+          problemId: problems[0].id,
+          attemptNumber: 2,
+          selectedAnswer: 'x = 2, 3',
+          isCorrect: true,
+          startedAt: new Date(Date.now() - 40 * 60 * 1000), // 40분 전 시작
+          completedAt: new Date(Date.now() - 35 * 60 * 1000), // 35분 전 완료
+          timeSpent: 300, // 5분 소요
+          lastAccessed: new Date(Date.now() - 35 * 60 * 1000),
+        },
+      }),
+      // 오답 시나리오
+      prisma.problemProgress.create({
+        data: {
+          userId: users[7].id, // 박준호
+          studyId: learningMaterials[0].id,
+          problemId: problems[8].id, // 피타고라스 문제
+          attemptNumber: 1,
+          selectedAnswer: '6',
+          isCorrect: false,
+          startedAt: new Date(Date.now() - 50 * 60 * 1000), // 50분 전 시작
+          completedAt: new Date(Date.now() - 45 * 60 * 1000), // 45분 전 완료
+          timeSpent: 300, // 5분 소요
+          lastAccessed: new Date(Date.now() - 45 * 60 * 1000),
+        },
+      }),
+    ]);
+
+    // 25. 시도 기록 데이터 생성 (Attempt 테이블)
+    const attempts = await Promise.all([
+      prisma.attempt.create({
+        data: {
+          userId: users[5].id, // 김민수
+          studyId: learningMaterials[0].id,
+          problemId: problems[0].id,
+          attemptNumber: 1,
+          selected: 'x = 2, 3',
+          isCorrect: true,
+          startedAt: new Date(Date.now() - 15 * 60 * 1000), // 15분 전 시작
+          completedAt: new Date(Date.now() - 10 * 60 * 1000), // 10분 전 완료
+          timeSpent: 300, // 5분 소요
+        },
+      }),
+      prisma.attempt.create({
+        data: {
+          userId: users[6].id, // 이지영
+          studyId: learningMaterials[0].id,
+          problemId: problems[0].id,
+          attemptNumber: 1,
+          selected: 'x = 2, 3',
+          isCorrect: true,
+          startedAt: new Date(Date.now() - 10 * 60 * 1000), // 10분 전 시작
+          completedAt: new Date(Date.now() - 5 * 60 * 1000), // 5분 전 완료
+          timeSpent: 300, // 5분 소요
+        },
+      }),
+      prisma.attempt.create({
+        data: {
+          userId: users[5].id, // 김민수
+          studyId: learningMaterials[0].id,
+          problemId: problems[7].id, // 일차방정식 문제
+          attemptNumber: 1,
+          selected: 'x = 2',
+          isCorrect: true,
+          startedAt: new Date(Date.now() - 20 * 60 * 1000), // 20분 전 시작
+          completedAt: new Date(Date.now() - 18 * 60 * 1000), // 18분 전 완료
+          timeSpent: 120, // 2분 소요
+        },
+      }),
+      prisma.attempt.create({
+        data: {
+          userId: users[6].id, // 이지영
+          studyId: learningMaterials[1].id, // 과학 학습 자료
+          problemId: problems[3].id, // 광합성 문제
+          attemptNumber: 1,
+          selected:
+            '빛에너지가 엽록소에 의해 흡수되어 ATP와 NADPH를 생성하고, 이를 이용해 포도당을 합성합니다.',
+          isCorrect: true,
+          startedAt: new Date(Date.now() - 30 * 60 * 1000), // 30분 전 시작
+          completedAt: new Date(Date.now() - 25 * 60 * 1000), // 25분 전 완료
+          timeSpent: 300, // 5분 소요
+        },
+      }),
+      // 재시도 시나리오 (2번째 시도)
+      prisma.attempt.create({
+        data: {
+          userId: users[7].id, // 박준호
+          studyId: learningMaterials[0].id,
+          problemId: problems[0].id,
+          attemptNumber: 2,
+          selected: 'x = 2, 3',
+          isCorrect: true,
+          startedAt: new Date(Date.now() - 40 * 60 * 1000), // 40분 전 시작
+          completedAt: new Date(Date.now() - 35 * 60 * 1000), // 35분 전 완료
+          timeSpent: 300, // 5분 소요
+        },
+      }),
+      // 오답 시나리오
+      prisma.attempt.create({
+        data: {
+          userId: users[7].id, // 박준호
+          studyId: learningMaterials[0].id,
+          problemId: problems[8].id, // 피타고라스 문제
+          attemptNumber: 1,
+          selected: '6',
+          isCorrect: false,
+          startedAt: new Date(Date.now() - 50 * 60 * 1000), // 50분 전 시작
+          completedAt: new Date(Date.now() - 45 * 60 * 1000), // 45분 전 완료
+          timeSpent: 300, // 5분 소요
         },
       }),
     ]);
@@ -1428,6 +1577,7 @@ async function main() {
       // studentProgress: studentProgress.length, // 제거된 모델
       problemAssignments: problemAssignments.length,
       problemProgress: problemProgress.length,
+      attempts: attempts.length,
       // analysisReports: analysisReports.length, // 제거된 모델
       // careerCounseling: careerCounseling.length, // 제거된 모델
       // aiModels: aiModels.length, // 제거된 모델

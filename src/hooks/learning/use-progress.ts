@@ -132,9 +132,17 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
       return { total: 0, completed: 0 };
     }
 
+    // totalProblems가 숫자가 아닌 경우 0으로 처리
+    const total = typeof data.totalProblems === 'number' ? data.totalProblems : 0;
+    // attemptedProblems 또는 completedProblems가 숫자가 아닌 경우 0으로 처리
+    const completed =
+      typeof (data.attemptedProblems || data.completedProblems) === 'number'
+        ? data.attemptedProblems || data.completedProblems
+        : 0;
+
     return {
-      total: data.totalProblems,
-      completed: data.attemptedProblems || data.completedProblems, // 시도한 문제 수
+      total,
+      completed,
     };
   }, [progressQuery.data]);
 
