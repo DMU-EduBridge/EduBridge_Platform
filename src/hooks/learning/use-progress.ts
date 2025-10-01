@@ -29,14 +29,12 @@ export interface ProgressData {
 
 export function useProgress(studyId: string, startNewAttempt: boolean = false) {
   const queryClient = useQueryClient();
-  console.log('useProgress 훅 호출:', { studyId, startNewAttempt });
 
   // 학습 진행 상태 조회
   const progressQuery = useQuery({
     queryKey: [...progressKeys.study(studyId), startNewAttempt],
     queryFn: async () => {
       const url = `/api/progress?studyId=${encodeURIComponent(studyId)}${startNewAttempt ? '&startNewAttempt=true' : ''}`;
-      console.log('useProgress API 호출:', { studyId, startNewAttempt, url });
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error('학습 진행 상태 조회 실패');
@@ -45,12 +43,9 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
       return data.data;
     },
     enabled: !!studyId,
-    // 새 시도 시작 시 서버에서 초기화가 이루어지므로, 항상 최신 값을 가져오도록 설정
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnReconnect: 'always',
-    refetchOnWindowFocus: 'always',
+    // 새 시도 시작 시 캐시 무효화를 위해 staleTime을 0으로 설정
+    staleTime: startNewAttempt ? 0 : 5 * 60 * 1000, // 새 시도: 0, 일반: 5분
+    gcTime: 60 * 60 * 1000, // 1시간
   });
 
   // 문제 완료 상태 저장
@@ -97,6 +92,9 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: progressKeys.study(studyId) });
+      // 새 시도 관련 쿼리도 무효화
+      queryClient.invalidateQueries({ queryKey: [...progressKeys.study(studyId), true] });
+      queryClient.invalidateQueries({ queryKey: [...progressKeys.study(studyId), false] });
     },
   });
 
@@ -122,6 +120,9 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
     onSuccess: () => {
       console.log('진행 상태 삭제 성공, 쿼리 무효화');
       queryClient.invalidateQueries({ queryKey: progressKeys.study(studyId) });
+      // 새 시도 관련 쿼리도 무효화
+      queryClient.invalidateQueries({ queryKey: [...progressKeys.study(studyId), true] });
+      queryClient.invalidateQueries({ queryKey: [...progressKeys.study(studyId), false] });
     },
   });
 
@@ -132,9 +133,17 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
       return { total: 0, completed: 0 };
     }
 
+    // totalProblems가 숫자가 아닌 경우 0으로 처리
+    const total = typeof data.totalProblems === 'number' ? data.totalProblems : 0;
+    // attemptedProblems 또는 completedProblems가 숫자가 아닌 경우 0으로 처리
+    const completed =
+      typeof (data.attemptedProblems || data.completedProblems) === 'number'
+        ? data.attemptedProblems || data.completedProblems
+        : 0;
+
     return {
-      total: data.totalProblems,
-      completed: data.attemptedProblems || data.completedProblems, // 시도한 문제 수
+      total,
+      completed,
     };
   }, [progressQuery.data]);
 

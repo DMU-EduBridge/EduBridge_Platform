@@ -3,6 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { memo } from 'react';
+import { ProblemElapsedTime } from './problem-elapsed-time';
 
 interface ProblemHeaderProps {
   currentIndex: number;
@@ -12,13 +14,17 @@ interface ProblemHeaderProps {
     completed: number;
   };
   attemptNumber?: number;
+  startTime?: Date;
+  isActive?: boolean;
 }
 
-export function ProblemHeader({
+export const ProblemHeader = memo(function ProblemHeader({
   currentIndex,
   totalCount,
   progressData,
   attemptNumber,
+  startTime,
+  isActive,
 }: ProblemHeaderProps) {
   const router = useRouter();
 
@@ -44,7 +50,7 @@ export function ProblemHeader({
         <div className="mb-2 flex items-center justify-between text-sm text-blue-700">
           <span>총 문항 수: {progressData.total} 문제</span>
           <span>완료된 문항: {progressData.completed} 문제</span>
-          <span>남은 문항 수: {progressData.total - progressData.completed} 문제</span>
+          <span>남은 문항 수: {Math.max(0, progressData.total - progressData.completed)} 문제</span>
         </div>
 
         {/* 진행 상황 표시 */}
@@ -57,6 +63,7 @@ export function ProblemHeader({
               {attemptNumber}번째 시도 진행 중
             </div>
           )}
+          {startTime && <ProblemElapsedTime startTime={startTime} isActive={isActive ?? true} />}
         </div>
       </div>
 
@@ -69,4 +76,4 @@ export function ProblemHeader({
       </div>
     </div>
   );
-}
+});

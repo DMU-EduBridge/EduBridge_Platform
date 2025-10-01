@@ -66,6 +66,50 @@ export class AttemptService {
         attemptNumber: attempt.attemptNumber,
       });
 
+      // ProblemProgress 동기화: studyId가 있는 경우에만 기록
+      if (data.studyId) {
+        const resolvedAttemptNumber =
+          data.attemptNumber && data.attemptNumber > 0 ? data.attemptNumber : attempt.attemptNumber;
+
+        await prisma.problemProgress.upsert({
+          where: {
+            userId_studyId_problemId_attemptNumber: {
+              userId: data.userId,
+              studyId: data.studyId,
+              problemId: data.problemId,
+              attemptNumber: resolvedAttemptNumber,
+            },
+          },
+          update: {
+            selectedAnswer: data.answer,
+            isCorrect: data.isCorrect,
+            startedAt: attempt.startedAt,
+            completedAt: attempt.completedAt ?? new Date(),
+            timeSpent: data.timeSpent,
+            lastAccessed: new Date(),
+          },
+          create: {
+            userId: data.userId,
+            studyId: data.studyId,
+            problemId: data.problemId,
+            attemptNumber: resolvedAttemptNumber,
+            selectedAnswer: data.answer,
+            isCorrect: data.isCorrect,
+            startedAt: attempt.startedAt,
+            completedAt: attempt.completedAt ?? new Date(),
+            timeSpent: data.timeSpent,
+            lastAccessed: new Date(),
+          },
+        });
+
+        logger.info('ProblemProgress 동기화 완료', {
+          userId: data.userId,
+          studyId: data.studyId,
+          problemId: data.problemId,
+          attemptNumber: resolvedAttemptNumber,
+        });
+      }
+
       return attempt;
     } catch (error) {
       logger.error('시도 기록 생성 실패', undefined, {

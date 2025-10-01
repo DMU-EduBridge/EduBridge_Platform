@@ -1,13 +1,15 @@
 'use client';
 
+import { LearningErrorBoundary } from '@/components/learning/error-boundary';
 import { ProblemActions } from '@/components/problems/problem-actions';
 import { ProblemContent } from '@/components/problems/problem-content';
 import { ProblemExplanation } from '@/components/problems/problem-explanation';
 import { ProblemHeader } from '@/components/problems/problem-header';
 import { ProblemOptions } from '@/components/problems/problem-options';
+import { useProblemNavigation } from '@/hooks/learning/use-problem-navigation';
+import { useProblemSubmission } from '@/hooks/learning/use-problem-submission';
 import { useProgress } from '@/hooks/learning/use-progress';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface Problem {
   id: string;
@@ -36,40 +38,57 @@ interface ProblemDetailClientProps {
 
 export function ProblemDetailClient({
   studyId,
-  problemId,
   initialProblem,
   currentIndex,
   totalCount,
   nextProblem,
 }: ProblemDetailClientProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const [problem, setProblem] = useState<Problem | undefined>(initialProblem);
-  const [selectedAnswer, setSelectedAnswer] = useState<string>('');
-  const [showResult, setShowResult] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [shouldStartNewAttempt, setShouldStartNewAttempt] = useState(false);
   const [startTime, setStartTime] = useState<Date>(new Date());
-  const [_elapsedTime, setElapsedTime] = useState(0);
 
-  const startNewAttemptParam = useMemo(() => {
-    const value = searchParams?.get('startNewAttempt');
-    return value === '1' || value === 'true';
-  }, [searchParams]);
-
-  const [shouldStartNewAttempt, setShouldStartNewAttempt] = useState(startNewAttemptParam);
-  const initialStartNewAttemptRef = useRef(startNewAttemptParam);
-
-  const { progressData, addCompletedProblem, activeAttemptNumber, isLoading } = useProgress(
+  // 커스텀 훅들
+  const { progressData, addCompletedProblem, activeAttemptNumber } = useProgress(
     studyId,
     shouldStartNewAttempt,
   );
 
+  const { startNewAttemptParam, handleNext } = useProblemNavigation({
+    studyId,
+    currentIndex,
+    totalCount,
+    nextProblem,
+  });
+
+  const {
+    selectedAnswer,
+    showResult,
+    isCorrect,
+    handleAnswerSelect,
+    handleSubmit,
+    resetSubmission,
+    setInitialStartNewAttempt,
+  } = useProblemSubmission({
+    problem,
+    activeAttemptNumber,
+    addCompletedProblem,
+  });
+
+  // 초기 설정
   useEffect(() => {
     if (startNewAttemptParam) {
-      initialStartNewAttemptRef.current = true;
+      setInitialStartNewAttempt(true);
       setShouldStartNewAttempt(true);
     }
-  }, [startNewAttemptParam]);
+  }, [startNewAttemptParam, setInitialStartNewAttempt]);
+
+  // 새 시도 시작 시 진행률 초기화를 위한 쿼리 키 변경
+  useEffect(() => {
+    if (shouldStartNewAttempt) {
+      // 새 시도 시작 시 기존 캐시를 무효화
+      console.log('새 시도 시작 - 진행률 초기화');
+    }
+  }, [shouldStartNewAttempt]);
 
   useEffect(() => {
     if (!startNewAttemptParam) {
@@ -88,144 +107,24 @@ export function ProblemDetailClient({
       console.warn('startNewAttempt 쿼리 제거 실패:', error);
     }
   }, [startNewAttemptParam]);
-  console.log('ProblemDetailClient 렌더링:', {
-    studyId,
-    problemId,
-    currentIndex,
-    totalCount,
-    startNewAttemptParam,
-    activeAttemptNumber,
-  });
 
   // 문제 데이터 로드 및 진행 상태 복원
   useEffect(() => {
-    const loadProblemData = async () => {
-      if (initialProblem) {
-        setProblem(initialProblem);
+    if (initialProblem) {
+      setProblem(initialProblem);
 
-        // 이미 결과를 표시 중이면 진행 상태를 복원하지 않음
-        if (showResult) {
-          return;
-        }
-
-        setStartTime(new Date());
-        setSelectedAnswer('');
-        setShowResult(false);
-
-        // 진행률은 React Query에서 자동 관리됨
-      }
-    };
-
-    loadProblemData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    initialProblem?.id, // problemId만 의존성으로 사용하여 무한 루프 방지
-    studyId,
-    problemId,
-  ]);
-
-  // 타이머 업데이트
-  useEffect(() => {
-    if (!showResult) {
-      const timer = setInterval(() => {
-        setElapsedTime(Math.floor((new Date().getTime() - startTime.getTime()) / 1000));
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-    return undefined;
-  }, [startTime, showResult]);
-
-  const onAnswerSelect = useCallback(
-    (answer: string) => {
+      // 새로운 문제로 변경 시 제출 상태 초기화
       if (!showResult) {
-        setSelectedAnswer(answer);
-        // 로컬 상태만 저장 (서버 저장은 정답 확인 시에만)
+        resetSubmission();
+        setStartTime(new Date());
       }
-    },
-    [showResult],
-  );
-
-  const handleSubmit = useCallback(async () => {
-    if (!problem || !selectedAnswer || activeAttemptNumber <= 0 || isLoading) return;
-
-    console.log('문제 제출 시작:', problem.id, selectedAnswer);
-
-    // 로컬에서 정답 확인
-    const correct = selectedAnswer === problem.correctAnswer;
-
-    setIsCorrect(correct);
-    setShowResult(true);
-
-    const elapsedSeconds = Math.max(
-      Math.floor((new Date().getTime() - startTime.getTime()) / 1000),
-      0,
-    );
-
-    // 문제 완료 상태 추가 및 정답/오답 정보 저장 (재시도 포함)
-    const answerData = {
-      isCorrect: correct,
-      selectedAnswer: selectedAnswer,
-      correctAnswer: problem.correctAnswer,
-      problemTitle: problem.title,
-      completedAt: new Date().toISOString(),
-    };
-
-    console.log('답안 데이터:', answerData);
-
-    // 문제 완료 처리 (React Query가 자동으로 상태 업데이트)
-    // 재시도 시에도 새로운 시도로 기록됨
-    try {
-      const result = await addCompletedProblem({
-        problemId: problem.id,
-        answer: answerData,
-        attemptNumber: activeAttemptNumber,
-        startTime: startTime.toISOString(),
-        timeSpent: elapsedSeconds,
-        forceNewAttempt: initialStartNewAttemptRef.current,
-      });
-      console.log('문제 완료 처리 결과:', result);
-      initialStartNewAttemptRef.current = false;
-      setShouldStartNewAttempt(false);
-    } catch (error) {
-      console.error('문제 완료 처리 실패:', error);
     }
-  }, [
-    problem,
-    selectedAnswer,
-    addCompletedProblem,
-    activeAttemptNumber,
-    startTime,
-    isLoading,
-  ]);
+  }, [initialProblem, showResult, resetSubmission]);
 
-  const handleNext = useCallback(async () => {
-    // 다음 문제로 이동
-    if (nextProblem) {
-      router.push(`/my/learning/${encodeURIComponent(studyId)}/problems/${nextProblem.id}`);
-    } else {
-      // 다음 문제가 없으면 결과 페이지로 이동
-      router.push(`/my/learning/${encodeURIComponent(studyId)}/results`);
-    }
-  }, [nextProblem, router, studyId]);
-
-  const handleRetry = useCallback(async () => {
-    console.log('재시도 시작:', problem?.id);
-
-    // 로컬 상태만 초기화 (시도 히스토리는 보존)
-    setSelectedAnswer('');
-    setShowResult(false);
-    setIsCorrect(false);
-    setStartTime(new Date());
-    setElapsedTime(0);
-    // currentAttempt는 이미 maxAttempt + 1로 설정되어 있으므로 증가시키지 않음
-
-    // 다음 제출을 새로운 시도로 기록하도록 플래그 설정
-    initialStartNewAttemptRef.current = true;
-    setShouldStartNewAttempt(true);
-
-    console.log('재시도 완료 - 새로운 시도로 기록됨');
-  }, [problem]);
+  // timeSpent 계산 최적화
+  const timeSpent = useMemo(() => {
+    return Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
+  }, [startTime]);
 
   if (!problem) {
     return (
@@ -238,42 +137,46 @@ export function ProblemDetailClient({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="mx-auto max-w-4xl px-4">
-        <ProblemHeader
-          currentIndex={currentIndex}
-          totalCount={totalCount}
-          progressData={progressData} // 전체 진행률만 사용
-          attemptNumber={activeAttemptNumber}
-        />
+    <LearningErrorBoundary>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="mx-auto max-w-4xl px-4">
+          <ProblemHeader
+            currentIndex={currentIndex}
+            totalCount={totalCount}
+            progressData={progressData}
+            attemptNumber={activeAttemptNumber}
+            startTime={startTime}
+            isActive={!showResult}
+          />
 
-        <ProblemContent problem={problem} />
+          <ProblemContent problem={problem} />
 
-        <ProblemOptions
-          problem={problem}
-          selectedAnswer={selectedAnswer}
-          showResult={showResult}
-          onAnswerSelect={onAnswerSelect}
-        />
+          <ProblemOptions
+            problem={problem}
+            selectedAnswer={selectedAnswer}
+            showResult={showResult}
+            onAnswerSelect={handleAnswerSelect}
+          />
 
-        <ProblemActions
-          selectedAnswer={selectedAnswer}
-          showResult={showResult}
-          isCorrect={isCorrect}
-          isLastProblem={currentIndex === totalCount}
-          onSubmit={handleSubmit}
-          onNext={handleNext}
-          onRetry={handleRetry}
-        />
+          <ProblemActions
+            selectedAnswer={selectedAnswer}
+            showResult={showResult}
+            isCorrect={isCorrect}
+            isLastProblem={currentIndex === totalCount}
+            onSubmit={handleSubmit}
+            onNext={handleNext}
+            timeSpent={timeSpent}
+          />
 
-        <ProblemExplanation
-          problem={problem}
-          showResult={showResult}
-          isCorrect={isCorrect}
-          selectedAnswer={selectedAnswer}
-        />
+          <ProblemExplanation
+            problem={problem}
+            showResult={showResult}
+            isCorrect={isCorrect}
+            selectedAnswer={selectedAnswer}
+          />
+        </div>
       </div>
-    </div>
+    </LearningErrorBoundary>
   );
 }
 

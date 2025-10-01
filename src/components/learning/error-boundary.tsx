@@ -12,7 +12,6 @@ interface ErrorBoundaryState {
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: any) => void;
 }
 
 export class LearningErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -27,7 +26,6 @@ export class LearningErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error('Learning Error Boundary caught an error:', error, errorInfo);
-    this.props.onError?.(error, errorInfo);
   }
 
   handleRetry = () => {
@@ -43,13 +41,29 @@ export class LearningErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
       return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
           <div className="text-center">
-            <AlertTriangle className="mx-auto mb-4 h-16 w-16 text-red-500" />
-            <h2 className="mb-2 text-2xl font-bold text-gray-900">문제가 발생했습니다</h2>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+            </div>
+            <h2 className="mb-2 text-xl font-semibold text-gray-900">문제가 발생했습니다</h2>
             <p className="mb-6 text-gray-600">학습 중 오류가 발생했습니다. 다시 시도해주세요.</p>
-            <Button onClick={this.handleRetry} className="px-6 py-3">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              다시 시도
-            </Button>
+            <div className="space-x-4">
+              <Button onClick={this.handleRetry} className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                다시 시도
+              </Button>
+              <Button variant="outline" onClick={() => (window.location.href = '/my/learning')}>
+                학습 목록으로
+              </Button>
+            </div>
+            {process.env.NODE_ENV === 'development' && this.state.error && (
+              <details className="mt-4 text-left">
+                <summary className="cursor-pointer text-sm text-gray-500">오류 상세 정보</summary>
+                <pre className="mt-2 text-xs text-red-600">
+                  {this.state.error.message}
+                  {this.state.error.stack}
+                </pre>
+              </details>
+            )}
           </div>
         </div>
       );
