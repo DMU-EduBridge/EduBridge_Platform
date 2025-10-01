@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+
 interface Problem {
   id: string;
   title: string;
@@ -23,7 +25,7 @@ interface ProblemOptionsProps {
   onAnswerSelect: (answer: string) => void;
 }
 
-export function ProblemOptions({
+export const ProblemOptions = memo(function ProblemOptions({
   problem,
   selectedAnswer,
   showResult,
@@ -91,4 +93,4 @@ export function ProblemOptions({
       </div>
     </div>
   );
-}
+});

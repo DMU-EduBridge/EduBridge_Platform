@@ -116,23 +116,6 @@ export default async function StudyProblemsPage({
     }
   });
 
-  // 모든 문제가 완료되었는지 확인 (시도한 모든 문제를 완료로 계산)
-  const completedProblems = Array.from(latestAttempts.values()).length;
-
-  const allProblemsCompleted = completedProblems === problems.length;
-
-  console.log('문제풀기 페이지 진입:', {
-    studyId,
-    totalProblems: problems.length,
-    completedProblems,
-    allProblemsCompleted,
-    latestAttempts: Array.from(latestAttempts.values()).map((entry) => ({
-      problemId: entry.problemId,
-      attemptNumber: entry.attemptNumber,
-      isCorrect: entry.isCorrect,
-    })),
-  });
-
   const firstProblem = problems[0];
 
   if (!firstProblem) {

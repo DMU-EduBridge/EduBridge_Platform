@@ -79,9 +79,9 @@ export default function ProblemsClient() {
     stats: statsQuery,
     delete: deleteMutation,
   } = useProblems({
-    search: searchTerm || undefined,
-    subject: selectedSubject !== 'all' ? selectedSubject : undefined,
-    difficulty: selectedDifficulty !== 'all' ? selectedDifficulty : undefined,
+    ...(searchTerm && { search: searchTerm }),
+    ...(selectedSubject !== 'all' && { subject: selectedSubject }),
+    ...(selectedDifficulty !== 'all' && { difficulty: selectedDifficulty }),
   });
 
   const problems = problemsQuery.data?.problems || [];
@@ -240,17 +240,17 @@ export default function ProblemsClient() {
                       <div className="mb-3 flex items-center gap-4 text-sm text-gray-600">
                         <span>과목: {problem.subject}</span>
                         <span>유형: {typeConfig.label}</span>
-                        <span>문제 수: {problem.questions}개</span>
+                        <span>문제 수: 1개</span>
                         <span>생성일: {new Date(problem.createdAt).toLocaleDateString()}</span>
                       </div>
                       <div className="flex items-center gap-6 text-sm">
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4 text-gray-400" />
-                          <span>{problem.attempts}회 시도</span>
+                          <span>0회 시도</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <TrendingUp className="h-4 w-4 text-gray-400" />
-                          <span>정답률 {problem.successRate}%</span>
+                          <span>정답률 0%</span>
                         </div>
                       </div>
                     </div>

@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 interface Problem {
   id: string;
@@ -28,7 +28,7 @@ interface ProblemExplanationProps {
   selectedAnswer: string;
 }
 
-export function ProblemExplanation({
+export const ProblemExplanation = memo(function ProblemExplanation({
   problem,
   showResult,
   isCorrect,
@@ -78,4 +78,4 @@ export function ProblemExplanation({
       </div>
     </Card>
   );
-}
+});

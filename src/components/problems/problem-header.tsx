@@ -3,6 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { memo } from 'react';
+import { ProblemElapsedTime } from './problem-elapsed-time';
 
 interface ProblemHeaderProps {
   currentIndex: number;
@@ -12,15 +14,17 @@ interface ProblemHeaderProps {
     completed: number;
   };
   attemptNumber?: number;
-  elapsedTime?: number; // 초 단위
+  startTime?: Date;
+  isActive?: boolean;
 }
 
-export function ProblemHeader({
+export const ProblemHeader = memo(function ProblemHeader({
   currentIndex,
   totalCount,
   progressData,
   attemptNumber,
-  elapsedTime,
+  startTime,
+  isActive,
 }: ProblemHeaderProps) {
   const router = useRouter();
 
@@ -59,11 +63,7 @@ export function ProblemHeader({
               {attemptNumber}번째 시도 진행 중
             </div>
           )}
-          {typeof elapsedTime === 'number' && (
-            <div className="mt-1 text-center text-xs text-blue-500">
-              경과 시간: {Math.floor(elapsedTime / 60)}분 {elapsedTime % 60}초
-            </div>
-          )}
+          {startTime && <ProblemElapsedTime startTime={startTime} isActive={isActive ?? true} />}
         </div>
       </div>
 
@@ -76,4 +76,4 @@ export function ProblemHeader({
       </div>
     </div>
   );
-}
+});

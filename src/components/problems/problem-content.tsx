@@ -1,6 +1,7 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
+import { memo } from 'react';
 
 interface Problem {
   id: string;
@@ -22,7 +23,7 @@ interface ProblemContentProps {
   problem: Problem;
 }
 
-export function ProblemContent({ problem }: ProblemContentProps) {
+export const ProblemContent = memo(function ProblemContent({ problem }: ProblemContentProps) {
   return (
     <Card className="mb-6 p-6">
       <div className="mb-4">
@@ -44,4 +45,4 @@ export function ProblemContent({ problem }: ProblemContentProps) {
       </div>
     </Card>
   );
-}
+});
