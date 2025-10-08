@@ -29,7 +29,7 @@ function convertToStudyItem(material: any): StudyItem {
 }
 
 /**
- * 학습 자료 목록 조회
+ * 학습 자료 목록 조회 또는 개별 조회
  */
 export async function GET(request: NextRequest) {
   try {
@@ -40,6 +40,27 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
+
+    // 개별 학습 자료 조회 (id 쿼리 파라미터가 있는 경우)
+    const materialId = searchParams.get('id');
+
+    if (materialId) {
+      const material = await materialService.getMaterialById(materialId);
+
+      if (!material) {
+        return NextResponse.json({ error: '학습 자료를 찾을 수 없습니다.' }, { status: 404 });
+      }
+
+      // LearningMaterial을 StudyItem으로 변환
+      const studyItem = convertToStudyItem(material);
+
+      return NextResponse.json({
+        success: true,
+        data: studyItem,
+      });
+    }
+
+    // 학습 자료 목록 조회
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || undefined;
@@ -70,10 +91,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error('학습 자료 목록 조회 실패', undefined, {
+    logger.error('학습 자료 조회 실패', undefined, {
       error: error instanceof Error ? error.message : String(error),
     });
-    return NextResponse.json({ error: '학습 자료 목록 조회에 실패했습니다.' }, { status: 500 });
+    return NextResponse.json({ error: '학습 자료 조회에 실패했습니다.' }, { status: 500 });
   }
 }
 

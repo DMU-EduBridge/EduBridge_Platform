@@ -24,7 +24,7 @@ export default async function MyLearningPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <MyLearningClient />
     </div>
   );

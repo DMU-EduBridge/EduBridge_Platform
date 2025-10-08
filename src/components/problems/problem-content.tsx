@@ -1,6 +1,5 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { memo } from 'react';
 
 interface Problem {
@@ -21,28 +20,26 @@ interface Problem {
 
 interface ProblemContentProps {
   problem: Problem;
+  currentIndex: number;
 }
 
-export const ProblemContent = memo(function ProblemContent({ problem }: ProblemContentProps) {
+export const ProblemContent = memo(function ProblemContent({
+  problem,
+  currentIndex,
+}: ProblemContentProps) {
   return (
-    <Card className="mb-6 p-6">
-      <div className="mb-4">
-        <h2 className="mb-2 text-xl font-semibold text-gray-800">{problem.title}</h2>
-        {problem.description && <p className="mb-4 text-gray-600">{problem.description}</p>}
-      </div>
-
-      <div className="mb-6">
-        <div className="rounded-lg bg-gray-50 p-4">
-          <div className="whitespace-pre-wrap leading-relaxed text-gray-800">{problem.content}</div>
+    <div className="mb-8">
+      {/* 문제 내용 */}
+      <div className="mb-8 rounded-lg bg-gray-50 p-4 sm:p-6">
+        <div className="text-base leading-relaxed text-gray-800 sm:text-lg">
+          {currentIndex}. {problem.content}
         </div>
+        {problem.points && (
+          <div className="mt-4 text-right text-xs text-gray-500 sm:text-sm">
+            [{problem.points}점]
+          </div>
+        )}
       </div>
-
-      {/* 문제 메타 정보 */}
-      <div className="mb-4 flex items-center gap-4 text-sm text-gray-500">
-        <span className="rounded bg-blue-100 px-2 py-1 text-blue-800">{problem.difficulty}</span>
-        <span className="rounded bg-green-100 px-2 py-1 text-green-800">{problem.points}점</span>
-        <span className="rounded bg-purple-100 px-2 py-1 text-purple-800">{problem.subject}</span>
-      </div>
-    </Card>
+    </div>
   );
 });

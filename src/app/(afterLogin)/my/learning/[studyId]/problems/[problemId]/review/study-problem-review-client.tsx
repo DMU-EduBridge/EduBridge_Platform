@@ -4,7 +4,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProblemDifficulty, ProblemType } from '@prisma/client';
-import { ArrowLeft, BookOpen, CheckCircle, RotateCcw, XCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  BookOpen,
+  CheckCircle,
+  FileText,
+  MessageSquare,
+  RotateCcw,
+  XCircle,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { memo } from 'react';
 
@@ -194,6 +202,14 @@ const StudyProblemReviewClient = memo(function StudyProblemReviewClient({
         >
           <RotateCcw className="mr-2 h-4 w-4" />
           다시 풀기
+        </Button>
+        <Button variant="outline" onClick={() => router.push('/my/incorrect-answers')}>
+          <FileText className="mr-2 h-4 w-4" />
+          오답 노트
+        </Button>
+        <Button variant="outline" onClick={() => router.push('/ai-assistant')}>
+          <MessageSquare className="mr-2 h-4 w-4" />
+          AI 도움받기
         </Button>
         <Button variant="outline" onClick={() => router.push('/my/learning')}>
           <BookOpen className="mr-2 h-4 w-4" />

@@ -70,15 +70,23 @@ export default async function ProblemDetailPage({ params }: { params: { problemI
       notFound();
     }
 
+    // 문제와 연결된 학습 자료 조회
+    const materialProblem = await prisma.learningMaterialProblem.findFirst({
+      where: { problemId: params.problemId },
+      select: { learningMaterialId: true },
+    });
+
+    const studyId = materialProblem?.learningMaterialId || problem.id;
+
     const problemData = {
       id: problem.id,
       title: problem.title,
-      description: problem.description,
+      description: problem.description ?? undefined,
       content: problem.content,
       type: problem.type,
       options: parseJsonArray(problem.options as string),
       correctAnswer: problem.correctAnswer,
-      explanation: problem.explanation ?? null,
+      explanation: problem.explanation ?? undefined,
       difficulty: problem.difficulty,
       subject: problem.subject,
       points: problem.points,
@@ -87,7 +95,7 @@ export default async function ProblemDetailPage({ params }: { params: { problemI
 
     return (
       <ProblemDetailClient
-        studyId=""
+        studyId={studyId}
         problemId={problem.id}
         initialProblem={problemData}
         currentIndex={1}

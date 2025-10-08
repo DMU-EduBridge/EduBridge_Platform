@@ -2,9 +2,12 @@ import {
   BookOpen,
   Bot,
   Calendar,
+  CheckSquare,
   FileText,
   FolderOpen,
   LayoutDashboard,
+  Mail,
+  MessageSquare,
   Search,
   Settings,
   Shield,
@@ -18,6 +21,10 @@ export function getStudentNav(): NavItem[] {
   return [
     { name: '대시보드', href: '/dashboard', icon: LayoutDashboard },
     { name: '나의 학습', href: '/my/learning', icon: BookOpen },
+    { name: '할 일 목록', href: '/my/todos', icon: CheckSquare },
+    { name: '메시지', href: '/my/messages', icon: Mail },
+    { name: 'AI 어시스턴트', href: '/ai-assistant', icon: MessageSquare },
+    { name: '오답 노트', href: '/my/incorrect-answers', icon: FileText },
     { name: '내 리포트', href: '/my/reports', icon: Calendar },
     { name: '프로필', href: '/profile', icon: User },
   ];
@@ -32,6 +39,11 @@ export function getTeacherNav(): NavItem[] {
     { name: '분석 리포트', href: '/reports', icon: Calendar },
     { name: 'AI 교사 리포트', href: '/teacher-reports', icon: Bot },
     { name: '의미적 검색', href: '/vector-search', icon: Search },
+    // 학생 기능들도 교사가 사용할 수 있도록 추가
+    { name: '할 일 목록', href: '/my/todos', icon: CheckSquare },
+    { name: '메시지', href: '/my/messages', icon: Mail },
+    { name: 'AI 어시스턴트', href: '/ai-assistant', icon: MessageSquare },
+    { name: '오답 노트', href: '/my/incorrect-answers', icon: FileText },
     { name: '프로필', href: '/profile', icon: User },
   ];
 }

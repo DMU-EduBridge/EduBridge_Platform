@@ -1,9 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { memo, useState } from 'react';
+import { memo } from 'react';
 
 interface Problem {
   id: string;
@@ -25,57 +22,29 @@ interface ProblemExplanationProps {
   problem: Problem;
   showResult: boolean;
   isCorrect: boolean;
-  selectedAnswer: string;
 }
 
 export const ProblemExplanation = memo(function ProblemExplanation({
   problem,
   showResult,
   isCorrect,
-  selectedAnswer,
 }: ProblemExplanationProps) {
-  const [showExplanation, setShowExplanation] = useState(false);
-
-  if (!showResult || !problem.explanation) {
+  if (!showResult) {
     return null;
   }
 
   return (
-    <Card className="p-6">
-      <div className="mb-4">
-        <div
-          className={`mb-2 text-xl font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}
-        >
-          {isCorrect ? '✓ 정답입니다!' : '✗ 틀렸습니다.'}
-        </div>
-
-        <div className="mb-2 text-gray-600">정답: {problem.correctAnswer}</div>
-
-        {!isCorrect && selectedAnswer && (
-          <div className="mb-4 text-gray-600">선택한 답: {selectedAnswer}</div>
-        )}
+    <div
+      className={`mb-8 rounded-lg border-2 ${
+        isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+      } p-4`}
+    >
+      <div
+        className={`mb-3 text-base font-semibold ${isCorrect ? 'text-green-800' : 'text-red-800'}`}
+      >
+        풀이
       </div>
-
-      <div className="border-t pt-4">
-        <Button
-          variant="ghost"
-          onClick={() => setShowExplanation(!showExplanation)}
-          className="flex h-auto items-center gap-2 p-0 text-blue-600 hover:text-blue-700"
-        >
-          <h4 className="text-lg font-medium">해설</h4>
-          {showExplanation ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-        </Button>
-
-        {showExplanation && (
-          <div className="mt-3 whitespace-pre-line leading-relaxed text-gray-700">
-            {problem.explanation}
-          </div>
-        )}
-      </div>
-    </Card>
+      <div className="text-sm leading-relaxed text-gray-800">{problem.explanation}</div>
+    </div>
   );
 });

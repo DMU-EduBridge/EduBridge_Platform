@@ -2,7 +2,7 @@ import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
 import {
   aiStatsService,
-  problemService,
+  problemStatsService,
   searchService,
   teacherReportService,
   textbookService,
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     const [aiStats, problemStats, textbookStats, teacherReportStats, searchStats] =
       await Promise.all([
         aiStatsService.getAIStatsSummary(),
-        problemService.getProblemStats(),
+        problemStatsService.getProblemStats(),
         textbookService.getTextbookStats(),
         teacherReportService.getTeacherReportStats(),
         searchService.getSearchStats(),
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     const dashboardData = {
       summary: {
-        totalProblems: problemStats.totalProblems,
+        totalProblems: problemStats.total,
         totalTextbooks: textbookStats.totalTextbooks,
         totalReports: teacherReportStats.totalReports,
         totalSearches: searchStats.totalQueries,
@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
       problemStats: {
         bySubject: problemStats.bySubject,
         byDifficulty: problemStats.byDifficulty,
-        byStatus: problemStats.byStatus,
-        aiGeneratedCount: problemStats.aiGeneratedCount,
+        byStatus: problemStats.byType,
+        aiGeneratedCount: problemStats.aiGenerated,
       },
       textbookStats: {
         bySubject: textbookStats.bySubject,

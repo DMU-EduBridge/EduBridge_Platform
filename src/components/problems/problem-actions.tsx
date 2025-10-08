@@ -1,77 +1,56 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
 import { memo } from 'react';
 
 interface ProblemActionsProps {
   selectedAnswer: string;
   showResult: boolean;
-  isCorrect: boolean;
   isLastProblem: boolean;
   onSubmit: () => void;
   onNext: () => void;
-  timeSpent?: number;
+  onPrevious: () => void;
+  currentIndex: number;
 }
 
 export const ProblemActions = memo(function ProblemActions({
   selectedAnswer,
   showResult,
-  isCorrect,
   isLastProblem,
   onSubmit,
   onNext,
-  timeSpent,
+  onPrevious,
+  currentIndex,
 }: ProblemActionsProps) {
-  if (!showResult) {
-    return (
-      <div className="mb-6 flex justify-center">
+  return (
+    <div className="flex flex-col gap-3 px-4 px-4 sm:flex-row sm:justify-center sm:gap-4">
+      {/* 이전 버튼 */}
+      <Button
+        variant="outline"
+        onClick={onPrevious}
+        disabled={currentIndex === 1}
+        className="w-full rounded-lg border-2 border-gray-300 px-6 py-3 font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-8"
+      >
+        이전
+      </Button>
+
+      {/* 제출/다음 버튼 */}
+      {!showResult ? (
         <Button
           onClick={onSubmit}
           disabled={!selectedAnswer}
-          className="rounded-lg bg-blue-600 px-8 py-3 text-lg text-white hover:bg-blue-700"
+          className="w-full rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-8"
         >
-          정답 확인
+          제출
         </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mb-6">
-      {/* 결과 피드백 */}
-      <div className="mb-4 rounded-lg p-4 text-center">
-        <div className={`mb-2 text-2xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-          {isCorrect ? '🎉 정답입니다!' : '😔 틀렸습니다'}
-        </div>
-
-        {/* 상세 피드백 */}
-        <div className="space-y-2 text-sm text-gray-600">
-          {timeSpent && (
-            <div>
-              소요 시간: {Math.floor(timeSpent / 60)}분 {timeSpent % 60}초
-            </div>
-          )}
-          {isCorrect ? (
-            <div className="text-green-600">잘하셨습니다! 다음 문제로 넘어가세요.</div>
-          ) : (
-            <div className="text-red-600">다시 시도해보세요. 해설을 확인해보는 것도 좋습니다.</div>
-          )}
-        </div>
-      </div>
-
-      {/* 액션 버튼들 */}
-      <div className="flex justify-center">
+      ) : (
         <Button
           onClick={onNext}
-          className={`flex items-center gap-2 ${
-            isCorrect ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
-          } rounded-lg px-8 py-3 text-lg text-white`}
+          className="w-full rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 sm:w-auto sm:px-8"
         >
-          {isLastProblem ? '결과 보기' : '다음 문제'}
-          <ArrowRight className="h-4 w-4" />
+          {isLastProblem ? '완료' : '다음'}
         </Button>
-      </div>
+      )}
     </div>
   );
 });

@@ -33,8 +33,7 @@ export const ProblemOptions = memo(function ProblemOptions({
 }: ProblemOptionsProps) {
   return (
     <div className="mb-6">
-      <h3 className="mb-4 text-lg font-medium text-gray-800">선택지를 고르세요:</h3>
-      <div className="grid gap-3">
+      <div className="space-y-3">
         {problem.options.map((option, index) => {
           const isSelected = selectedAnswer === option;
           const isCorrect = option === problem.correctAnswer;
@@ -46,7 +45,7 @@ export const ProblemOptions = memo(function ProblemOptions({
               onClick={() => onAnswerSelect(option)}
               disabled={showResult}
               className={`
-                rounded-lg border-2 p-4 text-left transition-all duration-200
+                w-full rounded-lg border-2 p-3 text-left transition-all duration-200 sm:p-4
                 ${
                   isSelected
                     ? showResult
@@ -63,29 +62,19 @@ export const ProblemOptions = memo(function ProblemOptions({
               `}
             >
               <div className="flex items-center gap-3">
-                <div
-                  className={`
-                  flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium
-                  ${
-                    isSelected
-                      ? showResult
-                        ? isCorrect
-                          ? 'bg-green-500 text-white'
-                          : 'bg-red-500 text-white'
-                        : 'bg-blue-500 text-white'
-                      : showResult && isCorrect
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                  }
-                `}
-                >
-                  {String.fromCharCode(65 + index)}
-                </div>
-                <span className="flex-1">{option}</span>
+                <span className="text-base font-medium sm:text-lg">
+                  {index + 1}. {option}
+                </span>
                 {showResult && isCorrect && (
-                  <span className="font-medium text-green-600">✓ 정답</span>
+                  <span className="ml-auto text-sm font-medium text-green-600 sm:text-base">
+                    ✓ 정답
+                  </span>
                 )}
-                {showResult && isWrong && <span className="font-medium text-red-600">✗ 오답</span>}
+                {showResult && isWrong && (
+                  <span className="ml-auto text-sm font-medium text-red-600 sm:text-base">
+                    ✗ 오답
+                  </span>
+                )}
               </div>
             </button>
           );

@@ -120,10 +120,8 @@ export default function MyLearningClient() {
               key={item.id}
               item={item}
               onStart={(id) => router.push(`/my/learning/${encodeURIComponent(id)}/problems`)}
-              onReview={(id) => router.push(`/problems/${id}/review`)}
-              onAiHelp={() =>
-                router.push(`/vector-search?search=${encodeURIComponent(item.title)}`)
-              }
+              onReview={() => router.push('/my/incorrect-answers')}
+              onAiHelp={() => router.push('/ai-assistant')}
             />
           ))}
         </div>

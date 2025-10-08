@@ -17,7 +17,7 @@ export const learningService = {
     limit?: number;
   }) => api.get('/learning-materials', { params }),
 
-  getMaterial: (id: string) => api.get(`/learning-materials/${id}`),
+  getMaterial: (id: string) => api.get(`/learning-materials?id=${id}`),
 
   createMaterial: (data: LearningMaterialPayload) => api.post('/learning-materials', data),
 
@@ -32,7 +32,7 @@ export const learningService = {
   getStudyItems: () =>
     api.get<{ success: boolean; data: { items: StudyItem[] } }>('/learning-materials'),
 
-  getStudyItem: (id: string) => api.get<StudyItem>(`/learning-materials/${id}`),
+  getStudyItem: (id: string) => api.get<StudyItem>(`/learning-materials?id=${id}`),
 
   getStudyProgress: (studyId: string) => api.get(`/learning-materials/${studyId}/progress`),
 };
