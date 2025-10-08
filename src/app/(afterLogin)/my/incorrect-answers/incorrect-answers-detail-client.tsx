@@ -25,7 +25,7 @@ interface IncorrectAnswersDetailClientProps {
 }
 
 export function IncorrectAnswersDetailClient({
-  session,
+  session: _session,
   initialData,
 }: IncorrectAnswersDetailClientProps) {
   const router = useRouter();
@@ -48,7 +48,7 @@ export function IncorrectAnswersDetailClient({
     );
   }
 
-  const { incorrectAnswers, subjects, stats } = incorrectAnswersData;
+  const { incorrectAnswers, subjects, stats: _stats } = incorrectAnswersData;
 
   // 단일 문제 재풀이: 해당 문제만 풀고 완료 시 오답 노트로 복귀
   const retryProblem = async (problemId: string) => {
@@ -138,7 +138,7 @@ export function IncorrectAnswersDetailClient({
           return;
         }
         // 어떤 문제도 학습 자료에 매핑되지 않은 경우: 첫 문제로 직접 이동 (폴백)
-        router.push(`/problems/${encodeURIComponent(wrongIds[0])}?retry=true`);
+        router.push(`/problems/${encodeURIComponent(wrongIds[0]!)}?retry=true`);
         return;
       }
       const idsParam = encodeURIComponent(wrongIds.join(','));
