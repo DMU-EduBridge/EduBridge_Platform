@@ -40,10 +40,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="//api.edubridge.com" />
 
-        {/* 중요 리소스 프리로딩 */}
-        <link rel="preload" href="/api/dashboard" as="fetch" crossOrigin="anonymous" />
-        <link rel="preload" href="/api/problems" as="fetch" crossOrigin="anonymous" />
-
         {/* 메타 태그 최적화 */}
         <meta name="theme-color" content="#3b82f6" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

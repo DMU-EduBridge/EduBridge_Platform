@@ -66,7 +66,7 @@ export const ProblemHeader = memo(function ProblemHeader({
       </div>
 
       {/* 파란색 네비게이션 바 - 피그마 디자인 */}
-      <div className="mb-8  bg-blue-600 px-6 pt-6 text-white sm:px-6">
+      <div className="mb-6 bg-blue-600 p-6 text-white sm:px-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-base font-semibold sm:text-lg">
             {studyTitle || '단원별 학습하기'}

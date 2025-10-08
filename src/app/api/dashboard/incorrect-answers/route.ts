@@ -1,4 +1,5 @@
 import { authOptions } from '@/lib/core/auth';
+import { prisma } from '@/lib/core/prisma';
 import { logger } from '@/lib/monitoring';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -42,100 +43,90 @@ export async function GET() {
       return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 });
     }
 
-    // 실제 데이터베이스에서 가져올 데이터 (현재는 시뮬레이션)
-    const incorrectAnswerNotes: IncorrectAnswerNote[] = [
-      {
-        id: '1',
-        subject: '한국의 역사',
-        grade: '중학교 3학년',
-        gradeColor: 'green',
-        status: '노력 필요',
-        statusColor: 'red',
-        incorrectCount: 10,
-        retryCount: 5,
-        completedCount: 5,
-        totalProblems: 100,
-        lastUpdated: '2024-01-20T16:30:00Z',
-        problems: [
-          {
-            id: 'p1',
-            question: '한국 전쟁이 일어난 연도는?',
-            correctAnswer: '1950년',
-            userAnswer: '1945년',
-            explanation: '한국 전쟁은 1950년 6월 25일에 시작되었습니다.',
-            isRetried: true,
-            isCompleted: true,
+    // 사용자 진행 데이터(오답) 조회 + 문제/과목 메타 결합
+    const progresses = await prisma.problemProgress.findMany({
+      where: { userId: session.user.id },
+      orderBy: [{ attemptNumber: 'desc' }, { completedAt: 'desc' }],
+      select: {
+        studyId: true,
+        problemId: true,
+        isCorrect: true,
+        selectedAnswer: true,
+        attemptNumber: true,
+        completedAt: true,
+        problem: {
+          select: {
+            id: true,
+            title: true,
+            subject: true,
+            correctAnswer: true,
+            explanation: true,
           },
-          {
-            id: 'p2',
-            question: '한국 전쟁의 원인은?',
-            correctAnswer: '이데올로기 갈등',
-            userAnswer: '경제적 갈등',
-            explanation: '한국 전쟁은 자본주의와 공산주의의 이데올로기 갈등이 주된 원인입니다.',
-            isRetried: false,
-            isCompleted: false,
-          },
-        ],
+        },
       },
-      {
-        id: '2',
-        subject: '알쏭달쏭 수학',
-        grade: '중학교 3학년',
-        gradeColor: 'green',
-        status: '보통 수준',
-        statusColor: 'yellow',
-        incorrectCount: 20,
-        retryCount: 5,
-        completedCount: 15,
-        totalProblems: 80,
-        lastUpdated: '2024-01-20T15:45:00Z',
-        problems: [
-          {
-            id: 'p3',
-            question: '2x + 5 = 13일 때 x의 값은?',
-            correctAnswer: '4',
-            userAnswer: '3',
-            explanation: '2x = 13 - 5 = 8, 따라서 x = 4입니다.',
-            isRetried: true,
-            isCompleted: true,
-          },
-        ],
-      },
-      {
-        id: '3',
-        subject: '확률과 통계',
-        grade: '고등학교 1학년',
+    });
+
+    // 문제별 최신 시도만 고려
+    const latestByProblem = new Map<string, (typeof progresses)[number]>();
+    for (const p of progresses) {
+      if (!latestByProblem.has(p.problemId)) latestByProblem.set(p.problemId, p);
+    }
+
+    // 과목 단위 그룹핑(오답만)
+    const group = new Map<string, IncorrectAnswerNote>();
+    latestByProblem.forEach((p) => {
+      const subject = p.problem?.subject || '기타';
+      const note: IncorrectAnswerNote = group.get(subject) || {
+        id: subject,
+        subject,
+        grade: '',
         gradeColor: 'red',
-        status: '완벽함',
-        statusColor: 'green',
-        incorrectCount: 1,
+        status: '복습 필요',
+        statusColor: 'red',
+        incorrectCount: 0,
         retryCount: 0,
-        completedCount: 1,
-        totalProblems: 120,
-        lastUpdated: '2024-01-19T14:20:00Z',
-        problems: [
-          {
-            id: 'p4',
-            question: '주사위를 던져서 6이 나올 확률은?',
-            correctAnswer: '1/6',
-            userAnswer: '1/5',
-            explanation: '주사위는 6면이므로 6이 나올 확률은 1/6입니다.',
-            isRetried: false,
-            isCompleted: true,
-          },
-        ],
-      },
-    ];
+        completedCount: 0,
+        totalProblems: 0,
+        lastUpdated: new Date().toISOString(),
+        problems: [],
+      };
+
+      // 전체 문제 수/완료 수 집계는 최신 시도 기준
+      note.totalProblems += 1;
+      if (p.isCorrect) note.completedCount += 1;
+      else note.incorrectCount += 1;
+
+      const retried = progresses.find(
+        (x) => x.problemId === p.problemId && x.attemptNumber < p.attemptNumber,
+      )
+        ? true
+        : false;
+      if (retried) note.retryCount += 1;
+
+      note.lastUpdated = p.completedAt?.toISOString?.() || note.lastUpdated;
+      if (!p.isCorrect) {
+        note.problems.push({
+          id: p.problemId,
+          question: p.problem?.title || '문제',
+          correctAnswer: p.problem?.correctAnswer || '',
+          userAnswer: p.selectedAnswer || '',
+          explanation: p.problem?.explanation || '',
+          isRetried: retried,
+          isCompleted: false,
+        });
+      }
+
+      group.set(subject, note);
+    });
+
+    const notes = Array.from(group.values());
 
     logger.info('오답 노트 조회 성공', {
       userId: session.user.id,
-      count: incorrectAnswerNotes.length,
+      count: notes.length,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: incorrectAnswerNotes,
-    });
+    return NextResponse.json({ success: true, data: notes });
   } catch (error) {
     logger.error('오답 노트 조회 실패', undefined, {
       error: error instanceof Error ? error.message : String(error),

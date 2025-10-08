@@ -106,6 +106,132 @@ export async function GET() {
     ],
     security: [{ bearerAuth: [] }],
     paths: {
+      // === 진행(Progress) API ===
+      '/progress': {
+        get: {
+          tags: ['Progress'],
+          summary: '진행 상태 조회(특정 학습 세션)',
+          parameters: [
+            { name: 'studyId', in: 'query', required: true, schema: { type: 'string' } },
+          ],
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          totalProblems: { type: 'integer' },
+                          completedProblems: { type: 'integer' },
+                          correctAnswers: { type: 'integer' },
+                          wrongAnswers: { type: 'integer' },
+                          isCompleted: { type: 'boolean' },
+                          attemptNumber: { type: 'integer' },
+                          attempts: { type: 'array', items: { type: 'object' } },
+                          latestAttempts: { type: 'array', items: { type: 'object' } },
+                          missingProblemIds: { type: 'array', items: { type: 'string' } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            '400': { description: 'Bad Request' },
+            '401': { description: 'Unauthorized' },
+          },
+        },
+        post: {
+          tags: ['Progress'],
+          summary: '문제 진행 저장/업데이트',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    studyId: { type: 'string' },
+                    problemId: { type: 'string' },
+                    selected: { type: 'string' },
+                    isCorrect: { type: 'boolean' },
+                    timeSpent: { type: 'integer' },
+                    totalProblems: { type: 'integer' },
+                    attemptNumber: { type: 'integer' },
+                    forceNewAttempt: { type: 'boolean' },
+                  },
+                  required: ['studyId', 'problemId', 'selected', 'isCorrect', 'totalProblems'],
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { type: 'object' },
+                    },
+                  },
+                },
+              },
+            },
+            '400': { description: 'Bad Request' },
+            '401': { description: 'Unauthorized' },
+          },
+        },
+      },
+
+      // === 학습 완료 상태 API ===
+      '/learning/complete': {
+        get: {
+          tags: ['Progress'],
+          summary: '학습 세션 완료 현황 조회',
+          parameters: [
+            { name: 'studyId', in: 'query', required: true, schema: { type: 'string' } },
+          ],
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          totalProblems: { type: 'integer' },
+                          completedProblems: { type: 'integer' },
+                          correctAnswers: { type: 'integer' },
+                          wrongAnswers: { type: 'integer' },
+                          isCompleted: { type: 'boolean' },
+                          attemptNumber: { type: 'integer' },
+                          attempts: { type: 'array', items: { type: 'object' } },
+                          latestAttempts: { type: 'array', items: { type: 'object' } },
+                          missingProblemIds: { type: 'array', items: { type: 'string' } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            '400': { description: 'Bad Request' },
+            '401': { description: 'Unauthorized' },
+          },
+        },
+      },
       // === 문제-학습자료 매핑 API (신규 통합) ===
       '/problems/material': {
         get: {
@@ -159,9 +285,7 @@ export async function GET() {
           deprecated: true,
           tags: ['Problems'],
           summary: '[Deprecated] 문제-학습자료 매핑 배치 조회',
-          parameters: [
-            { name: 'ids', in: 'query', required: true, schema: { type: 'string' } },
-          ],
+          parameters: [{ name: 'ids', in: 'query', required: true, schema: { type: 'string' } }],
           responses: {
             '200': { description: 'OK' },
             '410': { description: 'Deprecated. /problems/material 사용 권장' },
@@ -396,7 +520,9 @@ export async function GET() {
         get: {
           tags: ['Problems'],
           summary: '문제 상세 조회',
-          parameters: [{ name: 'problemId', in: 'path', required: true, schema: { type: 'string' } }],
+          parameters: [
+            { name: 'problemId', in: 'path', required: true, schema: { type: 'string' } },
+          ],
           responses: {
             '200': {
               description: 'OK',
@@ -411,7 +537,9 @@ export async function GET() {
         put: {
           tags: ['Problems'],
           summary: '문제 수정',
-          parameters: [{ name: 'problemId', in: 'path', required: true, schema: { type: 'string' } }],
+          parameters: [
+            { name: 'problemId', in: 'path', required: true, schema: { type: 'string' } },
+          ],
           requestBody: { required: true },
           responses: {
             '200': { description: 'OK' },
@@ -423,7 +551,9 @@ export async function GET() {
         delete: {
           tags: ['Problems'],
           summary: '문제 삭제',
-          parameters: [{ name: 'problemId', in: 'path', required: true, schema: { type: 'string' } }],
+          parameters: [
+            { name: 'problemId', in: 'path', required: true, schema: { type: 'string' } },
+          ],
           responses: {
             '200': { description: 'OK' },
             '401': { $ref: '#/components/responses/UnauthorizedError' },

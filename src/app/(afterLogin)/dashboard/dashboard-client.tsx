@@ -3,98 +3,30 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useDashboardOverviewData } from '@/hooks/dashboard/use-dashboard-overview';
+import { useIncorrectAnswersData } from '@/hooks/dashboard/use-incorrect-answers';
+import { useTodosData, useUpdateTodo } from '@/hooks/dashboard/use-todos';
+import type { DashboardOverview } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronRight, Download, Plus, Square } from 'lucide-react';
 import { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-// 타입 정의
-interface LearningProgressItem {
-  id: string;
-  subject: string;
-  grade: string;
-  gradeColor: 'green' | 'red';
-  currentUnit: string;
-  progress: number;
-  totalProblems: number;
-  completedProblems: number;
-  lastStudiedAt: string;
-}
-
-interface TodoItem {
-  id: string;
-  text: string;
-  completed: boolean;
-  priority: 'high' | 'medium' | 'low';
-  dueDate: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface MessageItem {
-  id: string;
-  sender: string;
-  senderId: string;
-  message: string;
-  hasNotification: boolean;
-  notificationCount?: number;
-  isRead: boolean;
-  messageType: 'question' | 'reminder' | 'general';
-  createdAt: string;
-}
-
-interface ChatExample {
-  id: string;
-  prompt: string;
-  response: string;
-  date: string;
-  messageType: 'translation' | 'explanation' | 'question' | 'general';
-  subject: string;
-}
-
-interface IncorrectAnswerNoteItem {
-  id: string;
-  subject: string;
-  grade: string;
-  gradeColor: 'green' | 'red';
-  status: string;
-  statusColor: 'red' | 'yellow' | 'green';
-  incorrectCount: number;
-  retryCount: number;
-  completedCount: number;
-  totalProblems: number;
-  lastUpdated: string;
-}
-
-interface DashboardData {
-  learningProgress: LearningProgressItem[];
-  todos: TodoItem[];
-  messages: MessageItem[];
-  aiChatExamples: ChatExample[];
-  incorrectAnswerNotes: IncorrectAnswerNoteItem[];
-  summary: {
-    totalSubjects: number;
-    totalTodos: number;
-    completedTodos: number;
-    unreadMessages: number;
-    totalIncorrectProblems: number;
-    completedIncorrectProblems: number;
-  };
-}
+// DashboardOverview 타입은 '@/types'에서 사용하며, 로컬 보조 타입은 UI 렌더링 편의를 위해 유지합니다.
 
 interface DashboardClientProps {
   session: Session;
-  initialData: DashboardData | null;
+  initialData: DashboardOverview | null;
 }
 
 export function DashboardClient({ session, initialData }: DashboardClientProps) {
   const router = useRouter();
   const [aiInput, setAiInput] = useState('');
+  const queryClient = useQueryClient();
 
   // React Query로 데이터 가져오기 (초기 데이터는 서버에서 제공)
   const {
     learningProgress,
-    todos,
     messages,
     aiChatExamples,
     incorrectAnswerNotes,
@@ -102,6 +34,14 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
     isLoading,
     error,
   } = useDashboardOverviewData(initialData || undefined);
+
+  // 오답 노트는 전용 API 훅으로 최신 데이터 우선 사용
+  const { incorrectAnswers: incorrectAnswersLive = [] } = useIncorrectAnswersData();
+  const notes = incorrectAnswersLive.length > 0 ? incorrectAnswersLive : incorrectAnswerNotes;
+
+  // 할 일 목록은 전용 API 훅으로 실제 데이터 연동
+  const { todos = [] } = useTodosData();
+  const updateTodoMutation = useUpdateTodo();
 
   // 데이터가 없으면 로딩 상태 표시
   if (isLoading) {
@@ -147,22 +87,12 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
 
   // 할 일 토글 함수 (React Query mutation 사용)
   const toggleTodo = async (id: string) => {
+    const current = todos.find((t) => t.id === id);
+    if (!current) return;
     try {
-      const response = await fetch('/api/dashboard/todos', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id,
-          completed: !todos.find((todo) => todo.id === id)?.completed,
-        }),
-      });
-
-      if (response.ok) {
-        // React Query가 자동으로 캐시를 무효화하고 다시 가져올 것
-        window.location.reload(); // 임시로 페이지 새로고침
-      }
+      await updateTodoMutation.mutateAsync({ id, completed: !current.completed });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'todos'] });
     } catch (error) {
       console.error('할 일 업데이트 실패:', error);
     }
@@ -183,8 +113,8 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
       });
 
       if (response.ok) {
-        // React Query가 자동으로 캐시를 무효화하고 다시 가져올 것
-        window.location.reload(); // 임시로 페이지 새로고침
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'messages'] });
       }
     } catch (error) {
       console.error('메시지 업데이트 실패:', error);
@@ -210,8 +140,8 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
       });
 
       if (response.ok) {
-        // React Query가 자동으로 캐시를 무효화하고 다시 가져올 것
-        window.location.reload(); // 임시로 페이지 새로고침
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'overview'] });
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'ai'] });
         setAiInput('');
       }
     } catch (error) {
@@ -322,11 +252,15 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
                   {aiChatExamples.map((example) => (
                     <div key={example.id} className="space-y-2 rounded-lg bg-gray-50 p-3">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900">{example.prompt}</p>
-                        <span className="text-xs text-gray-500">{example.date}</span>
+                        <p className="text-sm font-medium text-gray-900">
+                          {(example as any).prompt ?? (example as any).question ?? ''}
+                        </p>
+                        <span className="text-xs text-gray-500">
+                          {(example as any).date ?? (example as any).createdAt ?? ''}
+                        </span>
                       </div>
                       <p className="rounded border-l-4 border-blue-500 bg-white p-2 text-sm text-gray-600">
-                        {example.response}
+                        {(example as any).response ?? ''}
                       </p>
                     </div>
                   ))}
@@ -352,28 +286,37 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {todos.map((todo) => (
-                    <div
-                      key={todo.id}
-                      onClick={() => toggleTodo(todo.id)}
-                      className="flex cursor-pointer items-center space-x-3 rounded-lg p-2 transition-colors hover:bg-gray-50"
-                    >
-                      <div className="flex-shrink-0">
-                        {todo.completed ? (
-                          <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-500">
-                            <Check className="h-3 w-3 text-white" />
-                          </div>
-                        ) : (
-                          <Square className="h-5 w-5 text-gray-400" />
-                        )}
-                      </div>
-                      <span
-                        className={`flex-1 text-sm ${todo.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}
+                  {todos.length > 0 ? (
+                    todos.map((todo) => (
+                      <div
+                        key={todo.id}
+                        onClick={() => toggleTodo(todo.id)}
+                        className="flex cursor-pointer items-center space-x-3 rounded-lg p-2 transition-colors hover:bg-gray-50"
                       >
-                        {todo.text}
-                      </span>
+                        <div className="flex-shrink-0">
+                          {todo.completed ? (
+                            <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-500">
+                              <Check className="h-3 w-3 text-white" />
+                            </div>
+                          ) : (
+                            <Square className="h-5 w-5 text-gray-400" />
+                          )}
+                        </div>
+                        <span
+                          className={`flex-1 text-sm ${todo.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}
+                        >
+                          {todo.text}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div
+                      onClick={() => router.push('/my/todos')}
+                      className="cursor-pointer rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 hover:bg-gray-50"
+                    >
+                      오늘 할 일을 등록해 주세요.
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </Card>
@@ -393,7 +336,7 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  {incorrectAnswerNotes.map((note) => (
+                  {notes.map((note) => (
                     <div key={note.id} className="space-y-4 rounded-lg border border-gray-200 p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
@@ -422,7 +365,15 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
                         <p>오답 완료: {note.completedCount}문제</p>
                       </div>
                       <div className="flex space-x-2">
-                        <Button size="sm" className="bg-blue-500 text-white hover:bg-blue-600">
+                        <Button
+                          size="sm"
+                          className="bg-blue-500 text-white hover:bg-blue-600"
+                          onClick={() =>
+                            router.push(
+                              `/my/incorrect-answers?subject=${encodeURIComponent(note.subject)}`,
+                            )
+                          }
+                        >
                           문제 풀기
                         </Button>
                         <Button size="sm" variant="outline" className="flex items-center space-x-1">

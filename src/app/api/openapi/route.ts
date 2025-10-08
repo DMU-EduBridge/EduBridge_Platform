@@ -103,7 +103,14 @@ export async function GET() {
                             createdAt: { type: 'string', format: 'date-time' },
                             updatedAt: { type: 'string', format: 'date-time' },
                           },
-                          required: ['id', 'text', 'completed', 'priority', 'createdAt', 'updatedAt'],
+                          required: [
+                            'id',
+                            'text',
+                            'completed',
+                            'priority',
+                            'createdAt',
+                            'updatedAt',
+                          ],
                         },
                       },
                     },
@@ -135,7 +142,11 @@ export async function GET() {
               },
             },
           },
-          responses: { '200': { description: '성공' }, '400': { description: '검증 실패' }, '401': { description: '인증 필요' } },
+          responses: {
+            '200': { description: '성공' },
+            '400': { description: '검증 실패' },
+            '401': { description: '인증 필요' },
+          },
         },
         patch: {
           tags: ['Todos'],
@@ -154,5 +165,3 @@ export async function GET() {
 
   return NextResponse.json(spec);
 }
-
-

@@ -1,6 +1,7 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
+import { useLearningProgressData } from '@/hooks/dashboard/use-learning-progress';
 import { memo } from 'react';
 
 interface LearningProgressCardProps {
@@ -61,35 +62,42 @@ const LearningProgressCard = memo(function LearningProgressCard({
 });
 
 export const LearningProgressCards = memo(function LearningProgressCards() {
-  const learningData = [
-    {
-      subject: '한국의 역사',
-      grade: '중학교 3학년',
-      currentUnit: '한국 전쟁의 시작',
-      progress: 50,
-      gradeColor: 'green' as const,
-    },
-    {
-      subject: '알쏭달쏭 수학',
-      grade: '중학교 3학년',
-      currentUnit: '일차방정식',
-      progress: 75,
-      gradeColor: 'green' as const,
-    },
-    {
-      subject: '고등 영어',
-      grade: '고등학교 1학년',
-      currentUnit: 'Hello, everyone',
-      progress: 30,
-      gradeColor: 'red' as const,
-    },
-  ];
+  const { learningProgress = [], isLoading, error } = useLearningProgressData();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={i} className="animate-pulse p-6">
+            <div className="h-5 w-32 rounded bg-gray-200" />
+            <div className="mt-4 h-3 w-full rounded bg-gray-200" />
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        학습 진도를 불러오지 못했습니다.
+      </div>
+    );
+  }
+
+  if (learningProgress.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+        아직 학습 데이터가 없습니다.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {learningData.map((item, index) => (
+      {learningProgress.map((item) => (
         <LearningProgressCard
-          key={index}
+          key={item.id}
           subject={item.subject}
           grade={item.grade}
           currentUnit={item.currentUnit}

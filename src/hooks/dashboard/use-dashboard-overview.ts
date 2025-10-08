@@ -24,9 +24,10 @@ export function useDashboardOverview() {
       return response.json();
     },
     staleTime: 2 * 60 * 1000, // 2분
-    retry: 3,
+    retry: 1,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    refetchInterval: 5 * 60 * 1000, // 5분마다 자동 새로고침
+    refetchInterval: false, // 전역 자동 새로고침 비활성화 (대시보드 범위에서만 필요 시 트리거)
+    refetchOnWindowFocus: false,
   });
 }
 
