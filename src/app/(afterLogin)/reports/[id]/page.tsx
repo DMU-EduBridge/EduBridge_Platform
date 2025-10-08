@@ -1,23 +1,30 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ConceptMatrix } from '@/components/reports/concept-matrix';
+import { InsightsPanel } from '@/components/reports/insights-panel';
+import { KpiCards } from '@/components/reports/kpi-cards';
+import { RecentMistakes } from '@/components/reports/recent-mistakes';
+import { ReportHeader } from '@/components/reports/report-header';
+import { SubjectBreakdown } from '@/components/reports/subject-breakdown';
+import { TimelineSection } from '@/components/reports/timeline-section';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useReports } from '@/hooks/reports';
-import { ArrowLeft, Download, User } from 'lucide-react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useReportDetailSections } from '@/hooks/reports/use-report-detail';
+import { User } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 
-const statusColors: Record<string, string> = {
-  COMPLETED: 'bg-green-100 text-green-800',
-  IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
-  PENDING: 'bg-gray-100 text-gray-800',
-};
+// const _statusColors: Record<string, string> = {
+//   COMPLETED: 'bg-green-100 text-green-800',
+//   IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
+//   PENDING: 'bg-gray-100 text-gray-800',
+// };
 
 export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const { useReport, download } = useReports();
   const reportQuery = useReport(params.id);
+  const sections = useReportDetailSections(params.id);
 
   if (reportQuery.isLoading) {
     return (
@@ -38,24 +45,13 @@ export default function ReportDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/reports" className="text-sm text-gray-600 hover:underline">
-            <ArrowLeft className="mr-1 inline h-4 w-4" /> 목록으로
-          </Link>
-          <h1 className="text-2xl font-bold">{r.title}</h1>
-          <Badge className={statusColors[r.status] || ''}>{r.status}</Badge>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => download.mutate(r.id)}
-            disabled={download.isPending}
-          >
-            <Download className="mr-2 h-4 w-4" /> PDF 다운로드
-          </Button>
-        </div>
-      </div>
+      <ReportHeader
+        backHref="/reports"
+        title={r.title}
+        status={r.status}
+        onDownload={() => download.mutate(r.id)}
+        downloading={download.isPending}
+      />
 
       <Card>
         <CardHeader>
@@ -70,58 +66,47 @@ export default function ReportDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>총 문제 수</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{r.totalProblems}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>평균 점수</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{r.averageScore}점</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>완료율</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{r.completionRate}%</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>학생 수</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">{r.students}</CardContent>
-        </Card>
-      </div>
+      <KpiCards
+        totalProblems={r.totalProblems}
+        averageScore={r.averageScore}
+        completionRate={r.completionRate}
+        students={r.students}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>인사이트</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {(r.insights || []).map((s: string, i: number) => (
-            <div key={i} className="rounded bg-blue-50 p-2 text-sm text-gray-800">
-              {s}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <InsightsPanel insights={r.insights} recommendations={r.recommendations} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>개선 제안</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {(r.recommendations || []).map((s: string, i: number) => (
-            <div key={i} className="rounded bg-green-50 p-2 text-sm text-gray-800">
-              {s}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <SubjectBreakdown items={sections.breakdown} loading={sections.isLoading} />
+      <ConceptMatrix items={sections.concepts} loading={sections.isLoading} />
+      <TimelineSection points={sections.timeline} loading={sections.isLoading} />
+      <RecentMistakes
+        items={sections.recentMistakes}
+        loading={sections.isLoading}
+        onRetry={async (pid) => {
+          try {
+            // 문제-학습자료 매핑 조회
+            const res = await fetch(`/api/problems/material?ids=${encodeURIComponent(pid)}`);
+            let studyId: string | null = null;
+            if (res.ok) {
+              const json = await res.json();
+              const rec = (json?.data || [])[0];
+              if (rec?.studyId) studyId = rec.studyId as string;
+            }
+            if (!studyId) {
+              router.push(`/problems/${encodeURIComponent(pid)}?retry=true`);
+              return;
+            }
+            const idsParam = encodeURIComponent(pid);
+            router.push(
+              `/my/learning/${encodeURIComponent(studyId)}/problems/${encodeURIComponent(
+                pid,
+              )}?startNewAttempt=1&wrongOnly=1&ids=${idsParam}&from=report`,
+            );
+          } catch (e) {
+            console.error('리포트에서 재풀이 이동 실패:', e);
+            router.push('/my/learning?error=server-error');
+          }
+        }}
+      />
     </div>
   );
 }
