@@ -118,6 +118,7 @@ model User {
   searchQueries   SearchQuery[]
   progressEntries ProblemProgress[]
   attempts        Attempt[]
+  todos           Todo[]
 
   // Teacher Report System 관련 관계
   teacherReports TeacherReport[]
@@ -416,6 +417,24 @@ model ProblemAssignment {
   @@index([dueDate])
   @@index([isActive])
   @@map("problem_assignments")
+}
+
+model Todo {
+  id          String   @id @default(cuid())
+  userId      String
+  text        String
+  completed   Boolean  @default(false)
+  priority    String   @default("medium")
+  category    String?
+  description String?
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completed])
+  @@map("todos")
 }
 
 // Educational AI System Models - 실제 ChromaDB 기반 구조 반영
