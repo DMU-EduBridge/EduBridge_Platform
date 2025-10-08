@@ -50,10 +50,105 @@ export function IncorrectAnswersDetailClient({
 
   const { incorrectAnswers, subjects, stats } = incorrectAnswersData;
 
-  // 문제 다시 풀기 함수
-  const retryProblem = (problemId: string) => {
-    // 실제로는 문제 풀이 페이지로 이동
-    router.push(`/problems/${problemId}?retry=true`);
+  // 단일 문제 재풀이: 해당 문제만 풀고 완료 시 오답 노트로 복귀
+  const retryProblem = async (problemId: string) => {
+    try {
+      // studyId 조회 (배치 API 우선)
+      let studyId: string | null = null;
+      try {
+        const batch = await fetch(`/api/problems/material?ids=${encodeURIComponent(problemId)}`);
+        if (batch.ok) {
+          const bj = await batch.json();
+          const rec = (bj?.data || [])[0];
+          if (rec?.studyId) studyId = rec.studyId as string;
+        }
+      } catch {}
+
+      if (!studyId) {
+        try {
+          const res = await fetch(`/api/problems/${encodeURIComponent(problemId)}/material`);
+          if (res.ok) {
+            const js = await res.json();
+            if (js?.studyId) studyId = js.studyId as string;
+          }
+        } catch {}
+      }
+
+      if (!studyId) {
+        // 학습 자료 매핑이 없으면 단건 상세로 폴백
+        router.push(`/problems/${encodeURIComponent(problemId)}?retry=true`);
+        return;
+      }
+
+      const idsParam = encodeURIComponent(problemId);
+      router.push(
+        `/my/learning/${encodeURIComponent(studyId)}/problems/${encodeURIComponent(
+          problemId,
+        )}?startNewAttempt=1&wrongOnly=1&ids=${idsParam}&from=incorrect`,
+      );
+    } catch (e) {
+      console.error('단일 문제 재풀이 이동 실패:', e);
+      router.push('/my/learning?error=server-error');
+    }
+  };
+
+  // 세트 단위 틀린 문제만 풀기
+  const startWrongOnlySession = async (note: IncorrectAnswerNoteItem) => {
+    try {
+      const wrongIds = (note.problems || []).map((p) => p.id);
+      if (wrongIds.length === 0) {
+        return;
+      }
+
+      // 배치 조회로 매핑 상태 확인
+      let studyId: string | null = null;
+      try {
+        const batch = await fetch(
+          `/api/problems/material?ids=${encodeURIComponent(wrongIds.join(','))}`,
+        );
+        if (batch.ok) {
+          const bj = await batch.json();
+          const found = (bj?.data || []).find((r: any) => r.studyId);
+          if (found?.studyId) studyId = found.studyId as string;
+        }
+      } catch {}
+      // 그래도 없으면 개별 조회 시도
+      if (!studyId) {
+        for (const pid of wrongIds) {
+          try {
+            const res = await fetch(`/api/problems/${encodeURIComponent(pid)}/material`);
+            if (!res.ok) continue;
+            const json = await res.json();
+            if (json?.studyId) {
+              studyId = json.studyId as string;
+              break;
+            }
+          } catch (_) {}
+        }
+      }
+
+      if (!studyId) {
+        // note.id가 학습 자료 id인 경우가 많으므로 우선 시도, 없으면 첫 문제 폴백
+        const fallbackStudyId = (note as any)?.id || null;
+        if (fallbackStudyId) {
+          const idsParam = encodeURIComponent(wrongIds.join(','));
+          router.push(
+            `/my/learning/${encodeURIComponent(fallbackStudyId)}/problems?wrongOnly=1&ids=${idsParam}`,
+          );
+          return;
+        }
+        // 어떤 문제도 학습 자료에 매핑되지 않은 경우: 첫 문제로 직접 이동 (폴백)
+        router.push(`/problems/${encodeURIComponent(wrongIds[0])}?retry=true`);
+        return;
+      }
+      const idsParam = encodeURIComponent(wrongIds.join(','));
+      router.push(
+        `/my/learning/${encodeURIComponent(studyId)}/problems?wrongOnly=1&ids=${idsParam}`,
+      );
+    } catch (e) {
+      console.error('틀린 문제 세션 시작 실패:', e);
+      router.push('/my/learning?error=server-error');
+    }
   };
 
   // 과목별 필터링
@@ -191,8 +286,13 @@ export function IncorrectAnswersDetailClient({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button size="sm" className="bg-blue-500 text-white hover:bg-blue-600">
-                        문제 풀기
+                      <Button
+                        size="sm"
+                        className="bg-blue-500 text-white hover:bg-blue-600"
+                        onClick={() => startWrongOnlySession(answer)}
+                        title="세트의 모든 틀린 문제를 순서대로 풉니다"
+                      >
+                        세트 전체 다시 풀기
                       </Button>
                       <Button size="sm" variant="outline" className="flex items-center space-x-1">
                         <Download className="h-4 w-4" />
@@ -249,9 +349,9 @@ export function IncorrectAnswersDetailClient({
                             variant="outline"
                             onClick={() => retryProblem(problem.id)}
                             className="ml-4 flex items-center gap-1"
+                            title="이 문제 1개만 다시 풀기"
                           >
-                            <RotateCcw className="h-3 w-3" />
-                            다시 풀기
+                            <RotateCcw className="h-3 w-3" />이 문제만 다시 풀기
                           </Button>
                         </div>
 
