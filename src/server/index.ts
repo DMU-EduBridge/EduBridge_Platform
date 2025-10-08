@@ -1,4 +1,4 @@
-// import { AnalyticsService } from './services/analytics.service'; // 삭제됨
+import { AnalyticsService } from './services/analytics.service';
 import { ChatbotService } from './services/chatbot.service';
 import { ProblemService } from './services/problem';
 import { ProblemStatsService } from './services/problem/problem-stats.service';

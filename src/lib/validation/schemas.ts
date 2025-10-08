@@ -152,7 +152,6 @@ export const LearningMaterialsQuerySchema = z.object({
   subject: z.string().nullable().optional(),
   difficulty: z.string().nullable().optional(), // Prisma에서는 String 타입
   search: z.string().nullable().optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -162,7 +161,6 @@ export const CreateLearningMaterialSchema = z.object({
   content: z.string().min(1),
   subject: z.string().min(1),
   difficulty: z.string(), // Prisma에서는 String 타입
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
   estimatedTime: z.number().min(1).nullable().optional(),
   files: z.string().nullable().optional(),
 });
@@ -173,7 +171,6 @@ export const UpdateLearningMaterialSchema = z.object({
   content: z.string().min(1).optional(),
   subject: z.string().min(1).optional(),
   difficulty: z.string().optional(), // Prisma에서는 String 타입
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
   estimatedTime: z.number().min(1).nullable().optional(),
   files: z.string().nullable().optional(),
   isActive: z.boolean().optional(),

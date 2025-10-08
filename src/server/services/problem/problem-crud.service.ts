@@ -17,7 +17,7 @@ export class ProblemCrudService {
   async getProblemsByStudyId(
     studyId: string,
     options: { page?: number; limit?: number } = {},
-  ): Promise<(Problem & { creator: { id: string; name: string; email: string } | null })[]> {
+  ): Promise<Problem[]> {
     try {
       // 학습 자료에 연결된 모든 문제를 가져오기 위해 페이지네이션 제거
       const problems = await prisma.problem.findMany({

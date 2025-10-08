@@ -83,7 +83,7 @@ export class LearningMaterialsService {
     return {
       ...material,
       problems: material.materialProblems.map((mp) => mp.problem),
-      problemCount: material._count?.materialProblems || 0,
+      problemCount: material._count.materialProblems,
     };
   }
 
@@ -100,7 +100,7 @@ export class LearningMaterialsService {
         difficulty: data.difficulty,
         estimatedTime: data.estimatedTime ?? null,
         files: data.files ?? null,
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
         isActive: true,
       },
       include: {
@@ -114,7 +114,7 @@ export class LearningMaterialsService {
 
     return {
       ...material,
-      problemCount: material._count?.materialProblems || 0,
+      problemCount: material._count.materialProblems,
     };
   }
 
@@ -142,7 +142,7 @@ export class LearningMaterialsService {
 
     return {
       ...material,
-      problemCount: material._count?.materialProblems || 0,
+      problemCount: material._count.materialProblems,
     };
   }
 
