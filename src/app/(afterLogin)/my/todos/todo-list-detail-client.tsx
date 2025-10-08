@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useTodosData, useUpdateTodo } from '@/hooks/dashboard/use-todos';
+import { useCreateTodo, useTodosData, useUpdateTodo } from '@/hooks/dashboard/use-todos';
 import { ArrowLeft, Calendar, Check, Clock, Plus, Square } from 'lucide-react';
 import { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
@@ -44,11 +44,17 @@ export function TodoListDetailClient({
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');
   const [newTodo, setNewTodo] = useState('');
+  const [newCategory, setNewCategory] = useState<string>('기타');
+  const [newDescription, setNewDescription] = useState<string>('');
+  const [newPriority, setNewPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [newDueDate, setNewDueDate] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // React Query로 데이터 가져오기 (초기 데이터는 서버에서 제공)
   const { todos = [], isLoading, error } = useTodosData();
   const todosTyped = todos as unknown as UITodo[];
   const updateTodoMutation = useUpdateTodo();
+  const createTodoMutation = useCreateTodo();
 
   // 초기 데이터에서 categories와 stats 추출 (실제로는 API에서 가져와야 함)
   const categories: string[] = initialData?.categories || [
@@ -107,29 +113,28 @@ export function TodoListDetailClient({
   // 새 할 일 추가 함수 (API 호출)
   const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTodo.trim()) return;
+    setErrorMessage(null);
+    if (!newTodo.trim()) {
+      setErrorMessage('할 일 내용을 입력해주세요.');
+      return;
+    }
 
     try {
-      const response = await fetch('/api/dashboard/todos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: newTodo,
-          priority: 'medium',
-          category: '기타',
-          description: '',
-        }),
+      await createTodoMutation.mutateAsync({
+        text: newTodo,
+        priority: newPriority,
+        category: newCategory,
+        description: newDescription,
+        ...(newDueDate ? { dueDate: newDueDate } : {}),
       });
-
-      if (response.ok) {
-        setNewTodo('');
-        // React Query가 자동으로 캐시를 무효화하고 다시 가져올 것
-        window.location.reload(); // 임시로 페이지 새로고침
-      }
+      setNewTodo('');
+      setNewCategory('기타');
+      setNewDescription('');
+      setNewPriority('medium');
+      setNewDueDate('');
     } catch (error) {
       console.error('할 일 추가 실패:', error);
+      setErrorMessage('할 일 추가에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
@@ -226,19 +231,86 @@ export function TodoListDetailClient({
             </div>
 
             {/* 새 할 일 추가 */}
-            <form onSubmit={addTodo} className="flex gap-3">
-              <input
-                type="text"
-                value={newTodo}
-                onChange={(e) => setNewTodo(e.target.value)}
-                placeholder="새 할 일을 입력하세요..."
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-              />
-              <Button type="submit" className="flex items-center gap-2">
+            <form onSubmit={addTodo} className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+                <div className="md:col-span-6">
+                  <label className="mb-1 block text-xs text-gray-600">할 일</label>
+                  <input
+                    type="text"
+                    value={newTodo}
+                    onChange={(e) => setNewTodo(e.target.value)}
+                    placeholder="예: 수학 복습하기"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    disabled={createTodoMutation.isPending}
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="mb-1 block text-xs text-gray-600">카테고리</label>
+                  <input
+                    list="todo-categories"
+                    type="text"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="예: 과제 / 복습 / 기타"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    disabled={createTodoMutation.isPending}
+                  />
+                  <datalist id="todo-categories">
+                    {categories.map((c) => (
+                      <option value={c} key={c} />
+                    ))}
+                  </datalist>
+                </div>
+                <div className="md:col-span-3">
+                  <label className="mb-1 block text-xs text-gray-600">우선순위</label>
+                  <select
+                    value={newPriority}
+                    onChange={(e) => setNewPriority(e.target.value as 'high' | 'medium' | 'low')}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    disabled={createTodoMutation.isPending}
+                  >
+                    <option value="high">높음</option>
+                    <option value="medium">보통</option>
+                    <option value="low">낮음</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+                <div className="md:col-span-9">
+                  <label className="mb-1 block text-xs text-gray-600">설명(선택)</label>
+                  <input
+                    type="text"
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                    placeholder="예: 내일까지 2단원까지"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    disabled={createTodoMutation.isPending}
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="mb-1 block text-xs text-gray-600">마감일(선택)</label>
+                  <input
+                    type="date"
+                    value={newDueDate}
+                    onChange={(e) => setNewDueDate(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    disabled={createTodoMutation.isPending}
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={createTodoMutation.isPending}
+                className="flex w-full items-center gap-2"
+              >
                 <Plus className="h-4 w-4" />
-                추가
+                {createTodoMutation.isPending ? '추가 중...' : '추가'}
               </Button>
             </form>
+
+            {errorMessage && <div className="text-sm text-red-600">{errorMessage}</div>}
 
             {/* 할 일 목록 */}
             <div className="space-y-3">
