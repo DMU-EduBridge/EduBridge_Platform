@@ -60,36 +60,69 @@ export default async function StudyProblemsPage({
     redirect('/my/learning?error=material-not-found');
   }
 
-  // 해당 학습 자료의 문제들 조회
-  const problems = await prisma.problem.findMany({
-    where: {
-      materialProblems: {
-        some: {
-          learningMaterialId: studyId,
-        },
+  // 틀린 문제만 필터링(ids) 지원
+  const idsParam = typeof searchParams?.ids === 'string' ? searchParams?.ids : undefined;
+  const wrongOnly =
+    searchParams?.wrongOnly === '1' || searchParams?.wrongOnly === 'true' ? true : false;
+  let problems;
+  if (idsParam) {
+    // ids가 전달되면 studyId 매핑 없이 ids로 직접 조회 (오답세션용)
+    const idList = idsParam
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    problems = await prisma.problem.findMany({
+      where: { id: { in: idList }, isActive: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        type: true,
+        difficulty: true,
+        subject: true,
+        points: true,
+        timeLimit: true,
       },
-      isActive: true,
-    },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      type: true,
-      difficulty: true,
-      subject: true,
-      points: true,
-      timeLimit: true,
-    },
-    orderBy: {
-      createdAt: 'asc',
-    },
-  });
+      orderBy: { createdAt: 'asc' },
+    });
+  } else {
+    // 일반 학습 세션: studyId 기반 조회
+    problems = await prisma.problem.findMany({
+      where: {
+        materialProblems: {
+          some: {
+            learningMaterialId: studyId,
+          },
+        },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        type: true,
+        difficulty: true,
+        subject: true,
+        points: true,
+        timeLimit: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
 
   if (problems.length === 0) {
     redirect('/my/learning?error=no-problems');
   }
 
   const encodedStudyId = encodeURIComponent(studyId);
+  const suffixQuery = (() => {
+    const parts: string[] = [];
+    if (wrongOnly) parts.push('wrongOnly=1');
+    if (idsParam) parts.push(`ids=${encodeURIComponent(idsParam)}`);
+    return parts.length ? `?${parts.join('&')}` : '';
+  })();
 
   // 현재 진행 상황 확인
   const progressEntries = await prisma.problemProgress.findMany({
@@ -127,7 +160,11 @@ export default async function StudyProblemsPage({
     (Array.isArray(searchParams?.retry) && searchParams.retry.includes('1'));
 
   if (retryRequested) {
-    redirect(`/my/learning/${encodedStudyId}/problems/${firstProblem.id}?startNewAttempt=1`);
+    redirect(
+      `/my/learning/${encodedStudyId}/problems/${firstProblem.id}?startNewAttempt=1${
+        suffixQuery ? `&${suffixQuery.slice(1)}` : ''
+      }`,
+    );
   }
 
   const attemptNumbers = Array.from(
@@ -142,7 +179,7 @@ export default async function StudyProblemsPage({
   );
 
   if (latestAttemptEntries.length === 0) {
-    redirect(`/my/learning/${encodedStudyId}/problems/${firstProblem.id}`);
+    redirect(`/my/learning/${encodedStudyId}/problems/${firstProblem.id}${suffixQuery}`);
   }
 
   const completedSet = new Set(latestAttemptEntries.map((entry) => entry.problemId));
@@ -150,8 +187,8 @@ export default async function StudyProblemsPage({
 
   if (totalProblems > 0 && completedSet.size < totalProblems) {
     const nextProblem = problems.find((problem) => !completedSet.has(problem.id)) ?? firstProblem;
-    redirect(`/my/learning/${encodedStudyId}/problems/${nextProblem.id}`);
+    redirect(`/my/learning/${encodedStudyId}/problems/${nextProblem.id}${suffixQuery}`);
   }
 
-  redirect(`/my/learning/${encodedStudyId}/results`);
+  redirect(`/my/learning/${encodedStudyId}/results${suffixQuery}`);
 }
