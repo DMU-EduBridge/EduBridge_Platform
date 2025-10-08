@@ -12,11 +12,12 @@ import { problemKeys } from '../keys/problems';
  * LLM 문제 생성 훅
  */
 export function useGenerateProblems() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (request: LLMProblemGenerationRequest) => problemsService.generateProblems(request),
     onSuccess: () => {
       // 문제 목록 새로고침
-      const queryClient = useQueryClient();
       queryClient.invalidateQueries({ queryKey: problemKeys.all });
     },
   });

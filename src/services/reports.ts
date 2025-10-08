@@ -11,6 +11,7 @@ export const reportsService = {
   }) => api.get<{ reports: Report[]; total: number }>('/reports', { params }),
 
   getReport: (id: string) => api.get<Report>(`/reports/${id}`),
+  getReportDetail: (id: string) => api.get(`/reports/${id}/detail`),
 
   createReport: (data: {
     title: string;
@@ -26,4 +27,5 @@ export const reportsService = {
     }),
 
   getReportStats: () => api.get('/reports/stats'),
+  // 단일 상세 API만 유지
 };
