@@ -57,6 +57,12 @@ enum ProblemStatus {
   ARCHIVED
 }
 
+enum LearningMaterialStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 enum ProcessingStatus {
   PENDING
   PROCESSING
@@ -219,7 +225,7 @@ model LearningMaterial {
   difficulty       String
   estimatedTime    Int?
   files            String?
-  status           String
+  status           LearningMaterialStatus    @default(DRAFT)
   isActive         Boolean                   @default(true)
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt

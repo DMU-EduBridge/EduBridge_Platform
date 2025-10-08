@@ -65,7 +65,7 @@ export class MaterialService {
         }),
         ...(subject && { subject }),
         ...(difficulty && { difficulty }),
-        ...(status && { status }),
+        ...(status && { status: status as any }),
         isActive: true,
       };
 
@@ -105,7 +105,7 @@ export class MaterialService {
           content: data.content,
           subject: data.subject,
           difficulty: data.difficulty,
-          status: data.status,
+          status: data.status as any,
           estimatedTime: data.estimatedTime || null,
           files: data.files || null,
         },
@@ -136,7 +136,7 @@ export class MaterialService {
           ...(data.content !== undefined && { content: data.content }),
           ...(data.subject !== undefined && { subject: data.subject }),
           ...(data.difficulty !== undefined && { difficulty: data.difficulty }),
-          ...(data.status !== undefined && { status: data.status }),
+          ...(data.status !== undefined && { status: data.status as any }),
           ...(data.estimatedTime !== undefined && { estimatedTime: data.estimatedTime || null }),
           ...(data.files !== undefined && { files: data.files || null }),
         },

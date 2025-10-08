@@ -3,29 +3,14 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { calculatePercentage, calculateScore, getGrade } from '@/lib/utils/learning-utils';
+import { LearningMaterial, Problem } from '@prisma/client';
 import { CheckCircle, Home, RotateCcw, XCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-interface Problem {
-  id: string;
-  title: string;
-  content: string;
-  correctAnswer: string;
-  explanation?: string;
-  points: number;
-}
-
-interface LearningMaterial {
-  id: string;
-  title: string;
-  description?: string;
-  subject: string;
-}
-
 interface ResultsClientProps {
   studyId: string;
-  problems: Problem[];
+  problems: (Problem & { creator: { id: string; name: string; email: string } | null })[];
   learningMaterial: LearningMaterial | null;
   userId: string;
 }
@@ -52,10 +37,16 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
           const result = await response.json();
           if (result.success) {
             setLearningStatus(result.data);
+          } else {
+            console.error('API 응답 오류:', result.error);
           }
+        } else {
+          console.error('HTTP 오류:', response.status, response.statusText);
+          setError(`서버 오류: ${response.status}`);
         }
       } catch (error) {
         console.error('학습 상태 조회 실패:', error);
+        setError('네트워크 오류가 발생했습니다.');
       } finally {
         setIsLoading(false);
       }
@@ -87,6 +78,26 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
   };
 
   const gradeInfo = getGrade(percentage);
+
+  // 에러 상태 추가
+  const [error, setError] = useState<string | null>(null);
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">오류가 발생했습니다</h1>
+          <p className="mt-2 text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

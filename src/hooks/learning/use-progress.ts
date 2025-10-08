@@ -46,6 +46,8 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
     // 새 시도 시작 시 캐시 무효화를 위해 staleTime을 0으로 설정
     staleTime: startNewAttempt ? 0 : 5 * 60 * 1000, // 새 시도: 0, 일반: 5분
     gcTime: 60 * 60 * 1000, // 1시간
+    retry: 3, // 새로고침 시 재시도 횟수 증가
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 지수 백오프
   });
 
   // 문제 완료 상태 저장

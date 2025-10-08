@@ -49,7 +49,7 @@ export function ProblemDetailClient({
   const [startTime, setStartTime] = useState<Date>(new Date());
 
   // 커스텀 훅들
-  const { addCompletedProblem, activeAttemptNumber } = useProgress(studyId, shouldStartNewAttempt);
+  const { addCompletedProblem, activeAttemptNumber, isError: progressError, error: progressErrorData } = useProgress(studyId, shouldStartNewAttempt);
 
   // 학습 세션 정보 가져오기
   const { data: studyItem } = useStudyItem(studyId);
@@ -116,10 +116,60 @@ export function ProblemDetailClient({
     }
   }, [initialProblem, showResult, resetSubmission]);
 
+  // 에러 처리
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('문제 풀이 중 에러 발생:', event.error);
+      setError('문제를 불러오는 중 오류가 발생했습니다.');
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('처리되지 않은 Promise 거부:', event.reason);
+      setError('네트워크 오류가 발생했습니다.');
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
+  // React Query 에러 처리
+  useEffect(() => {
+    if (progressError) {
+      console.error('진행 상태 조회 실패:', progressErrorData);
+      setError('학습 진행 상태를 불러올 수 없습니다.');
+    }
+  }, [progressError, progressErrorData]);
+
+  // 에러 상태 추가
+  const [error, setError] = useState<string | null>(null);
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">오류가 발생했습니다</h1>
+          <p className="mt-2 text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!problem) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
           <div className="text-lg text-gray-600">문제를 불러오는 중...</div>
         </div>
       </div>

@@ -208,8 +208,14 @@ export default async function ProblemDetailPage({ params, searchParams }: Proble
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">문제를 불러올 수 없습니다</h1>
+          <h1 className="text-2xl font-bold text-red-600">문제를 불러올 수 없습니다</h1>
           <p className="mt-2 text-gray-600">잠시 후 다시 시도해주세요.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+          >
+            다시 시도
+          </button>
         </div>
       </div>
     );
