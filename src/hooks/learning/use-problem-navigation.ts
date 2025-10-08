@@ -23,13 +23,14 @@ export function useProblemNavigation({
   }, [searchParams]);
 
   const handleNext = useCallback(() => {
+    const suffix = startNewAttemptParam ? '?startNewAttempt=1' : '';
     if (currentIndex < totalCount && nextProblem) {
-      router.push(`/my/learning/${studyId}/problems/${nextProblem.id}`);
+      router.push(`/my/learning/${studyId}/problems/${nextProblem.id}${suffix}`);
     } else {
       // 마지막 문제인 경우 결과 페이지로 이동
-      router.push(`/my/learning/${studyId}/results`);
+      router.push(`/my/learning/${studyId}/results${suffix}`);
     }
-  }, [currentIndex, totalCount, nextProblem, studyId, router]);
+  }, [currentIndex, totalCount, nextProblem, studyId, router, startNewAttemptParam]);
 
   const handleBackToLearning = useCallback(() => {
     router.push('/my/learning');

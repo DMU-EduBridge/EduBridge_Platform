@@ -53,10 +53,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const attemptNumbers = Array.from(new Set(completedAttempts.map((attempt) => attempt.attemptNumber))).sort(
-      (a, b) => a - b,
-    );
-    const latestAttemptNumber = attemptNumbers.length > 0 ? attemptNumbers[attemptNumbers.length - 1] : 1;
+    const attemptNumbers = Array.from(
+      new Set(completedAttempts.map((attempt) => attempt.attemptNumber)),
+    ).sort((a, b) => a - b);
+    const latestAttemptNumber =
+      attemptNumbers.length > 0 ? attemptNumbers[attemptNumbers.length - 1] : 1;
 
     const latestAttemptEntries = completedAttempts.filter(
       (attempt) => attempt.attemptNumber === latestAttemptNumber,
@@ -75,6 +76,10 @@ export async function GET(request: NextRequest) {
     });
 
     const completedProblems = Array.from(latestAttempts.keys());
+    // 누락 문제 식별: 자료의 전체 문제와 최신 시도 문제 비교
+    const allProblemIds = new Set(allProblems.map((p) => p.id));
+    const attemptedIds = new Set(completedProblems);
+    const missingProblemIds = Array.from(allProblemIds).filter((id) => !attemptedIds.has(id));
     const correctAnswers = Array.from(latestAttempts.values()).filter((a) => a.isCorrect).length;
     const wrongAnswers = completedProblems.length - correctAnswers;
 
@@ -99,6 +104,7 @@ export async function GET(request: NextRequest) {
           timeSpent: attempt.timeSpent,
         })), // 최신 시도만 (결과 페이지용)
         latestAttempts: Array.from(latestAttempts.values()), // 최신 시도만 (완료 상태 판단용)
+        missingProblemIds,
       },
     });
   } catch (error) {

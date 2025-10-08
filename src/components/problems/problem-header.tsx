@@ -3,76 +3,80 @@
 import { Button } from '@/components/ui/button';
 import { Home } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { memo } from 'react';
-import { ProblemElapsedTime } from './problem-elapsed-time';
+import { memo, useEffect, useState } from 'react';
 
 interface ProblemHeaderProps {
   currentIndex: number;
   totalCount: number;
-  progressData: {
-    total: number;
-    completed: number;
-  };
   attemptNumber?: number;
   startTime?: Date;
   isActive?: boolean;
+  studyTitle?: string | undefined;
+  subject?: string | undefined;
 }
 
 export const ProblemHeader = memo(function ProblemHeader({
   currentIndex,
   totalCount,
-  progressData,
-  attemptNumber,
   startTime,
-  isActive,
+  studyTitle,
+  subject,
 }: ProblemHeaderProps) {
   const router = useRouter();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // 타이머 업데이트
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // 타이머 포맷팅 (MM:SS)
+  const formatTimer = () => {
+    if (!startTime) return '00:00';
+    const diffSeconds = Math.floor((currentTime.getTime() - startTime.getTime()) / 1000);
+    const timeSpent = Number.isFinite(diffSeconds) ? Math.max(0, diffSeconds) : 0;
+    const minutes = Math.floor(timeSpent / 60);
+    const seconds = timeSpent % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="mb-6">
-      {/* 네비게이션 버튼들 */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      {/* 상단 헤더 - 피그마 디자인 */}
+      <div className="mb-6 flex flex-col gap-4 px-6 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">단원별 학습하기</h1>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-base font-semibold text-gray-700 sm:text-lg">
+            <span className="text-blue-600">{formatTimer()}</span>
+          </div>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => router.push('/my/learning')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
           >
-            <Home className="h-4 w-4" />
-            학습 목록
+            <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="text-sm font-medium sm:text-base">HOME</span>
           </Button>
         </div>
       </div>
 
-      {/* 진행률 정보 */}
-      <div className="mb-4 rounded-lg bg-blue-50 p-4">
-        <div className="mb-2 flex items-center justify-between text-sm text-blue-700">
-          <span>총 문항 수: {progressData.total} 문제</span>
-          <span>완료된 문항: {progressData.completed} 문제</span>
-          <span>남은 문항 수: {Math.max(0, progressData.total - progressData.completed)} 문제</span>
-        </div>
-
-        {/* 진행 상황 표시 */}
-        <div className="mb-2">
-          <div className="text-center text-sm text-blue-600">
-            {progressData.completed} / {progressData.total} 문제 완료
+      {/* 파란색 네비게이션 바 - 피그마 디자인 */}
+      <div className="mb-8  bg-blue-600 px-6 py-4 text-white sm:px-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-base font-semibold sm:text-lg">
+            {studyTitle || '단원별 학습하기'}
+            {subject && ` - ${subject}`}
           </div>
-          {typeof attemptNumber === 'number' && attemptNumber > 0 && (
-            <div className="mt-1 text-center text-xs text-blue-500">
-              {attemptNumber}번째 시도 진행 중
-            </div>
-          )}
-          {startTime && <ProblemElapsedTime startTime={startTime} isActive={isActive ?? true} />}
+          <div className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:gap-6 sm:text-sm">
+            <span>총 문항 수: {totalCount} 문제</span>
+            <span>남은 문항 수: {Math.max(0, totalCount - currentIndex + 1)} 문제</span>
+          </div>
         </div>
-      </div>
-
-      {/* 현재 문제 정보 */}
-      <div className="text-center text-gray-600">
-        문제 {currentIndex} / {totalCount}
-        {progressData.completed === progressData.total && (
-          <span className="ml-2 font-medium text-green-600">(모든 문제 완료)</span>
-        )}
       </div>
     </div>
   );

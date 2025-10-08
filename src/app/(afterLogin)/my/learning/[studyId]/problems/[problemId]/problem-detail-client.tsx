@@ -9,7 +9,8 @@ import { ProblemOptions } from '@/components/problems/problem-options';
 import { useProblemNavigation } from '@/hooks/learning/use-problem-navigation';
 import { useProblemSubmission } from '@/hooks/learning/use-problem-submission';
 import { useProgress } from '@/hooks/learning/use-progress';
-import { useEffect, useMemo, useState } from 'react';
+import { useStudyItem } from '@/hooks/learning/use-study-item';
+import { useEffect, useRef, useState } from 'react';
 
 interface Problem {
   id: string;
@@ -48,10 +49,10 @@ export function ProblemDetailClient({
   const [startTime, setStartTime] = useState<Date>(new Date());
 
   // 커스텀 훅들
-  const { progressData, addCompletedProblem, activeAttemptNumber } = useProgress(
-    studyId,
-    shouldStartNewAttempt,
-  );
+  const { addCompletedProblem, activeAttemptNumber } = useProgress(studyId, shouldStartNewAttempt);
+
+  // 학습 세션 정보 가져오기
+  const { data: studyItem } = useStudyItem(studyId);
 
   const { startNewAttemptParam, handleNext } = useProblemNavigation({
     studyId,
@@ -59,6 +60,16 @@ export function ProblemDetailClient({
     totalCount,
     nextProblem,
   });
+
+  // 시도 번호 고정: 첫 결정된 시도 번호를 이후 제출에 계속 사용하여 시도 번호 흔들림 방지
+  const lockedAttemptNumberRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (typeof activeAttemptNumber === 'number' && activeAttemptNumber > 0) {
+      if (lockedAttemptNumberRef.current === null) {
+        lockedAttemptNumberRef.current = activeAttemptNumber;
+      }
+    }
+  }, [activeAttemptNumber]);
 
   const {
     selectedAnswer,
@@ -70,7 +81,7 @@ export function ProblemDetailClient({
     setInitialStartNewAttempt,
   } = useProblemSubmission({
     problem,
-    activeAttemptNumber,
+    activeAttemptNumber: lockedAttemptNumberRef.current ?? activeAttemptNumber,
     addCompletedProblem,
   });
 
@@ -90,23 +101,7 @@ export function ProblemDetailClient({
     }
   }, [shouldStartNewAttempt]);
 
-  useEffect(() => {
-    if (!startNewAttemptParam) {
-      return;
-    }
-
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('startNewAttempt');
-      window.history.replaceState(null, '', url.toString());
-    } catch (error) {
-      console.warn('startNewAttempt 쿼리 제거 실패:', error);
-    }
-  }, [startNewAttemptParam]);
+  // NOTE: startNewAttempt 쿼리를 유지하여 새로고침에도 컨텍스트 보존
 
   // 문제 데이터 로드 및 진행 상태 복원
   useEffect(() => {
@@ -121,11 +116,6 @@ export function ProblemDetailClient({
     }
   }, [initialProblem, showResult, resetSubmission]);
 
-  // timeSpent 계산 최적화
-  const timeSpent = useMemo(() => {
-    return Math.floor((new Date().getTime() - startTime.getTime()) / 1000);
-  }, [startTime]);
-
   if (!problem) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -136,44 +126,74 @@ export function ProblemDetailClient({
     );
   }
 
+  // 이전 문제로 이동하는 핸들러
+  const handlePrevious = () => {
+    if (currentIndex > 1) {
+      // 이전 문제로 이동 로직
+      window.history.back();
+    }
+  };
+
+  // 다음 이동 시 항상 저장 보장 (마지막 문제뿐 아니라 일반 이동도 포함)
+  const handleNextEnsured = () => {
+    if (!showResult) {
+      if (!selectedAnswer) {
+        // 답안을 선택하지 않으면 저장 및 이동을 허용하지 않음
+        try {
+          // 브라우저 환경에서만 알림
+          if (typeof window !== 'undefined') {
+            window.alert('답안을 선택한 후 제출해 주세요.');
+          }
+        } catch {}
+        return;
+      }
+      try {
+        Promise.resolve(handleSubmit()).finally(() => {
+          handleNext();
+        });
+      } catch (_e) {
+        handleNext();
+      }
+      return;
+    }
+    handleNext();
+  };
+
   return (
     <LearningErrorBoundary>
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="mx-auto max-w-4xl px-4">
+      <div className="min-h-screen bg-white py-8">
+        <div className="mx-auto">
           <ProblemHeader
             currentIndex={currentIndex}
             totalCount={totalCount}
-            progressData={progressData}
             attemptNumber={activeAttemptNumber}
             startTime={startTime}
             isActive={!showResult}
+            studyTitle={studyItem?.title}
+            subject={problem?.subject}
           />
+          <div className="flex flex-col gap-4 px-6">
+            <ProblemContent problem={problem} currentIndex={currentIndex} />
 
-          <ProblemContent problem={problem} />
+            <ProblemOptions
+              problem={problem}
+              selectedAnswer={selectedAnswer}
+              showResult={showResult}
+              onAnswerSelect={handleAnswerSelect}
+            />
 
-          <ProblemOptions
-            problem={problem}
-            selectedAnswer={selectedAnswer}
-            showResult={showResult}
-            onAnswerSelect={handleAnswerSelect}
-          />
+            <ProblemExplanation problem={problem} showResult={showResult} isCorrect={isCorrect} />
 
-          <ProblemActions
-            selectedAnswer={selectedAnswer}
-            showResult={showResult}
-            isCorrect={isCorrect}
-            isLastProblem={currentIndex === totalCount}
-            onSubmit={handleSubmit}
-            onNext={handleNext}
-            timeSpent={timeSpent}
-          />
-
-          <ProblemExplanation
-            problem={problem}
-            showResult={showResult}
-            isCorrect={isCorrect}
-            selectedAnswer={selectedAnswer}
-          />
+            <ProblemActions
+              selectedAnswer={selectedAnswer}
+              showResult={showResult}
+              isLastProblem={currentIndex === totalCount}
+              onSubmit={handleSubmit}
+              onNext={handleNextEnsured}
+              onPrevious={handlePrevious}
+              currentIndex={currentIndex}
+            />
+          </div>
         </div>
       </div>
     </LearningErrorBoundary>

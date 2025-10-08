@@ -35,6 +35,22 @@ export async function POST(request: NextRequest) {
         learningMaterialId: studyId,
       },
     });
+    // 현재 제출한 problemId가 해당 학습(studyId)에 속하는지 검증
+    const isProblemInStudy = await prisma.learningMaterialProblem.findFirst({
+      where: { learningMaterialId: studyId, problemId },
+      select: { id: true },
+    });
+    if (!isProblemInStudy) {
+      return NextResponse.json(
+        {
+          error: '해당 문제는 이 학습 자료에 속하지 않습니다.',
+          code: 'PROBLEM_NOT_IN_STUDY',
+          studyId,
+          problemId,
+        },
+        { status: 400 },
+      );
+    }
 
     if (totalProblems === 0) {
       return NextResponse.json(
@@ -68,12 +84,12 @@ export async function POST(request: NextRequest) {
 
     let resolvedAttemptNumber: number;
 
-    if (forceNewAttempt) {
-      resolvedAttemptNumber = hasProvidedAttemptNumber
-        ? parsedAttemptNumber
-        : latestAttemptNumber + 1;
-    } else if (hasProvidedAttemptNumber) {
-      resolvedAttemptNumber = parsedAttemptNumber;
+    if (hasProvidedAttemptNumber) {
+      // 클라이언트가 명시한 시도 번호를 1순위로 신뢰
+      // 단, 최신 시도 번호보다 작은 값으로 역행 저장되는 것을 방지
+      resolvedAttemptNumber = Math.max(parsedAttemptNumber, latestAttemptNumber || 1);
+    } else if (forceNewAttempt) {
+      resolvedAttemptNumber = latestAttemptNumber + 1;
     } else if (existingLatestAttempt) {
       const attemptEntries = await prisma.problemProgress.findMany({
         where: {
@@ -149,6 +165,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // 누락 문제 식별 (학습 자료에 연결된 전체 problemId 집합과 현재 시도 엔트리 비교)
+    const allStudyProblems = await prisma.learningMaterialProblem.findMany({
+      where: { learningMaterialId: studyId },
+      select: { problemId: true },
+    });
+    const allProblemIds = new Set(allStudyProblems.map((p) => p.problemId));
+    const attemptedIds = new Set(attemptEntries.map((e) => e.problemId));
+    const missingProblemIds = Array.from(allProblemIds).filter((id) => !attemptedIds.has(id));
+
     const isAttemptCompleted = attemptEntries.length >= totalProblems && totalProblems > 0;
 
     return NextResponse.json({
@@ -167,6 +192,7 @@ export async function POST(request: NextRequest) {
           completedAt: entry.completedAt?.toISOString(),
           timeSpent: entry.timeSpent,
         })),
+        missingProblemIds,
       },
     });
   } catch (error) {

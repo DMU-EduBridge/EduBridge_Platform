@@ -74,7 +74,7 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
   };
 
   const handleRetry = async () => {
-    router.push(`/my/learning/${encodeURIComponent(studyId)}/problems?retry=1`);
+    router.push(`/my/learning/${encodeURIComponent(studyId)}/problems?retry=1&startNewAttempt=1`);
   };
 
   const gradeInfo = getGrade(percentage);
@@ -91,7 +91,7 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -157,64 +157,71 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
           <div className="flex-1">
             <h4 className="mb-4 text-lg font-bold text-gray-800">문제별 상세 결과</h4>
             <div className="space-y-3">
-              {learningStatus?.attempts?.map((attempt: any, index: number) => {
-                const problem = problems.find((p) => p.id === attempt.problemId);
-                if (!problem) return null;
+              {(() => {
+                const orderMap = new Map<string, number>();
+                problems.forEach((p, idx) => orderMap.set(p.id, idx));
+                const sortedAttempts = (learningStatus?.attempts || [])
+                  .slice()
+                  .sort((a: any, b: any) => {
+                    const ai = orderMap.get(a.problemId) ?? Number.MAX_SAFE_INTEGER;
+                    const bi = orderMap.get(b.problemId) ?? Number.MAX_SAFE_INTEGER;
+                    return ai - bi;
+                  });
+                return sortedAttempts.map((attempt: any, index: number) => {
+                  const problem = problems.find((p) => p.id === attempt.problemId);
+                  if (!problem) return null;
 
-                const isCorrect = attempt.isCorrect;
+                  const isCorrect = attempt.isCorrect;
 
-                return (
-                  <div
-                    key={problem.id}
-                    className={`flex items-center justify-between rounded-lg border p-4 ${
-                      isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {isCorrect ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      )}
-                      <div>
-                        <div className="font-medium text-gray-800">
-                          {index + 1}. {problem.title}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          정답: {problem.correctAnswer}
-                          {!isCorrect && (
-                            <span className="ml-2 text-red-600">(선택: {attempt.selected})</span>
-                          )}
+                  return (
+                    <div
+                      key={problem.id}
+                      className={`flex items-center justify-between rounded-lg border p-4 ${
+                        isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {isCorrect ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-500" />
+                        )}
+                        <div>
+                          <div className="font-medium text-gray-800">
+                            {index + 1}. {problem.title}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            정답: {problem.correctAnswer}
+                            {!isCorrect && (
+                              <span className="ml-2 text-red-600">(선택: {attempt.selected})</span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right text-sm text-gray-500">
+                          <div>{isCorrect ? problem.points : 0}점</div>
+                          {typeof attempt.timeSpent === 'number' && attempt.timeSpent > 0 && (
+                            <div className="text-xs text-gray-400">
+                              소요 시간: {attempt.timeSpent}초
+                            </div>
+                          )}
+                        </div>
+                        {!isCorrect && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => router.push('/my/incorrect-answers')}
+                            className="text-xs"
+                          >
+                            오답체크
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                <div className="text-sm text-gray-500 text-right">
-                  <div>{isCorrect ? problem.points : 0}점</div>
-                  {typeof attempt.timeSpent === 'number' && attempt.timeSpent > 0 && (
-                    <div className="text-xs text-gray-400">
-                      소요 시간: {attempt.timeSpent}초
-                    </div>
-                  )}
-                </div>
-                      {!isCorrect && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            router.push(
-                              `/my/learning/${encodeURIComponent(studyId)}/problems/${problem.id}/review`,
-                            )
-                          }
-                          className="text-xs"
-                        >
-                          오답체크
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
         </Card>
