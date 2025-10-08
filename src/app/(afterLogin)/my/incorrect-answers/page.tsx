@@ -1,4 +1,5 @@
 import { authOptions } from '@/lib/core/auth';
+import { prisma } from '@/lib/core/prisma';
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
@@ -10,111 +11,114 @@ export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 };
 
-// 서버에서 오답 노트 데이터를 가져오는 함수
-async function getIncorrectAnswersData() {
+// 항상 최신 DB 상태를 반영하도록 캐시 비활성화
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
+// 서버에서 오답 노트 데이터를 DB에서 가져오는 함수
+async function getIncorrectAnswersData(userId: string) {
   try {
-    return {
-      incorrectAnswers: [
-        {
-          id: '1',
-          subject: '한국의 역사',
-          grade: '중학교 3학년',
-          gradeColor: 'green' as const,
-          status: '노력 필요',
-          statusColor: 'red' as const,
-          incorrectCount: 10,
-          retryCount: 5,
-          completedCount: 5,
-          totalProblems: 100,
-          lastUpdated: '2024-01-20T16:30:00Z',
-          problems: [
-            {
-              id: 'p1',
-              question: '한국 전쟁이 일어난 연도는?',
-              myAnswer: '1951년',
-              correctAnswer: '1950년',
-              explanation: '한국 전쟁은 1950년 6월 25일에 시작되었습니다.',
-              difficulty: 'medium',
-              topic: '한국 전쟁',
-              attempts: 3,
-              lastAttempt: '2024-01-20T14:30:00Z',
+    // 사용자의 오답(progress) 수집 (최신 시도 우선)
+    const progresses = await prisma.problemProgress.findMany({
+      where: { userId, isCorrect: false },
+      orderBy: [{ completedAt: 'desc' }],
+      select: {
+        problemId: true,
+        selectedAnswer: true,
+        isCorrect: true,
+        completedAt: true,
+        attemptNumber: true,
+        timeSpent: true,
+        problem: {
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            subject: true,
+            difficulty: true,
+            explanation: true,
+            correctAnswer: true,
+            materialProblems: {
+              select: { learningMaterialId: true },
+              take: 1,
             },
-            {
-              id: 'p2',
-              question: '조선왕조의 건국자는?',
-              myAnswer: '이성계',
-              correctAnswer: '이성계 (태조)',
-              explanation: '이성계가 조선을 건국하고 태조로 즉위했습니다.',
-              difficulty: 'easy',
-              topic: '조선 건국',
-              attempts: 2,
-              lastAttempt: '2024-01-20T13:15:00Z',
-            },
-          ],
+          },
         },
-        {
-          id: '2',
-          subject: '알쏭달쏭 수학',
-          grade: '중학교 3학년',
-          gradeColor: 'green' as const,
-          status: '보통 수준',
-          statusColor: 'yellow' as const,
-          incorrectCount: 20,
-          retryCount: 5,
-          completedCount: 15,
-          totalProblems: 80,
-          lastUpdated: '2024-01-20T15:45:00Z',
-          problems: [
-            {
-              id: 'p3',
-              question: 'x² - 5x + 6 = 0의 해를 구하시오.',
-              myAnswer: 'x = 2, 3',
-              correctAnswer: 'x = 2, 3',
-              explanation: '인수분해하면 (x-2)(x-3) = 0이므로 x = 2 또는 x = 3입니다.',
-              difficulty: 'medium',
-              topic: '이차방정식',
-              attempts: 1,
-              lastAttempt: '2024-01-20T12:00:00Z',
-            },
-          ],
-        },
-        {
-          id: '3',
-          subject: '확률과 통계',
-          grade: '고등학교 1학년',
-          gradeColor: 'red' as const,
-          status: '완벽함',
-          statusColor: 'green' as const,
-          incorrectCount: 1,
-          retryCount: 0,
-          completedCount: 1,
-          totalProblems: 120,
-          lastUpdated: '2024-01-19T14:20:00Z',
-          problems: [
-            {
-              id: 'p4',
-              question: '주사위 2개를 던질 때 합이 7이 나올 확률은?',
-              myAnswer: '1/6',
-              correctAnswer: '1/6',
-              explanation:
-                '주사위 2개의 합이 7이 되는 경우는 (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) 총 6가지이고, 전체 경우의 수는 36가지이므로 6/36 = 1/6입니다.',
-              difficulty: 'easy',
-              topic: '확률',
-              attempts: 1,
-              lastAttempt: '2024-01-19T14:20:00Z',
-            },
-          ],
-        },
-      ],
-      subjects: ['한국의 역사', '알쏭달쏭 수학', '확률과 통계', '고등 영어', '화학', '물리'],
-      stats: {
-        totalIncorrect: 31,
-        totalRetry: 10,
-        totalCompleted: 21,
-        averageAttempts: 2.1,
-        mostDifficultSubject: '한국의 역사',
       },
+    });
+
+    // 문제별 최신 오답만 유지
+    const latestByProblem = new Map<string, (typeof progresses)[number]>();
+    for (const p of progresses) {
+      if (!latestByProblem.has(p.problemId)) latestByProblem.set(p.problemId, p);
+    }
+
+    // 과목(또는 학습자료) 단위로 그룹핑
+    const groups = new Map<string, any>();
+    latestByProblem.forEach((p) => {
+      const subject = p.problem.subject || '기타';
+      const key = subject;
+      const entry = groups.get(key) || {
+        id: key,
+        subject,
+        grade: '',
+        gradeColor: 'red' as const,
+        status: '복습 필요',
+        statusColor: 'red' as const,
+        incorrectCount: 0,
+        retryCount: 0,
+        completedCount: 0,
+        totalProblems: 0,
+        lastUpdated: p.completedAt?.toISOString?.() || new Date().toISOString(),
+        problems: [] as any[],
+      };
+
+      entry.incorrectCount += 1;
+      entry.lastUpdated =
+        entry.lastUpdated && p.completedAt && p.completedAt > new Date(entry.lastUpdated)
+          ? p.completedAt.toISOString()
+          : entry.lastUpdated;
+
+      entry.problems.push({
+        id: p.problemId,
+        question: p.problem.title || p.problem.content?.slice(0, 80) || '문제',
+        myAnswer: p.selectedAnswer || '',
+        correctAnswer: p.problem.correctAnswer,
+        explanation: p.problem.explanation || '',
+        difficulty: (p.problem.difficulty || 'MEDIUM').toLowerCase(),
+        topic: subject,
+        attempts: p.attemptNumber || 1,
+        lastAttempt: p.completedAt?.toISOString?.() || new Date().toISOString(),
+      });
+
+      groups.set(key, entry);
+    });
+
+    const incorrectAnswers = Array.from(groups.values());
+    const subjects = incorrectAnswers.map((g: any) => g.subject);
+
+    const stats = {
+      totalIncorrect: incorrectAnswers.reduce((s: number, g: any) => s + g.incorrectCount, 0),
+      totalRetry: 0,
+      totalCompleted: 0,
+      averageAttempts:
+        incorrectAnswers.length > 0
+          ? Number(
+              (
+                incorrectAnswers.reduce(
+                  (s: number, g: any) =>
+                    s + g.problems.reduce((ps: number, pr: any) => ps + (pr.attempts || 1), 0),
+                  0,
+                ) / incorrectAnswers.reduce((s: number, g: any) => s + g.problems.length, 0)
+              ).toFixed(1),
+            )
+          : 0,
+      mostDifficultSubject:
+        incorrectAnswers.sort((a: any, b: any) => b.incorrectCount - a.incorrectCount)[0]
+          ?.subject || '',
     };
+
+    return { incorrectAnswers, subjects, stats };
   } catch (error) {
     console.error('오답 노트 데이터 로드 실패:', error);
     return null;
@@ -128,7 +132,7 @@ export default async function IncorrectAnswersPage() {
     redirect('/login');
   }
 
-  const incorrectAnswersData = await getIncorrectAnswersData();
+  const incorrectAnswersData = await getIncorrectAnswersData(session.user.id);
 
   return <IncorrectAnswersDetailClient session={session} initialData={incorrectAnswersData} />;
 }
