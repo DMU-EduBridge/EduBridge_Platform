@@ -16,10 +16,7 @@ interface ProblemDetailPageProps {
   searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-export default async function ProblemDetailPage({
-  params,
-  searchParams,
-}: ProblemDetailPageProps) {
+export default async function ProblemDetailPage({ params, searchParams }: ProblemDetailPageProps) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -51,13 +48,23 @@ export default async function ProblemDetailPage({
       page: 1,
       limit: 100,
     });
+    // ids 필터(wrongOnly 세션) 적용
+    const idsParam =
+      typeof searchParams?.ids === 'string' ? (searchParams?.ids as string) : undefined;
+    const filterIds = idsParam
+      ? new Set(
+          idsParam
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
+        )
+      : null;
+    const problems = filterIds ? allProblems.filter((p) => filterIds.has(p.id)) : allProblems;
 
-    const currentIndex = allProblems.findIndex((p) => p.id === problemId);
+    const currentIndex = problems.findIndex((p) => p.id === problemId);
 
     const nextProblem =
-      currentIndex >= 0 && currentIndex < allProblems.length - 1
-        ? allProblems[currentIndex + 1]
-        : null;
+      currentIndex >= 0 && currentIndex < problems.length - 1 ? problems[currentIndex + 1] : null;
 
     const progressEntries = await prisma.problemProgress.findMany({
       where: {
@@ -78,26 +85,47 @@ export default async function ProblemDetailPage({
       (entry) => entry.attemptNumber === latestAttemptNumber,
     );
 
-    const totalProblems = allProblems.length;
-    const latestCompleted =
-      totalProblems > 0 && latestAttemptEntries.length >= totalProblems;
+    const totalProblems = problems.length;
+    const latestCompleted = totalProblems > 0 && latestAttemptEntries.length >= totalProblems;
 
     const startNewAttemptParam =
-      (typeof searchParams?.startNewAttempt === 'string' &&
-        searchParams.startNewAttempt === '1') ||
-      (Array.isArray(searchParams?.startNewAttempt) &&
-        searchParams.startNewAttempt.includes('1'));
+      (typeof searchParams?.startNewAttempt === 'string' && searchParams.startNewAttempt === '1') ||
+      (Array.isArray(searchParams?.startNewAttempt) && searchParams.startNewAttempt.includes('1'));
 
     if (!startNewAttemptParam && latestCompleted && latestAttemptEntries.length > 0) {
-      redirect(`/my/learning/${encodeURIComponent(studyId)}/results`);
+      // 쿼리 보존
+      const sp = new URLSearchParams();
+      const startNewAttemptVal = searchParams?.startNewAttempt;
+      if (typeof startNewAttemptVal === 'string' && startNewAttemptVal === '1') {
+        sp.set('startNewAttempt', '1');
+      }
+      if (idsParam) sp.set('ids', idsParam);
+      const w =
+        typeof searchParams?.wrongOnly === 'string' &&
+        (searchParams?.wrongOnly as string) &&
+        ((searchParams?.wrongOnly as string) === '1' ||
+          (searchParams?.wrongOnly as string) === 'true');
+      if (w) sp.set('wrongOnly', '1');
+      const suffix = sp.toString() ? `?${sp.toString()}` : '';
+      redirect(`/my/learning/${encodeURIComponent(studyId)}/results${suffix}`);
     }
 
     if (!startNewAttemptParam && latestAttemptEntries.length > 0) {
       const existingEntry = latestAttemptEntries.find((entry) => entry.problemId === problemId);
 
       if (existingEntry) {
+        // 쿼리 보존
+        const sp = new URLSearchParams();
+        if (idsParam) sp.set('ids', idsParam);
+        const w =
+          typeof searchParams?.wrongOnly === 'string' &&
+          (searchParams?.wrongOnly as string) &&
+          ((searchParams?.wrongOnly as string) === '1' ||
+            (searchParams?.wrongOnly as string) === 'true');
+        if (w) sp.set('wrongOnly', '1');
+        const suffix = sp.toString() ? `?${sp.toString()}` : '';
         redirect(
-          `/my/learning/${encodeURIComponent(studyId)}/problems/${problemId}/review`,
+          `/my/learning/${encodeURIComponent(studyId)}/problems/${problemId}/review${suffix}`,
         );
       }
     }
@@ -165,7 +193,7 @@ export default async function ProblemDetailPage({
             initialProblem={formattedProblem}
             nextProblem={formattedNextProblem}
             currentIndex={currentIndex + 1}
-            totalCount={allProblems.length}
+            totalCount={problems.length}
           />
         </Suspense>
       </LearningErrorBoundary>

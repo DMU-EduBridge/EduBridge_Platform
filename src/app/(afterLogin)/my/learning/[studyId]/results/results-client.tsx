@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { calculatePercentage, calculateScore, getGrade } from '@/lib/utils/learning-utils';
 import { CheckCircle, Home, RotateCcw, XCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface Problem {
@@ -32,6 +32,11 @@ interface ResultsClientProps {
 
 export default function ResultsClient({ studyId, problems, learningMaterial }: ResultsClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const cameFromWrongOnly = (() => {
+    const v = searchParams?.get('wrongOnly');
+    return v === '1' || v === 'true';
+  })();
 
   // API에서 학습 완료 상태 가져오기
   const [learningStatus, setLearningStatus] = useState<any>(null);
@@ -70,6 +75,10 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
   const percentage = calculatePercentage(correctAnswers, totalProblems);
 
   const handleBackToLearning = () => {
+    if (cameFromWrongOnly) {
+      router.push('/my/incorrect-answers');
+      return;
+    }
     router.push('/my/learning');
   };
 
@@ -97,7 +106,7 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={handleBackToLearning} className="px-4 py-2">
             <Home className="mr-2 h-4 w-4" />
-            학습 홈
+            {cameFromWrongOnly ? '오답 노트' : '학습 홈'}
           </Button>
           <h1 className="text-2xl font-bold text-gray-800">학습 결과</h1>
           <span className="text-sm text-gray-500">{attemptNumber}번째 시도</span>
@@ -211,7 +220,17 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push('/my/incorrect-answers')}
+                            onClick={() =>
+                              router.push(
+                                `/my/learning/${encodeURIComponent(
+                                  studyId,
+                                )}/problems/${encodeURIComponent(
+                                  problem.id,
+                                )}?startNewAttempt=1&wrongOnly=1&ids=${encodeURIComponent(
+                                  problem.id,
+                                )}&from=results`,
+                              )
+                            }
                             className="text-xs"
                           >
                             오답체크
@@ -233,7 +252,7 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
             다시 풀기
           </Button>
           <Button onClick={handleBackToLearning} className="px-6 py-3">
-            학습 홈으로
+            {cameFromWrongOnly ? '오답 노트로' : '학습 홈으로'}
           </Button>
         </div>
       </div>
