@@ -4,8 +4,8 @@ import { StudyCard } from '@/components/learning/study-card';
 import { StudyFilters } from '@/components/learning/study-filters';
 import { useStudyItems } from '@/hooks/learning';
 import { StudyItem } from '@/types/domain/learning';
-import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
 // Loading skeleton component
 function StudySkeleton() {
@@ -46,8 +46,18 @@ function StudyError({ error, onRetry }: { error: Error; onRetry: () => void }) {
 
 export default function MyLearningClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<string>('');
+  const [difficulty, setDifficulty] = useState<string>('');
+
+  // URL 쿼리 → 상태 하이드레이션 (초기 1회)
+  useEffect(() => {
+    const qp = searchParams?.get('query') || '';
+    const sp = searchParams?.get('difficulty') || '';
+    setQuery(qp);
+    setDifficulty(sp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // React Query를 사용한 데이터 페칭
   const { data: studyItems, isLoading, error, refetch } = useStudyItems();
@@ -60,11 +70,13 @@ export default function MyLearningClient() {
       const matchesQuery =
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         item.summary.toLowerCase().includes(query.toLowerCase());
-      const matchesStatus = !status || item.level === status;
+      // API는 난이도를 한국어 문자열(level: '보통' | '어려움' ...)로 내려줌
+      const itemLevel = (item as any).level || item.difficulty;
+      const matchesDifficulty = !difficulty || itemLevel === difficulty;
 
-      return matchesQuery && matchesStatus;
+      return matchesQuery && matchesDifficulty;
     });
-  }, [studyItems, query, status]);
+  }, [studyItems, query, difficulty]);
 
   // 로딩 상태
   if (isLoading) {
@@ -102,9 +114,9 @@ export default function MyLearningClient() {
       {/* 검색/필터 바 */}
       <StudyFilters
         query={query}
-        status={status}
+        difficulty={difficulty}
         onQueryChange={setQuery}
-        onStatusChange={setStatus}
+        onDifficultyChange={setDifficulty}
       />
 
       {/* 결과 개수 표시 */}
