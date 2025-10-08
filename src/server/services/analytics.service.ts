@@ -39,14 +39,14 @@ export class AnalyticsService {
         // 문제 통계
         prisma.problem
           .groupBy({
-            by: ['isGeneratedByAI'],
-            _count: { isGeneratedByAI: true },
+            by: ['isAIGenerated'],
+            _count: { isAIGenerated: true },
           })
           .then((result) => {
             const stats = { total: 0, aiGenerated: 0 };
             result.forEach((item) => {
-              stats.total += item._count.isGeneratedByAI;
-              if (item.isGeneratedByAI) stats.aiGenerated = item._count.isGeneratedByAI;
+              stats.total += item._count.isAIGenerated;
+              if (item.isAIGenerated) stats.aiGenerated = item._count.isAIGenerated;
             });
             return stats;
           }),

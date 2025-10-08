@@ -1,4 +1,4 @@
-import { Prisma, Problem } from '@prisma/client';
+import { Prisma, Problem, ProblemDifficulty, ProblemType } from '@prisma/client';
 import { prisma } from '../../../lib/core/prisma';
 import { handlePrismaError } from '../../../lib/errors';
 import { logger } from '../../../lib/monitoring';
@@ -82,7 +82,7 @@ export class ProblemSearchService {
       );
 
       const pagination = {
-        page,
+        page: optimizedPage,
         limit,
         total,
         totalPages: Math.ceil(total / limit),
@@ -109,8 +109,8 @@ export class ProblemSearchService {
     filters?: {
       subject?: string;
       gradeLevel?: string;
-      difficulty?: string;
-      type?: string;
+      difficulty?: ProblemDifficulty;
+      type?: ProblemType;
       limit?: number;
     },
   ): Promise<Problem[]> {

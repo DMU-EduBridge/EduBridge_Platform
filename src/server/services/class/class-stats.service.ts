@@ -1,6 +1,6 @@
 import { prisma } from '../../../lib/core/prisma';
 import { logger } from '../../../lib/monitoring';
-import { ClassWithDetails } from '../../../types/domain/class';
+import { ClassMemberRole, ClassWithDetails } from '../../../types/domain/class';
 
 export class ClassStatsService {
   /**
@@ -102,7 +102,7 @@ export class ClassStatsService {
         assignmentCount: cls.assignments.length,
         members: cls.members.map((member) => ({
           ...member,
-          role: member.role as any,
+          role: member.role as ClassMemberRole,
         })),
       }));
     } catch (error) {
@@ -136,7 +136,6 @@ export class ClassStatsService {
         students.map(async (student) => {
           // attempts 테이블 제거됨 - ProblemProgress로 대체
           // 임시로 빈 데이터 반환
-          const attempts: any[] = [];
           const totalAttempts = 0;
           const correctAttempts = 0;
           const averageScore = 0;

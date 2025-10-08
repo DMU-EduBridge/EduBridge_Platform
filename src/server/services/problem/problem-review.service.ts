@@ -57,7 +57,7 @@ export class ProblemReviewService {
             reviewStatus: 'REJECTED',
             reviewedBy: reviewerId,
             reviewedAt: new Date(),
-            reviewNotes: reason || null,
+            generationPrompt: reason || null,
             updatedAt: new Date(),
           },
           include: {
@@ -220,7 +220,7 @@ export class ProblemReviewService {
         ...(reviewerId && { reviewedBy: reviewerId }),
       };
 
-      const [totalReviewed, approved, rejected, pending, averageReviewTime] = await Promise.all([
+      const [totalReviewed, approved, rejected, pending, _averageReviewTime] = await Promise.all([
         prisma.problem.count({
           where: {
             ...where,
@@ -250,7 +250,7 @@ export class ProblemReviewService {
             ...where,
             reviewStatus: { in: ['APPROVED', 'REJECTED'] },
             reviewedAt: { not: null },
-            createdAt: { not: null },
+            createdAt: { not: null as any },
           },
           _avg: {
             // Prisma에서는 직접 날짜 차이 계산이 어려우므로 별도 처리 필요
@@ -287,7 +287,7 @@ export class ProblemReviewService {
         data: {
           reviewStatus: 'PENDING',
           status: 'DRAFT',
-          reviewNotes: null,
+          generationPrompt: null, // reviewNotes 대신 generationPrompt 사용
           reviewedBy: null,
           reviewedAt: null,
           updatedAt: new Date(),
@@ -314,7 +314,7 @@ export class ProblemReviewService {
       const problem = await prisma.problem.update({
         where: { id: problemId },
         data: {
-          reviewNotes: notes,
+          generationPrompt: notes, // reviewNotes 대신 generationPrompt 사용
           reviewedBy: reviewerId,
           reviewedAt: new Date(),
           updatedAt: new Date(),
