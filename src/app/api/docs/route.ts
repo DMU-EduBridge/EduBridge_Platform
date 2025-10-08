@@ -106,6 +106,68 @@ export async function GET() {
     ],
     security: [{ bearerAuth: [] }],
     paths: {
+      // === 문제-학습자료 매핑 API (신규 통합) ===
+      '/problems/material': {
+        get: {
+          tags: ['Problems'],
+          summary: '문제-학습자료 매핑 조회(배치/단건 통합)',
+          parameters: [
+            {
+              name: 'ids',
+              in: 'query',
+              required: true,
+              schema: { type: 'string' },
+              description: '쉼표로 구분된 problemId 목록 (예: p1,p2,p3)',
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'OK',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            id: { type: 'string' },
+                            studyId: { type: 'string', nullable: true },
+                          },
+                          required: ['id', 'studyId'],
+                        },
+                      },
+                    },
+                    required: ['success', 'data'],
+                  },
+                },
+              },
+            },
+            '400': { description: '잘못된 요청(ids 없음)' },
+            '401': { description: '인증 필요' },
+            '500': { description: '서버 오류' },
+          },
+        },
+      },
+
+      // === (Deprecated) 문제-학습자료 매핑 배치 조회 ===
+      '/problems/material/batch': {
+        get: {
+          deprecated: true,
+          tags: ['Problems'],
+          summary: '[Deprecated] 문제-학습자료 매핑 배치 조회',
+          parameters: [
+            { name: 'ids', in: 'query', required: true, schema: { type: 'string' } },
+          ],
+          responses: {
+            '200': { description: 'OK' },
+            '410': { description: 'Deprecated. /problems/material 사용 권장' },
+          },
+        },
+      },
       // === 사용자 관리 API ===
       '/users': {
         get: {
