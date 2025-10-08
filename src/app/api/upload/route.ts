@@ -1,23 +1,33 @@
-import { UploadResponseSchema } from '@/lib/schemas/api';
-import { getRequestId } from '@/lib/utils/request-context';
+import { logger } from '@/lib/monitoring';
+import { ok, withAuth } from '@/server/http/handler';
 import { uploadService } from '@/server/services/upload.service';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  try {
+  return withAuth(async ({ userId }) => {
     const data = await request.formData();
     const file: File | null = (data.get('file') as unknown as File) || null;
 
-    if (!file) return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-    const saved = await uploadService.save(file);
-    const payload = { success: true, ...saved };
-    UploadResponseSchema.parse(payload);
-    return NextResponse.json(payload, {
-      headers: { 'Cache-Control': 'no-store', 'X-Request-Id': getRequestId(request) },
+    if (!file) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'No file uploaded', code: 'NO_FILE' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const result = await uploadService.save(file);
+    logger.info('파일 업로드 성공', {
+      userId,
+      fileName: result.fileName,
+      fileSize: result.fileSize,
     });
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
-  }
+    return new Response(JSON.stringify(ok(result)), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+      },
+    });
+  });
 }

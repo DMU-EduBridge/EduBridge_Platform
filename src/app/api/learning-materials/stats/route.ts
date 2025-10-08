@@ -1,11 +1,14 @@
 import { logger } from '@/lib/monitoring';
 import { ok, withAuth } from '@/server/http/handler';
-import { learningProgressService } from '@/server/services/dashboard/learning-progress.service';
+import { learningMaterialsService } from '@/server/services/learning-materials/learning-materials.service';
 
+/**
+ * 학습자료 통계 조회
+ */
 export async function GET() {
   return withAuth(async ({ userId }) => {
-    const data = await learningProgressService.getLearningProgress(userId);
-    logger.info('학습 진도 조회 성공', { userId, count: data.length });
+    const data = await learningMaterialsService.getLearningMaterialStats();
+    logger.info('학습자료 통계 조회 성공', { userId });
     return new Response(JSON.stringify(ok(data)), {
       headers: { 'Content-Type': 'application/json' },
     });
