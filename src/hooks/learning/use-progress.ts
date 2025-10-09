@@ -1,100 +1,84 @@
-type ProblemAnswer = {
-  isCorrect: boolean;
-  selectedAnswer: string;
-  correctAnswer: string;
-  problemTitle: string;
-  completedAt: string;
-};
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-// React Query 키 정의
-const progressKeys = {
-  all: ['progress'] as const,
-  study: (studyId: string) => [...progressKeys.all, 'study', studyId] as const,
-};
+import {
+  API_ENDPOINTS,
+  DEFAULT_VALUES,
+  ERROR_MESSAGES,
+  PROGRESS_QUERY_KEYS,
+} from '@/lib/constants/learning';
+import { buildQueryString, transformSubmissionToPayload } from '@/lib/utils/learning-utils';
+import type { ProblemAnswer, ProblemSubmissionData, ProgressData } from '@/types/learning';
 
-export interface ProblemProgress {
-  attemptId: string;
-  selectedAnswer: string;
-  startTime: string;
-  lastAccessed: string;
-}
-
-export interface ProgressData {
-  total: number;
-  completed: number;
-}
-
-export function useProgress(studyId: string, startNewAttempt: boolean = false) {
+/**
+ * 학습 진행 상태를 관리하는 커스텀 훅
+ * @param studyId 학습 자료 ID
+ * @param startNewAttempt 새로운 시도 시작 여부 또는 시도 번호
+ * @returns 진행 상태 데이터와 관련 액션들
+ */
+export function useProgress(studyId: string, startNewAttempt: boolean | number = false) {
   const queryClient = useQueryClient();
 
   // 학습 진행 상태 조회
   const progressQuery = useQuery({
-    queryKey: [...progressKeys.study(studyId), startNewAttempt],
+    queryKey: [...PROGRESS_QUERY_KEYS.study(studyId), startNewAttempt],
     queryFn: async () => {
-      const url = `/api/progress?studyId=${encodeURIComponent(studyId)}${startNewAttempt ? '&startNewAttempt=true' : ''}`;
+      const params: Record<string, string> = {
+        studyId: encodeURIComponent(studyId),
+      };
+
+      if (startNewAttempt === true) {
+        params.startNewAttempt = 'true';
+      } else if (typeof startNewAttempt === 'number') {
+        params.startNewAttempt = startNewAttempt.toString();
+      }
+
+      const queryString = buildQueryString(params);
+      const url = `${API_ENDPOINTS.PROGRESS}${queryString}`;
+
+      console.log('Fetching progress with URL:', url);
+
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('학습 진행 상태 조회 실패');
+        throw new Error(ERROR_MESSAGES.PROGRESS_FETCH_FAILED);
       }
+
       const data = await response.json();
+      console.log('Progress response:', data);
       return data.data;
     },
     enabled: !!studyId,
-    // 새 시도 시작 시 캐시 무효화를 위해 staleTime을 0으로 설정
-    staleTime: startNewAttempt ? 0 : 5 * 60 * 1000, // 새 시도: 0, 일반: 5분
-    gcTime: 60 * 60 * 1000, // 1시간
+    staleTime: DEFAULT_VALUES.STALE_TIME,
+    gcTime: DEFAULT_VALUES.GC_TIME,
   });
 
   // 문제 완료 상태 저장
   const addCompletedProblemMutation = useMutation({
-    mutationFn: async (data: {
-      problemId: string;
-      selectedAnswer: string;
-      isCorrect: boolean;
-      attemptNumber: number;
-      startTime?: string;
-      timeSpent?: number;
-      forceNewAttempt?: boolean;
-    }) => {
-      const payload: Record<string, unknown> = {
-        studyId,
-        problemId: data.problemId,
-        selectedAnswer: data.selectedAnswer,
-        isCorrect: data.isCorrect,
-        attemptNumber: data.attemptNumber,
-      };
+    mutationFn: async (data: ProblemSubmissionData) => {
+      const payload = transformSubmissionToPayload(studyId, data);
 
-      if (typeof data.startTime === 'string') {
-        payload.startTime = data.startTime;
-      }
-      if (typeof data.timeSpent === 'number') {
-        payload.timeSpent = data.timeSpent;
-      }
-      if (typeof data.forceNewAttempt === 'boolean') {
-        payload.forceNewAttempt = data.forceNewAttempt;
-      }
-
-      const response = await fetch('/api/progress', {
+      const response = await fetch(API_ENDPOINTS.PROGRESS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
+
       if (!response.ok) {
-        throw new Error('문제 완료 상태 저장 실패');
+        throw new Error(ERROR_MESSAGES.PROGRESS_SAVE_FAILED);
       }
+
       const result = await response.json();
       return result.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: progressKeys.study(studyId) });
-      // 새 시도 관련 쿼리도 무효화
-      queryClient.invalidateQueries({ queryKey: [...progressKeys.study(studyId), true] });
-      queryClient.invalidateQueries({ queryKey: [...progressKeys.study(studyId), false] });
+      // 관련 쿼리들 무효화
+      queryClient.invalidateQueries({ queryKey: PROGRESS_QUERY_KEYS.study(studyId) });
+      queryClient.invalidateQueries({ queryKey: [...PROGRESS_QUERY_KEYS.study(studyId), true] });
+      queryClient.invalidateQueries({ queryKey: [...PROGRESS_QUERY_KEYS.study(studyId), false] });
+      // 오답노트 데이터도 무효화
+      queryClient.invalidateQueries({ queryKey: ['incorrect-answers'] });
     },
   });
 
@@ -111,7 +95,7 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
         method: 'DELETE',
       });
       if (!response.ok) {
-        throw new Error('문제 진행 상태 삭제 실패');
+        throw new Error(ERROR_MESSAGES.PROGRESS_DELETE_FAILED);
       }
       const result = await response.json();
       console.log('진행 상태 삭제 결과:', result);
@@ -119,32 +103,29 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
     },
     onSuccess: () => {
       console.log('진행 상태 삭제 성공, 쿼리 무효화');
-      queryClient.invalidateQueries({ queryKey: progressKeys.study(studyId) });
-      // 새 시도 관련 쿼리도 무효화
-      queryClient.invalidateQueries({ queryKey: [...progressKeys.study(studyId), true] });
-      queryClient.invalidateQueries({ queryKey: [...progressKeys.study(studyId), false] });
+      queryClient.invalidateQueries({ queryKey: PROGRESS_QUERY_KEYS.study(studyId) });
+      queryClient.invalidateQueries({ queryKey: [...PROGRESS_QUERY_KEYS.study(studyId), true] });
+      queryClient.invalidateQueries({ queryKey: [...PROGRESS_QUERY_KEYS.study(studyId), false] });
+      // 오답노트 데이터도 무효화
+      queryClient.invalidateQueries({ queryKey: ['incorrect-answers'] });
     },
   });
 
-  // 진행률 계산 (최신 시도 기준) - 시도한 모든 문제를 완료로 계산
+  // 진행률 계산 (최신 시도 기준)
   const progressData = useCallback((): ProgressData => {
     const data = progressQuery.data;
     if (!data) {
-      return { total: 0, completed: 0 };
+      return { total: DEFAULT_VALUES.POINTS, completed: DEFAULT_VALUES.POINTS };
     }
 
-    // totalProblems가 숫자가 아닌 경우 0으로 처리
-    const total = typeof data.totalProblems === 'number' ? data.totalProblems : 0;
-    // attemptedProblems 또는 completedProblems가 숫자가 아닌 경우 0으로 처리
+    const total =
+      typeof data.totalProblems === 'number' ? data.totalProblems : DEFAULT_VALUES.POINTS;
     const completed =
       typeof (data.attemptedProblems || data.completedProblems) === 'number'
         ? data.attemptedProblems || data.completedProblems
-        : 0;
+        : DEFAULT_VALUES.POINTS;
 
-    return {
-      total,
-      completed,
-    };
+    return { total, completed };
   }, [progressQuery.data]);
 
   // 완료된 문제 목록 (시도한 모든 문제)
@@ -159,13 +140,17 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
   const correctnessInfo = useCallback(() => {
     const data = progressQuery.data;
     if (!data) {
-      return { correctnessRate: 0, correctAnswers: 0, attemptedProblems: 0 };
+      return {
+        correctnessRate: DEFAULT_VALUES.POINTS,
+        correctAnswers: DEFAULT_VALUES.POINTS,
+        attemptedProblems: DEFAULT_VALUES.POINTS,
+      };
     }
 
     return {
-      correctnessRate: data.correctnessRate || 0,
-      correctAnswers: data.correctAnswers || 0,
-      attemptedProblems: data.attemptedProblems || 0,
+      correctnessRate: data.correctnessRate || DEFAULT_VALUES.POINTS,
+      correctAnswers: data.correctAnswers || DEFAULT_VALUES.POINTS,
+      attemptedProblems: data.attemptedProblems || DEFAULT_VALUES.POINTS,
     };
   }, [progressQuery.data]);
 
@@ -180,8 +165,8 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
       answers[entry.problemId] = {
         isCorrect: entry.isCorrect,
         selectedAnswer: entry.selectedAnswer,
-        correctAnswer: '', // 문제 데이터에서 가져와야 함
-        problemTitle: '', // 문제 데이터에서 가져와야 함
+        correctAnswer: '', // TODO: 문제 데이터에서 가져와야 함
+        problemTitle: '', // TODO: 문제 데이터에서 가져와야 함
         completedAt: entry.completedAt || new Date().toISOString(),
       };
     });
@@ -204,7 +189,7 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
       timeSpent?: number;
       forceNewAttempt?: boolean;
     }) => {
-      return addCompletedProblemMutation.mutateAsync({
+      const submissionData: ProblemSubmissionData = {
         problemId: data.problemId,
         selectedAnswer: data.answer.selectedAnswer,
         isCorrect: data.answer.isCorrect,
@@ -214,7 +199,9 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
         ...(typeof data.forceNewAttempt === 'boolean'
           ? { forceNewAttempt: data.forceNewAttempt }
           : {}),
-      });
+      };
+
+      return addCompletedProblemMutation.mutateAsync(submissionData);
     },
     [addCompletedProblemMutation],
   );
@@ -243,7 +230,7 @@ export function useProgress(studyId: string, startNewAttempt: boolean = false) {
     completedProblems: completedProblems(),
     problemAnswers: problemAnswers(),
     correctnessInfo: correctnessInfo(),
-    activeAttemptNumber: progressQuery.data?.activeAttemptNumber ?? 1,
+    activeAttemptNumber: progressQuery.data?.activeAttemptNumber ?? DEFAULT_VALUES.ATTEMPT_NUMBER,
     attemptHistory: progressQuery.data?.attemptHistory ?? [],
 
     // 상태
