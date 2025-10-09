@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useDashboardOverviewData } from '@/hooks/dashboard/use-dashboard-overview';
-import { useIncorrectAnswersData } from '@/hooks/dashboard/use-incorrect-answers';
 import { useTodosData, useUpdateTodo } from '@/hooks/dashboard/use-todos';
+import { useIncorrectAnswers } from '@/hooks/incorrect-answers/use-incorrect-answers';
 import type { DashboardOverview } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronRight, Download, Plus, Square } from 'lucide-react';
@@ -36,7 +36,8 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
   } = useDashboardOverviewData(initialData || undefined);
 
   // 오답 노트는 전용 API 훅으로 최신 데이터 우선 사용
-  const { incorrectAnswers: incorrectAnswersLive = [] } = useIncorrectAnswersData();
+  const { data: incorrectAnswersData } = useIncorrectAnswers();
+  const incorrectAnswersLive = incorrectAnswersData?.incorrectAnswers || [];
   const notes = incorrectAnswersLive.length > 0 ? incorrectAnswersLive : incorrectAnswerNotes;
 
   // 할 일 목록은 전용 API 훅으로 실제 데이터 연동

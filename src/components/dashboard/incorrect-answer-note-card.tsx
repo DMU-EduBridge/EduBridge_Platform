@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useIncorrectAnswersData } from '@/hooks/dashboard/use-incorrect-answers';
+import { useIncorrectAnswers } from '@/hooks/incorrect-answers/use-incorrect-answers';
 import { Download } from 'lucide-react';
 import { memo } from 'react';
 
@@ -77,7 +77,8 @@ const SubjectNoteItem = memo(function SubjectNoteItem({
 });
 
 export const IncorrectAnswerNoteCard = memo(function IncorrectAnswerNoteCard() {
-  const { incorrectAnswers, isLoading, error } = useIncorrectAnswersData();
+  const { data: incorrectAnswersData, isLoading, error } = useIncorrectAnswers();
+  const incorrectAnswers = incorrectAnswersData?.incorrectAnswers || [];
 
   if (isLoading) {
     return (
