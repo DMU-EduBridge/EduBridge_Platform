@@ -2,7 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import type { IncorrectAnswerItem, IncorrectAnswersStats, IncorrectProblem } from '@/types';
+import { useIncorrectAnswers } from '@/hooks/incorrect-answers/use-incorrect-answers';
+import { formatKoreanDate, formatTimeSpent } from '@/lib/utils/incorrect-answers-utils';
+import type { IncorrectAnswerItem, IncorrectProblem } from '@/types';
 import { AlertCircle, ArrowLeft, CheckCircle, Clock, Download, RotateCcw } from 'lucide-react';
 import { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
@@ -13,35 +15,48 @@ type Problem = IncorrectProblem;
 
 type IncorrectAnswerNoteItem = IncorrectAnswerItem;
 
-interface IncorrectAnswersData {
-  incorrectAnswers: IncorrectAnswerNoteItem[];
-  subjects: string[];
-  stats: IncorrectAnswersStats;
-}
-
 interface IncorrectAnswersDetailClientProps {
   session: Session;
-  initialData: IncorrectAnswersData | null;
 }
 
 export function IncorrectAnswersDetailClient({
   session: _session,
-  initialData,
 }: IncorrectAnswersDetailClientProps) {
   const router = useRouter();
-  const [incorrectAnswersData, _setIncorrectAnswersData] = useState<IncorrectAnswersData | null>(
-    initialData,
-  );
   const [selectedSubject, setSelectedSubject] = useState<string>('전체');
   const [_selectedProblem, _setSelectedProblem] = useState<Problem | null>(null);
 
-  if (!incorrectAnswersData) {
+  // React Query를 사용하여 오답노트 데이터 가져오기
+  const { data: incorrectAnswersData, isLoading, isError, error } = useIncorrectAnswers();
+
+  // 로딩 상태 처리
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
-            <p className="mt-4 text-gray-600">데이터를 불러오는 중...</p>
+            <p className="mt-4 text-gray-600">오답노트를 불러오는 중...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 상태 처리
+  if (isError || !incorrectAnswersData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">데이터를 불러올 수 없습니다</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {error?.message || '오답노트 데이터를 불러오는 중 오류가 발생했습니다.'}
+            </p>
+            <div className="mt-4">
+              <Button onClick={() => window.location.reload()}>다시 시도</Button>
+            </div>
           </div>
         </div>
       </div>
@@ -84,7 +99,7 @@ export function IncorrectAnswersDetailClient({
       router.push(
         `/my/learning/${encodeURIComponent(studyId)}/problems/${encodeURIComponent(
           problemId,
-        )}?startNewAttempt=1&wrongOnly=1&ids=${idsParam}&from=incorrect`,
+        )}?wrongOnly=1&ids=${idsParam}&from=incorrect`,
       );
     } catch (e) {
       console.error('단일 문제 재풀이 이동 실패:', e);
@@ -277,7 +292,9 @@ export function IncorrectAnswersDetailClient({
                               ? 'bg-red-100 text-red-700'
                               : answer.statusColor === 'yellow'
                                 ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-green-100 text-green-700'
+                                : answer.statusColor === 'green'
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-100 text-gray-700'
                           }`}
                         >
                           {answer.status}
@@ -289,7 +306,7 @@ export function IncorrectAnswersDetailClient({
                       <Button
                         size="sm"
                         className="bg-blue-500 text-white hover:bg-blue-600"
-                        onClick={() => startWrongOnlySession(answer)}
+                        onClick={() => startWrongOnlySession(answer as any)}
                         title="세트의 모든 틀린 문제를 순서대로 풉니다"
                       >
                         세트 전체 다시 풀기
@@ -355,7 +372,8 @@ export function IncorrectAnswersDetailClient({
                           </Button>
                         </div>
 
-                        <div className="space-y-2 text-sm">
+                        <div className="space-y-3 text-sm">
+                          {/* 최신 시도 정보 */}
                           <div className="flex gap-4">
                             <div>
                               <span className="text-gray-600">내 답:</span>
@@ -365,7 +383,49 @@ export function IncorrectAnswersDetailClient({
                               <span className="text-gray-600">정답:</span>
                               <span className="ml-1 text-green-600">{problem.correctAnswer}</span>
                             </div>
+                            <div>
+                              <span className="text-gray-600">최신 시도:</span>
+                              <span className="ml-1 text-blue-600">
+                                {problem.attempts}번째 시도
+                              </span>
+                            </div>
                           </div>
+
+                          {/* 모든 시도 이력 */}
+                          {(problem as any).allAttempts &&
+                            (problem as any).allAttempts.length > 1 && (
+                              <div className="rounded bg-gray-50 p-3">
+                                <div className="mb-2 font-medium text-gray-700">시도 이력:</div>
+                                <div className="space-y-2">
+                                  {(problem as any).allAttempts.map(
+                                    (attempt: any, index: number) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center justify-between rounded bg-white p-2 text-xs"
+                                      >
+                                        <div className="flex gap-3">
+                                          <span className="font-medium text-gray-600">
+                                            {attempt.attemptNumber}번째 시도
+                                          </span>
+                                          <span className="text-red-600">
+                                            내 답: {attempt.selectedAnswer}
+                                          </span>
+                                          <span className="text-gray-500">
+                                            {formatKoreanDate(attempt.completedAt)}
+                                          </span>
+                                        </div>
+                                        {attempt.timeSpent > 0 && (
+                                          <span className="text-gray-500">
+                                            {formatTimeSpent(attempt.timeSpent)}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
                           <div className="rounded bg-blue-50 p-2 text-gray-700">
                             <span className="text-gray-600">해설:</span> {problem.explanation}
                           </div>
