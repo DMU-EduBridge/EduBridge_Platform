@@ -6,7 +6,7 @@ const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS ?? 10);
 
 // 개발 환경에서 소셜 전용 계정(비밀번호 없음) 로그인 테스트를 위해 허용할 고정 비밀번호.
 // 프로덕션에서는 사용하지 않도록 주의하세요.
-const DEV_TEST_PASSWORD = process.env.DEV_TEST_PASSWORD || 'student123';
+const DEV_TEST_PASSWORD = process.env.DEV_TEST_PASSWORD || 'password123';
 
 // 이메일 표준화: 대소문자/공백 차이로 인한 중복이나 매칭 실패 방지
 function normalizeEmail(email: string) {
