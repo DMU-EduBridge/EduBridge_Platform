@@ -161,7 +161,7 @@ export default async function ProblemDetailPage({ params, searchParams }: Proble
     const formattedProblem = {
       id: problem.id,
       title: problem.title,
-      description: problem.description || undefined,
+      description: problem.description || null,
       content: problem.content,
       type: problem.type as
         | 'MULTIPLE_CHOICE'
@@ -178,17 +178,17 @@ export default async function ProblemDetailPage({ params, searchParams }: Proble
           ? JSON.parse(problem.options as string)
           : [],
       correctAnswer: problem.correctAnswer,
-      explanation: problem.explanation || undefined,
+      explanation: problem.explanation || null,
       hints: problem.hints,
       points: problem.points,
-      timeLimit: problem.timeLimit || undefined,
+      timeLimit: problem.timeLimit || null,
     };
 
     const formattedNextProblem = nextProblem
       ? {
           id: nextProblem.id,
           title: nextProblem.title,
-          description: nextProblem.description || undefined,
+          description: nextProblem.description || null,
           content: nextProblem.content,
           type: nextProblem.type as
             | 'MULTIPLE_CHOICE'

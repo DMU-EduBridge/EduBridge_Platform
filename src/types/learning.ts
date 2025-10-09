@@ -4,9 +4,6 @@
 
 import type { Problem } from './domain/problem';
 
-// Problem 타입을 다시 export하여 다른 파일에서 사용할 수 있도록 함
-export type { Problem };
-
 export interface LearningMaterial {
   id: string;
   title: string;

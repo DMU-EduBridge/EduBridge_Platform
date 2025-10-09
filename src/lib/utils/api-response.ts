@@ -1,15 +1,10 @@
+import type { ApiResponse } from '@/lib/api-response';
 import { NextRequest, NextResponse } from 'next/server';
 
-// 표준 API 응답 타입
-export interface StandardApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-  timestamp: string;
-}
+// 표준 API 응답 타입 (통합됨)
+export type StandardApiResponse<T = any> = ApiResponse<T>;
 
-export interface PaginatedApiResponse<T = any> extends StandardApiResponse<T[]> {
+export interface PaginatedApiResponse<T = any> extends ApiResponse<T[]> {
   pagination: {
     page: number;
     limit: number;

@@ -1,7 +1,7 @@
 'use client';
 
-import { memo } from 'react';
 import type { Problem } from '@/types/domain/problem';
+import { memo } from 'react';
 
 interface ProblemOptionsProps {
   problem: Problem;

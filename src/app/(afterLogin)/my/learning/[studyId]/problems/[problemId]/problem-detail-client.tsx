@@ -16,7 +16,8 @@ import {
   parseStartNewAttemptParam,
   showBrowserAlert,
 } from '@/lib/utils/learning-utils';
-import type { Problem, ProblemDetailClientProps } from '@/types/learning';
+import type { Problem } from '@/types/domain/problem';
+import type { ProblemDetailClientProps } from '@/types/learning';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 

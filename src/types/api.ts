@@ -2,8 +2,9 @@
  * API 응답 관련 타입 정의
  */
 
-import type { LearningStatus, Problem } from './learning';
 import type { ApiResponse } from '@/lib/api-response';
+import type { Problem } from './domain/problem';
+import type { LearningStatus } from './learning';
 
 // 학습 완료 상태 API 응답
 export type LearningCompleteResponse = ApiResponse<LearningStatus>;
