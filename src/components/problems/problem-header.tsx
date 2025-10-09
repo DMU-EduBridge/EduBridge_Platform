@@ -8,6 +8,7 @@ import { memo, useEffect, useState } from 'react';
 interface ProblemHeaderProps {
   currentIndex: number;
   totalCount: number;
+  remainingProblems?: number;
   attemptNumber?: number;
   startTime?: Date;
   isActive?: boolean;
@@ -18,6 +19,7 @@ interface ProblemHeaderProps {
 export const ProblemHeader = memo(function ProblemHeader({
   currentIndex,
   totalCount,
+  remainingProblems,
   startTime,
   studyTitle,
   subject,
@@ -74,7 +76,13 @@ export const ProblemHeader = memo(function ProblemHeader({
           </div>
           <div className="flex flex-col gap-1 text-xs sm:flex-row sm:items-center sm:gap-6 sm:text-sm">
             <span>총 문항 수: {totalCount} 문제</span>
-            <span>남은 문항 수: {Math.max(0, totalCount - currentIndex + 1)} 문제</span>
+            <span>
+              남은 문항 수:{' '}
+              {remainingProblems !== undefined
+                ? remainingProblems
+                : Math.max(0, totalCount - currentIndex + 1)}{' '}
+              문제
+            </span>
           </div>
         </div>
       </div>

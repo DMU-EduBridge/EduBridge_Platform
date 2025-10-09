@@ -1,153 +1,93 @@
-import { z } from 'zod';
-// API 응답 타입 정의
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
+/**
+ * API 응답 관련 타입 정의
+ */
+
+import type { LearningStatus, Problem } from './learning';
+
+// 기본 API 응답 구조
+export interface ApiResponse<T = unknown> {
   success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
 }
 
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  pagination: {
+// 학습 완료 상태 API 응답
+export interface LearningCompleteResponse extends ApiResponse<LearningStatus> {}
+
+// 진행 상태 API 응답
+export interface ProgressResponse
+  extends ApiResponse<{
+    totalProblems: number;
+    attemptedProblems: number;
+    correctAnswers: number;
+    correctnessRate: number;
+    activeAttemptNumber: number;
+    progress: Array<{
+      problemId: string;
+      attemptNumber: number;
+      selectedAnswer: string;
+      isCorrect: boolean;
+      startedAt?: string;
+      completedAt?: string;
+      timeSpent: number;
+    }>;
+    attemptHistory: Array<{
+      attemptNumber: number;
+      attemptedProblems: number;
+      correctAnswers: number;
+      totalTimeSpent: number;
+      isCompleted: boolean;
+      correctnessRate: number;
+    }>;
+    latestAttemptNumber: number;
+    isLatestAttemptCompleted: boolean;
+  }> {}
+
+// 문제 목록 API 응답
+export interface ProblemsResponse
+  extends ApiResponse<{
+    problems: Problem[];
+    totalCount: number;
     page: number;
     limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
+  }> {}
 
-// 에러 응답 타입
-export interface ApiError {
-  error: string;
+// 학습 자료 API 응답
+export interface LearningMaterialResponse
+  extends ApiResponse<{
+    id: string;
+    title: string;
+    description?: string;
+    subject: string;
+    problems: Problem[];
+  }> {}
+
+// 에러 응답
+export interface ErrorResponse extends ApiResponse {
   success: false;
-  statusCode?: number;
+  error: string;
+  code?: string;
+  details?: Record<string, unknown>;
 }
 
-// Attempts
-export interface AttemptItem {
-  id: string;
-  selected: string;
-  isCorrect: boolean;
-  createdAt: string;
+// 페이지네이션 파라미터
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  offset?: number;
 }
 
-export type AttemptsResponse = AttemptItem[];
-
-export interface AttemptPostBody {
-  selected: string;
+// 정렬 파라미터
+export interface SortParams {
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
-// Solution
-export interface SolutionResponse {
-  correctAnswer: string;
-  explanation: string | null;
-  hints: string[];
-}
-
-// Zod Schemas (공유 DTO)
-export const AttemptPostSchema = z.object({ selected: z.string().min(1) });
-export type AttemptPostDto = z.infer<typeof AttemptPostSchema>;
-
-export const SolutionResponseSchema = z.object({
-  correctAnswer: z.string(),
-  explanation: z.string().nullable(),
-  hints: z.array(z.string()),
-});
-
-export const AttemptsResponseSchema = z.array(
-  z.object({
-    id: z.string(),
-    selected: z.string(),
-    isCorrect: z.boolean(),
-    createdAt: z.string(),
-  }),
-);
-
-export const AttemptPostResponseSchema = z.object({ correct: z.boolean() });
-export type AttemptPostResponse = z.infer<typeof AttemptPostResponseSchema>;
-
-export const CreateProblemSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
-  content: z.string().min(1),
-  subject: z.string().min(1),
-  type: z.enum(['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'TRUE_FALSE']),
-  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']),
-  options: z.array(z.string()).optional(),
-  correctAnswer: z.string().min(1),
-  hints: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
-});
-export type CreateProblemDto = z.infer<typeof CreateProblemSchema>;
-
-// 통계 응답 타입
-export interface StatsResponse {
-  totalProblems?: number;
-  activeProblems?: number;
-  bySubject?: Record<string, number>;
-  byDifficulty?: Record<string, number>;
-  totalStudents?: number;
-  activeStudents?: number;
-  byGrade?: Record<string, number>;
-  averageScore?: number;
-  completionRate?: number;
-  totalReports?: number;
-  completedReports?: number;
-  pendingReports?: number;
-}
-
-// 문제 생성/수정 요청 타입
-export interface CreateProblemRequest {
-  title: string;
-  description: string;
-  content: string;
-  subject: string;
-  type: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'TRUE_FALSE';
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-  options?: string[];
-  correctAnswer: string;
-  hints?: string[];
-  tags?: string[];
-}
-
-export interface UpdateProblemRequest extends Partial<CreateProblemRequest> {
-  id: string;
-}
-
-// 학생 생성/수정 요청 타입
-export interface CreateStudentRequest {
-  name: string;
-  email: string;
-  grade: string;
-  subjects?: string[];
-  learningStyle?: string[];
-  interests?: string[];
-}
-
-export interface UpdateStudentRequest extends Partial<CreateStudentRequest> {
-  id: string;
-}
-
-// 리포트 생성 요청 타입
-export interface CreateReportRequest {
-  title: string;
-  type: string;
-  period: string;
-  studentIds?: string[];
-  subjectIds?: string[];
-}
-
-// 학습 자료 생성/수정 요청 타입
-export interface CreateLearningMaterialRequest {
-  title: string;
-  description?: string;
-  content: string;
-  subject: string;
-  difficulty: string;
-  estimatedTime?: number;
-  files?: string[];
-  status: string;
-}
-
-export interface UpdateLearningMaterialRequest extends Partial<CreateLearningMaterialRequest> {
-  id: string;
+// 필터 파라미터
+export interface FilterParams {
+  subject?: string;
+  difficulty?: string;
+  type?: string;
+  search?: string;
 }

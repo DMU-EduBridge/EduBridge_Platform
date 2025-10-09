@@ -99,7 +99,7 @@ export default function ReportDetailPage() {
             router.push(
               `/my/learning/${encodeURIComponent(studyId)}/problems/${encodeURIComponent(
                 pid,
-              )}?startNewAttempt=1&wrongOnly=1&ids=${idsParam}&from=report`,
+              )}?wrongOnly=1&ids=${idsParam}&from=report`,
             );
           } catch (e) {
             console.error('리포트에서 재풀이 이동 실패:', e);
