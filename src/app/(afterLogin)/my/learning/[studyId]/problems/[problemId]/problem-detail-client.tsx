@@ -10,32 +10,21 @@ import { useProblemNavigation } from '@/hooks/learning/use-problem-navigation';
 import { useProblemSubmission } from '@/hooks/learning/use-problem-submission';
 import { useProgress } from '@/hooks/learning/use-progress';
 import { useStudyItem } from '@/hooks/learning/use-study-item';
-import { useEffect, useRef, useState } from 'react';
+import { DEFAULT_VALUES, ERROR_MESSAGES } from '@/lib/constants/learning';
+import {
+  calculateRemainingProblems,
+  parseStartNewAttemptParam,
+  showBrowserAlert,
+} from '@/lib/utils/learning-utils';
+import type { Problem, ProblemDetailClientProps } from '@/types/learning';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-interface Problem {
-  id: string;
-  title: string;
-  description?: string | undefined;
-  content: string;
-  type: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'TRUE_FALSE' | 'CODING' | 'MATH';
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
-  subject: string;
-  options: string[];
-  correctAnswer: string;
-  explanation?: string | undefined;
-  hints?: any;
-  points: number;
-  timeLimit?: number | undefined;
-}
-
-interface ProblemDetailClientProps {
-  studyId: string;
-  problemId: string;
-  initialProblem?: Problem | undefined;
-  currentIndex: number;
-  totalCount: number;
-  nextProblem?: { id: string } | undefined;
-}
+/**
+ * 문제 상세 페이지 클라이언트 컴포넌트
+ * @param props 컴포넌트 props
+ * @returns JSX.Element
+ */
 
 export function ProblemDetailClient({
   studyId,
@@ -47,12 +36,27 @@ export function ProblemDetailClient({
   const [problem, setProblem] = useState<Problem | undefined>(initialProblem);
   const [shouldStartNewAttempt, setShouldStartNewAttempt] = useState(false);
   const [startTime, setStartTime] = useState<Date>(new Date());
+  const searchParams = useSearchParams();
+
+  // URL에서 startNewAttempt 파라미터를 파싱
+  const startNewAttemptNumber = useMemo(() => {
+    const parsed = parseStartNewAttemptParam(searchParams);
+    return parsed !== undefined ? parsed : shouldStartNewAttempt ? true : false;
+  }, [searchParams, shouldStartNewAttempt]);
 
   // 커스텀 훅들
-  const { addCompletedProblem, activeAttemptNumber } = useProgress(studyId, shouldStartNewAttempt);
+  const { addCompletedProblem, activeAttemptNumber, progressData } = useProgress(
+    studyId,
+    startNewAttemptNumber,
+  );
 
   // 학습 세션 정보 가져오기
   const { data: studyItem } = useStudyItem(studyId);
+
+  // 남은 문항 수 계산 (클라이언트에서 실시간 계산)
+  const clientRemainingProblems = useMemo(() => {
+    return calculateRemainingProblems(progressData.completed, totalCount);
+  }, [progressData.completed, totalCount]);
 
   const { startNewAttemptParam, handleNext } = useProblemNavigation({
     studyId,
@@ -63,13 +67,29 @@ export function ProblemDetailClient({
 
   // 시도 번호 고정: 첫 결정된 시도 번호를 이후 제출에 계속 사용하여 시도 번호 흔들림 방지
   const lockedAttemptNumberRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if (typeof activeAttemptNumber === 'number' && activeAttemptNumber > 0) {
+    console.log('startNewAttemptNumber:', startNewAttemptNumber);
+    console.log('activeAttemptNumber:', activeAttemptNumber);
+    console.log('lockedAttemptNumberRef.current:', lockedAttemptNumberRef.current);
+
+    // startNewAttemptNumber가 유효한 숫자이면 그것을 우선 사용
+    if (
+      typeof startNewAttemptNumber === 'number' &&
+      startNewAttemptNumber > DEFAULT_VALUES.POINTS
+    ) {
+      lockedAttemptNumberRef.current = startNewAttemptNumber;
+      console.log('Using startNewAttemptNumber as lockedAttemptNumber:', startNewAttemptNumber);
+    } else if (
+      typeof activeAttemptNumber === 'number' &&
+      activeAttemptNumber > DEFAULT_VALUES.POINTS
+    ) {
       if (lockedAttemptNumberRef.current === null) {
         lockedAttemptNumberRef.current = activeAttemptNumber;
+        console.log('lockedAttemptNumber set to:', activeAttemptNumber);
       }
     }
-  }, [activeAttemptNumber]);
+  }, [activeAttemptNumber, startNewAttemptNumber]);
 
   const {
     selectedAnswer,
@@ -139,14 +159,10 @@ export function ProblemDetailClient({
     if (!showResult) {
       if (!selectedAnswer) {
         // 답안을 선택하지 않으면 저장 및 이동을 허용하지 않음
-        try {
-          // 브라우저 환경에서만 알림
-          if (typeof window !== 'undefined') {
-            window.alert('답안을 선택한 후 제출해 주세요.');
-          }
-        } catch {}
+        showBrowserAlert(ERROR_MESSAGES.ANSWER_REQUIRED);
         return;
       }
+
       try {
         Promise.resolve(handleSubmit()).finally(() => {
           handleNext();
@@ -156,6 +172,7 @@ export function ProblemDetailClient({
       }
       return;
     }
+
     handleNext();
   };
 
@@ -166,6 +183,7 @@ export function ProblemDetailClient({
           <ProblemHeader
             currentIndex={currentIndex}
             totalCount={totalCount}
+            remainingProblems={clientRemainingProblems}
             attemptNumber={activeAttemptNumber}
             startTime={startTime}
             isActive={!showResult}
@@ -187,7 +205,7 @@ export function ProblemDetailClient({
             <ProblemActions
               selectedAnswer={selectedAnswer}
               showResult={showResult}
-              isLastProblem={currentIndex === totalCount}
+              isLastProblem={currentIndex >= totalCount}
               onSubmit={handleSubmit}
               onNext={handleNextEnsured}
               onPrevious={handlePrevious}
