@@ -120,7 +120,7 @@ model LearningMaterial {
   subject          Subject
   difficulty       ProblemDifficulty
   estimatedTime    Int?
-  files            String?
+  files            Json?
   status           MaterialStatus            @default(DRAFT)
   isActive         Boolean                   @default(true)
   createdAt        DateTime                  @default(now())
@@ -163,7 +163,7 @@ model Problem {
   reviewedBy       String?
   reviewedAt       DateTime?
   generationPrompt String?
-  contextChunkIds  String?
+  contextChunkIds  Json?
   generationTimeMs Int?
   modelName        String?
   tokensUsed       Int?
@@ -197,6 +197,8 @@ model Problem {
   @@index([isAIGenerated, reviewStatus, status, createdAt])
   @@index([createdBy, createdAt])
   @@index([textbookId, gradeLevel])
+  @@index([isActive, createdAt])
+  @@index([subject, isActive, createdAt])
   @@map("problems")
 }
 
@@ -262,6 +264,9 @@ model ProblemProgress {
   @@index([studyId])
   @@index([userId, studyId])
   @@index([userId, studyId, attemptNumber])
+  @@index([userId, isCorrect, completedAt])
+  @@index([userId, studyId, lastAccessed])
+  @@index([userId, studyId, attemptNumber, completedAt])
   @@map("problem_progress")
 }
 
@@ -285,6 +290,7 @@ model Attempt {
   @@index([userId, problemId])
   @@index([userId, studyId])
   @@index([problemId])
+  @@index([userId, studyId, attemptNumber, completedAt])
   @@map("attempts")
 }
 
