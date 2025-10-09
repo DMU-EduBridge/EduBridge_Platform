@@ -2,21 +2,10 @@
  * 학습 관련 타입 정의
  */
 
-export interface Problem {
-  id: string;
-  title: string;
-  description?: string | undefined;
-  content: string;
-  type: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'TRUE_FALSE' | 'CODING' | 'MATH';
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
-  subject: string;
-  options: string[];
-  correctAnswer: string;
-  explanation?: string | undefined;
-  hints?: any;
-  points: number;
-  timeLimit?: number | undefined;
-}
+import type { Problem } from './domain/problem';
+
+// Problem 타입을 다시 export하여 다른 파일에서 사용할 수 있도록 함
+export type { Problem };
 
 export interface LearningMaterial {
   id: string;

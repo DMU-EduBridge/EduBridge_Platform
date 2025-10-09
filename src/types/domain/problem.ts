@@ -9,7 +9,7 @@ export type ProblemType =
   | 'MATH';
 export type ProblemStatus = 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
 
-// 기본 문제 인터페이스
+// 기본 문제 인터페이스 (학습용)
 export interface Problem {
   id: string;
   title: string;
@@ -18,21 +18,24 @@ export interface Problem {
   type: ProblemType;
   difficulty: ProblemDifficulty;
   subject: string;
-  gradeLevel: string | null;
-  unit?: string | null;
-  options?: string[] | null;
-  correctAnswer?: string | null;
+  options: string[];
+  correctAnswer: string;
   explanation?: string | null;
-  hint?: string | null;
+  hints?: any;
+  points: number;
+  timeLimit?: number | null;
+  // 확장 필드들 (관리용)
+  gradeLevel?: string | null;
+  unit?: string | null;
   tags?: string[] | null;
   attachments?: string[] | null;
-  isAIGenerated: boolean;
-  reviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION';
-  status: ProblemStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  isAIGenerated?: boolean;
+  reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION';
+  status?: ProblemStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
   deletedAt?: Date | null;
-  createdBy: string;
+  createdBy?: string;
 }
 
 // 요청/응답 타입
@@ -235,34 +238,9 @@ export function convertLLMProblemToInternal(llmProblem: LLMGeneratedProblem): Pa
     options: llmProblem.options,
     correctAnswer: llmProblem.options[llmProblem.correct_answer] || '',
     explanation: llmProblem.explanation,
-    hint: llmProblem.hint,
+    hints: llmProblem.hint,
     isAIGenerated: true,
     reviewStatus: 'PENDING',
     status: 'DRAFT',
   };
-}
-
-export interface Problem {
-  id: string;
-  title: string;
-  description?: string | null;
-  content: string;
-  type: ProblemType;
-  difficulty: ProblemDifficulty;
-  subject: string;
-  gradeLevel: string | null;
-  unit?: string | null;
-  options?: string[] | null;
-  correctAnswer?: string | null;
-  explanation?: string | null;
-  hint?: string | null;
-  tags?: string[] | null;
-  attachments?: string[] | null;
-  isAIGenerated: boolean;
-  reviewStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'NEEDS_REVISION';
-  status: ProblemStatus;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date | null;
-  createdBy: string;
 }

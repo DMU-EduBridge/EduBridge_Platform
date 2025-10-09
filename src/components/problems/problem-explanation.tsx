@@ -1,22 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-
-interface Problem {
-  id: string;
-  title: string;
-  description?: string | undefined;
-  content: string;
-  type: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'ESSAY' | 'TRUE_FALSE' | 'CODING' | 'MATH';
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
-  subject: string;
-  options: string[];
-  correctAnswer: string;
-  explanation?: string | undefined;
-  hints?: any;
-  points: number;
-  timeLimit?: number | undefined;
-}
+import type { Problem } from '@/types/domain/problem';
 
 interface ProblemExplanationProps {
   problem: Problem;
