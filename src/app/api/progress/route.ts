@@ -61,7 +61,16 @@ export async function GET(request: NextRequest) {
   return withAuth(async ({ userId }) => {
     const { searchParams } = new URL(request.url);
     const studyId = searchParams.get('studyId');
-    const startNewAttempt = searchParams.get('startNewAttempt') === 'true';
+    const startNewAttemptParam = searchParams.get('startNewAttempt');
+    let startNewAttempt: boolean | number | undefined;
+
+    if (startNewAttemptParam === 'true') {
+      startNewAttempt = true;
+    } else if (startNewAttemptParam === 'false') {
+      startNewAttempt = false;
+    } else if (startNewAttemptParam && !isNaN(Number(startNewAttemptParam))) {
+      startNewAttempt = Number(startNewAttemptParam);
+    }
 
     if (!studyId) {
       return new Response(JSON.stringify({ success: false, error: 'studyId가 필요합니다.' }), {

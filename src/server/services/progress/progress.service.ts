@@ -47,7 +47,25 @@ export class ProgressService {
     if (hasProvidedAttemptNumber) {
       resolvedAttemptNumber = Math.max(parsedAttemptNumber, latestAttemptNumber || 1);
     } else if (forceNewAttempt) {
-      resolvedAttemptNumber = latestAttemptNumber + 1;
+      // forceNewAttempt가 true인 경우, 기존 시도가 완료되었는지 확인
+      if (existingLatestAttempt) {
+        const attemptEntries = await prisma.problemProgress.findMany({
+          where: { userId, studyId, attemptNumber: existingLatestAttempt.attemptNumber },
+          select: { problemId: true },
+        });
+
+        const uniqueProblemCount = new Set(attemptEntries.map((entry) => entry.problemId)).size;
+        const attemptCompleted = uniqueProblemCount >= totalProblems;
+
+        if (attemptCompleted) {
+          resolvedAttemptNumber = existingLatestAttempt.attemptNumber + 1;
+        } else {
+          // 기존 시도가 완료되지 않았으면 기존 시도 계속 진행
+          resolvedAttemptNumber = existingLatestAttempt.attemptNumber;
+        }
+      } else {
+        resolvedAttemptNumber = 1;
+      }
     } else if (existingLatestAttempt) {
       const attemptEntries = await prisma.problemProgress.findMany({
         where: { userId, studyId, attemptNumber: existingLatestAttempt.attemptNumber },
@@ -140,7 +158,9 @@ export class ProgressService {
     };
   }
 
-  async getProgress(userId: string, studyId: string, startNewAttempt?: boolean) {
+  async getProgress(userId: string, studyId: string, startNewAttempt?: boolean | number) {
+    console.log('getProgress called with startNewAttempt:', startNewAttempt);
+
     const totalProblems = await prisma.learningMaterialProblem.count({
       where: { learningMaterialId: studyId },
     });
@@ -165,8 +185,19 @@ export class ProgressService {
 
     let activeAttemptNumber: number = latestAttemptNumber;
 
+    console.log('latestAttemptNumber:', latestAttemptNumber);
+    console.log('startNewAttempt:', startNewAttempt);
+
     if (startNewAttempt) {
-      activeAttemptNumber = latestAttemptNumber + 1;
+      if (typeof startNewAttempt === 'number') {
+        // 숫자로 전달된 경우 해당 시도 번호 사용
+        activeAttemptNumber = startNewAttempt;
+        console.log('Using startNewAttempt as number:', startNewAttempt);
+      } else {
+        // boolean으로 전달된 경우 기존 로직 사용
+        activeAttemptNumber = latestAttemptNumber + 1;
+        console.log('Using boolean logic, new attempt:', activeAttemptNumber);
+      }
     } else if (latestAttemptNumber > 0) {
       const latestEntries = progressEntries.filter(
         (entry) => entry.attemptNumber === latestAttemptNumber,
@@ -184,6 +215,8 @@ export class ProgressService {
     if (activeAttemptNumber < 1) {
       activeAttemptNumber = 1;
     }
+
+    console.log('Final activeAttemptNumber:', activeAttemptNumber);
 
     const currentAttemptEntries = progressEntries.filter(
       (entry) => entry.attemptNumber === activeAttemptNumber,

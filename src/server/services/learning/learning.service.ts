@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/core/prisma';
 
 export class LearningService {
-  async getCompleteStatus(userId: string, studyId: string) {
+  async getCompleteStatus(userId: string, studyId: string, startNewAttempt?: boolean | number) {
     // 해당 학습 자료의 모든 문제 조회
     const allProblems = await prisma.problem.findMany({
       where: {
@@ -40,10 +40,52 @@ export class LearningService {
       new Set(completedAttempts.map((attempt) => attempt.attemptNumber)),
     ).sort((a, b) => a - b);
     const latestAttemptNumber =
-      attemptNumbers.length > 0 ? attemptNumbers[attemptNumbers.length - 1] : 1;
+      attemptNumbers.length > 0 ? (attemptNumbers[attemptNumbers.length - 1] as number) : 0;
 
+    // 현재 활성 시도 번호 계산 (Progress Service 로직과 동일)
+    let activeAttemptNumber: number;
+
+    if (startNewAttempt) {
+      if (typeof startNewAttempt === 'number') {
+        // 숫자로 전달된 경우 해당 시도 번호 사용 (새로운 시도 시작)
+        activeAttemptNumber = startNewAttempt;
+      } else {
+        // boolean으로 전달된 경우 기존 로직 사용
+        activeAttemptNumber = latestAttemptNumber + 1;
+      }
+    } else if (latestAttemptNumber > 0) {
+      // 모든 시도 번호를 확인하여 완료된 시도가 있는지 찾기
+      const attemptNumbers = Array.from(
+        new Set(completedAttempts.map((entry) => entry.attemptNumber)),
+      ).sort((a, b) => a - b);
+
+      let completedAttemptNumber = 0;
+
+      // 각 시도 번호별로 완료 여부 확인
+      for (const attemptNum of attemptNumbers) {
+        const attemptEntries = completedAttempts.filter(
+          (attempt) => attempt.attemptNumber === attemptNum,
+        );
+        const uniqueCount = new Set(attemptEntries.map((attempt) => attempt.problemId)).size;
+        const isCompleted = uniqueCount >= allProblems.length && allProblems.length > 0;
+
+        if (isCompleted) {
+          completedAttemptNumber = attemptNum;
+        }
+      }
+
+      // 완료된 시도가 있으면 해당 시도 번호 사용, 없으면 최신 시도 번호 사용
+      activeAttemptNumber =
+        completedAttemptNumber > 0 ? completedAttemptNumber : latestAttemptNumber;
+    } else {
+      // 첫 번째 시도
+      activeAttemptNumber = 1;
+    }
+
+    // startNewAttempt가 있으면 해당 시도 번호의 데이터를 조회, 없으면 최신 시도 번호의 데이터를 조회
+    const targetAttemptNumber = startNewAttempt ? activeAttemptNumber : latestAttemptNumber;
     const latestAttemptEntries = completedAttempts.filter(
-      (attempt) => attempt.attemptNumber === latestAttemptNumber,
+      (attempt) => attempt.attemptNumber === targetAttemptNumber,
     );
 
     const latestAttempts = new Map();
@@ -67,7 +109,10 @@ export class LearningService {
     const wrongAnswers = completedProblems.length - correctAnswers;
 
     // 모든 문제가 완료되었는지 확인 (정확한 개수 비교)
-    const isCompleted = completedProblems.length === allProblems.length && allProblems.length > 0;
+    // startNewAttempt가 있으면 새로운 시도이므로 완료되지 않은 상태로 처리
+    const isCompleted = startNewAttempt
+      ? false
+      : completedProblems.length === allProblems.length && allProblems.length > 0;
 
     return {
       totalProblems: allProblems.length,
@@ -75,7 +120,7 @@ export class LearningService {
       correctAnswers,
       wrongAnswers: wrongAnswers,
       isCompleted,
-      attemptNumber: latestAttemptNumber,
+      attemptNumber: activeAttemptNumber, // 현재 활성 시도 번호 사용
       attempts: Array.from(latestAttempts.values()).map((attempt) => ({
         problemId: attempt.problemId,
         isCorrect: attempt.isCorrect,
