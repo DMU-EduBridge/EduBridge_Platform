@@ -1,6 +1,8 @@
 import { authOptions } from '@/lib/core/auth';
+import { ApiSuccess, ApiError } from '@/lib/api-response';
 import { logger } from '@/lib/monitoring';
 import { getServerSession, Session } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 export type ApiResult<T> = { success: true; data: T } | { success: false; error: string };
 
@@ -9,10 +11,7 @@ export function ok<T>(data: T): ApiResult<T> {
 }
 
 export function fail(error: string, status = 400) {
-  return new Response(JSON.stringify({ success: false, error }), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return ApiError.badRequest(error);
 }
 
 export async function withAuth(
@@ -20,7 +19,7 @@ export async function withAuth(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return fail('인증이 필요합니다.', 401);
+    return ApiError.unauthorized();
   }
   try {
     return await fn({ userId: session.user.id, session });
@@ -28,6 +27,6 @@ export async function withAuth(
     logger.error('API 처리 실패', undefined, {
       error: error instanceof Error ? error.message : String(error),
     });
-    return fail('서버 오류가 발생했습니다.', 500);
+    return ApiError.internalError();
   }
 }

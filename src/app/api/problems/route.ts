@@ -1,3 +1,4 @@
+import { ApiSuccess } from '@/lib/api-response';
 import { logger } from '@/lib/monitoring';
 import { CreateProblemSchema, ProblemQuerySchema } from '@/lib/validation/schemas';
 import { ok, withAuth } from '@/server/http/handler';
@@ -24,9 +25,7 @@ export async function GET(request: NextRequest) {
 
     const result = await problemsService.getProblems(query);
     logger.info('문제 목록 조회 성공', { userId, count: result.problems.length });
-    return new Response(JSON.stringify(ok(result)), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return ApiSuccess.ok(result);
   });
 }
 
@@ -40,9 +39,6 @@ export async function POST(request: NextRequest) {
 
     const problem = await problemsService.createProblem(data, userId);
     logger.info('문제 생성 성공', { userId, problemId: problem.id });
-    return new Response(JSON.stringify(ok(problem)), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return ApiSuccess.created(problem);
   });
 }

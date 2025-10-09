@@ -1,6 +1,7 @@
+import { ApiSuccess, ApiError } from '@/lib/api-response';
 import { logger } from '@/lib/monitoring';
 import { ProgressPostSchema } from '@/lib/validation/schemas';
-import { ok, withAuth } from '@/server/http/handler';
+import { withAuth } from '@/server/http/handler';
 import { progressService } from '@/server/services/progress/progress.service';
 import { NextRequest } from 'next/server';
 
@@ -19,36 +20,14 @@ export async function POST(request: NextRequest) {
         studyId: data.studyId,
         problemId: data.problemId,
       });
-      return new Response(JSON.stringify(ok(result)), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return ApiSuccess.ok(result);
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'PROBLEM_NOT_IN_STUDY') {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: '해당 문제는 이 학습 자료에 속하지 않습니다.',
-              code: 'PROBLEM_NOT_IN_STUDY',
-            }),
-            {
-              status: 400,
-              headers: { 'Content-Type': 'application/json' },
-            },
-          );
+          return ApiError.badRequest('해당 문제는 이 학습 자료에 속하지 않습니다.');
         }
         if (error.message === 'NO_PROBLEMS') {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: '학습 자료에 등록된 문제가 없습니다.',
-              code: 'NO_PROBLEMS',
-            }),
-            {
-              status: 400,
-              headers: { 'Content-Type': 'application/json' },
-            },
-          );
+          return ApiError.badRequest('학습 자료에 등록된 문제가 없습니다.');
         }
       }
       throw error;
@@ -73,17 +52,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (!studyId) {
-      return new Response(JSON.stringify({ success: false, error: 'studyId가 필요합니다.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return ApiError.badRequest('studyId가 필요합니다.');
     }
 
     const result = await progressService.getProgress(userId, studyId, startNewAttempt);
     logger.info('학습 진행 상태 조회 성공', { userId, studyId });
-    return new Response(JSON.stringify(ok(result)), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return ApiSuccess.ok(result);
   });
 }
 
@@ -95,10 +69,7 @@ export async function DELETE(request: NextRequest) {
     const problemId = searchParams.get('problemId');
 
     if (!studyId) {
-      return new Response(JSON.stringify({ success: false, error: 'studyId가 필요합니다.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return ApiError.badRequest('studyId가 필요합니다.');
     }
 
     const result = await progressService.deleteProgress(userId, studyId, problemId || undefined);
@@ -108,8 +79,6 @@ export async function DELETE(request: NextRequest) {
       problemId,
       deletedCount: result.deletedCount,
     });
-    return new Response(JSON.stringify(ok(result)), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return ApiSuccess.ok(result);
   });
 }

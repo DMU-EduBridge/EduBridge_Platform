@@ -1,5 +1,6 @@
+import { ApiSuccess, ApiError } from '@/lib/api-response';
 import { logger } from '@/lib/monitoring';
-import { ok, withAuth } from '@/server/http/handler';
+import { withAuth } from '@/server/http/handler';
 import { learningService } from '@/server/services/learning/learning.service';
 import { NextRequest } from 'next/server';
 
@@ -20,17 +21,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (!studyId) {
-      return new Response(JSON.stringify({ success: false, error: 'studyId가 필요합니다.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return ApiError.badRequest('studyId가 필요합니다.');
     }
 
     const result = await learningService.getCompleteStatus(userId, studyId, startNewAttempt);
     logger.info('학습 완료 상태 조회 성공', { userId, studyId });
-    return new Response(JSON.stringify(ok(result)), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return ApiSuccess.ok(result);
   });
 }
 
@@ -41,16 +37,11 @@ export async function DELETE(request: NextRequest) {
     const studyId = searchParams.get('studyId');
 
     if (!studyId) {
-      return new Response(JSON.stringify({ success: false, error: 'studyId가 필요합니다.' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return ApiError.badRequest('studyId가 필요합니다.');
     }
 
     const result = await learningService.resetCompleteStatus(userId, studyId);
     logger.info('학습 완료 상태 초기화 성공', { userId, studyId });
-    return new Response(JSON.stringify(ok(result)), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return ApiSuccess.ok(result);
   });
 }
