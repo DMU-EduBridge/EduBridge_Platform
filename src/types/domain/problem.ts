@@ -17,7 +17,23 @@ export interface Problem {
   content: string;
   type: ProblemType;
   difficulty: ProblemDifficulty;
-  subject: string;
+  subject:
+    | 'KOREAN'
+    | 'MATH'
+    | 'ENGLISH'
+    | 'SCIENCE'
+    | 'SOCIAL_STUDIES'
+    | 'HISTORY'
+    | 'GEOGRAPHY'
+    | 'PHYSICS'
+    | 'CHEMISTRY'
+    | 'BIOLOGY'
+    | 'COMPUTER_SCIENCE'
+    | 'ART'
+    | 'MUSIC'
+    | 'PHYSICAL_EDUCATION'
+    | 'ETHICS'
+    | 'OTHER';
   options: string[];
   correctAnswer: string;
   explanation?: string | null;
@@ -25,7 +41,20 @@ export interface Problem {
   points: number;
   timeLimit?: number | null;
   // 확장 필드들 (관리용)
-  gradeLevel?: string | null;
+  gradeLevel?:
+    | 'GRADE_1'
+    | 'GRADE_2'
+    | 'GRADE_3'
+    | 'GRADE_4'
+    | 'GRADE_5'
+    | 'GRADE_6'
+    | 'GRADE_7'
+    | 'GRADE_8'
+    | 'GRADE_9'
+    | 'GRADE_10'
+    | 'GRADE_11'
+    | 'GRADE_12'
+    | null;
   unit?: string | null;
   tags?: string[] | null;
   attachments?: string[] | null;
@@ -45,7 +74,23 @@ export interface CreateProblemRequest {
   content: string;
   type: ProblemType;
   difficulty: ProblemDifficulty;
-  subject: string;
+  subject:
+    | 'KOREAN'
+    | 'MATH'
+    | 'ENGLISH'
+    | 'SCIENCE'
+    | 'SOCIAL_STUDIES'
+    | 'HISTORY'
+    | 'GEOGRAPHY'
+    | 'PHYSICS'
+    | 'CHEMISTRY'
+    | 'BIOLOGY'
+    | 'COMPUTER_SCIENCE'
+    | 'ART'
+    | 'MUSIC'
+    | 'PHYSICAL_EDUCATION'
+    | 'ETHICS'
+    | 'OTHER';
   gradeLevel?: string;
   unit?: string;
   options?: string[];
@@ -96,17 +141,17 @@ export interface ProblemQueryParams {
 // LLM 생성 문제를 위한 확장된 타입
 export type LLMProblemDifficulty = 'easy' | 'medium' | 'hard' | 'expert';
 export type LLMProblemSubject =
-  | '수학'
-  | '과학'
-  | '국어'
-  | '영어'
-  | '사회'
-  | '역사'
-  | '지리'
-  | '물리'
-  | '화학'
-  | '생물'
-  | '지구과학';
+  | 'MATH'
+  | 'SCIENCE'
+  | 'KOREAN'
+  | 'ENGLISH'
+  | 'SOCIAL_STUDIES'
+  | 'HISTORY'
+  | 'GEOGRAPHY'
+  | 'PHYSICS'
+  | 'CHEMISTRY'
+  | 'BIOLOGY'
+  | 'EARTH_SCIENCE';
 
 // LLM 생성 문제 인터페이스
 export interface LLMGeneratedProblem {
@@ -234,7 +279,23 @@ export function convertLLMProblemToInternal(llmProblem: LLMGeneratedProblem): Pa
     content: llmProblem.question,
     type: 'MULTIPLE_CHOICE',
     difficulty: llmProblem.difficulty.toUpperCase() as ProblemDifficulty,
-    subject: llmProblem.subject,
+    subject: llmProblem.subject as
+      | 'KOREAN'
+      | 'MATH'
+      | 'ENGLISH'
+      | 'SCIENCE'
+      | 'SOCIAL_STUDIES'
+      | 'HISTORY'
+      | 'GEOGRAPHY'
+      | 'PHYSICS'
+      | 'CHEMISTRY'
+      | 'BIOLOGY'
+      | 'COMPUTER_SCIENCE'
+      | 'ART'
+      | 'MUSIC'
+      | 'PHYSICAL_EDUCATION'
+      | 'ETHICS'
+      | 'OTHER',
     options: llmProblem.options,
     correctAnswer: llmProblem.options[llmProblem.correct_answer] || '',
     explanation: llmProblem.explanation,

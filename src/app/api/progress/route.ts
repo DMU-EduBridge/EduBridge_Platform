@@ -11,8 +11,11 @@ export const runtime = 'nodejs';
 // 문제 완료 상태 저장
 export const POST = withErrorHandler(async (request: NextRequest) => {
   return withAuth(async ({ userId }) => {
+    console.log('POST /api/progress called with userId:', userId);
     const body = await request.json();
+    console.log('Request body:', body);
     const data = ProgressPostSchema.parse(body);
+    console.log('Parsed data:', data);
 
     try {
       const result = await progressService.saveProgress(userId, data);

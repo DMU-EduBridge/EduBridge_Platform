@@ -78,15 +78,15 @@ model Class {
 }
 
 model ClassMember {
-  id       String    @id @default(cuid())
+  id       String         @id @default(cuid())
   classId  String
   userId   String
-  role     String    @default("STUDENT")
-  joinedAt DateTime  @default(now())
+  role     ClassMemberRole @default(STUDENT)
+  joinedAt DateTime       @default(now())
   leftAt   DateTime?
-  isActive Boolean   @default(true)
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  class    Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  isActive Boolean        @default(true)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class    Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@unique([classId, userId])
   @@index([classId])
@@ -97,16 +97,16 @@ model ClassMember {
 }
 
 model UserPreferences {
-  id                  String  @id @default(cuid())
-  userId              String  @unique
-  preferredDifficulty String  @default("MEDIUM")
-  learningStyle       String
+  id                  String           @id @default(cuid())
+  userId              String           @unique
+  preferredDifficulty ProblemDifficulty @default(MEDIUM)
+  learningStyle       LearningStyle
   studyTime           Int?
   interests           String
-  emailNotifications  Boolean @default(true)
-  pushNotifications   Boolean @default(true)
-  weeklyReport        Boolean @default(true)
-  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailNotifications  Boolean          @default(true)
+  pushNotifications   Boolean          @default(true)
+  weeklyReport        Boolean          @default(true)
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_preferences")
@@ -117,11 +117,11 @@ model LearningMaterial {
   title            String
   description      String?
   content          String
-  subject          String
-  difficulty       String
+  subject          Subject
+  difficulty       ProblemDifficulty
   estimatedTime    Int?
   files            String?
-  status           String                    @default("DRAFT")
+  status           MaterialStatus            @default(DRAFT)
   isActive         Boolean                   @default(true)
   createdAt        DateTime                  @default(now())
   updatedAt        DateTime                  @updatedAt
@@ -144,8 +144,8 @@ model Problem {
   content          String
   type             ProblemType
   difficulty       ProblemDifficulty
-  subject          String
-  gradeLevel       String?
+  subject          Subject
+  gradeLevel       GradeLevel?
   unit             String?
   options          Json?
   correctAnswer    String
@@ -204,7 +204,7 @@ model TeacherReport {
   id               String           @id @default(cuid())
   title            String
   content          String
-  reportType       String           @default("full")
+  reportType       ReportType       @default(PROGRESS_REPORT)
   classInfo        Json?
   students         Json?
   analysisData     Json?
@@ -311,17 +311,17 @@ model ProblemAssignment {
 }
 
 model Todo {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   userId      String
   text        String
-  completed   Boolean   @default(false)
-  priority    String    @default("medium")
-  category    String?
+  completed   Boolean    @default(false)
+  priority    TodoPriority @default(MEDIUM)
+  category    TodoCategory?
   description String?
   dueDate     DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, completed])
   @@map("todos")
@@ -330,8 +330,8 @@ model Todo {
 model Textbook {
   id               String           @id @default(cuid())
   title            String
-  subject          String
-  gradeLevel       String
+  subject          Subject
+  gradeLevel       GradeLevel
   publisher        String?
   fileName         String
   filePath         String
@@ -373,8 +373,8 @@ model DocumentChunk {
 model SearchQuery {
   id           String         @id @default(cuid())
   queryText    String
-  subject      String?
-  gradeLevel   String?
+  subject      Subject?
+  gradeLevel   GradeLevel?
   unit         String?
   resultsCount Int
   searchTimeMs Int
@@ -440,7 +440,7 @@ model AIServerStatus {
 model AIServerSync {
   id               String     @id @default(cuid())
   serverName       String
-  syncType         String
+  syncType         SyncType
   status           SyncStatus @default(PENDING)
   startTime        DateTime   @default(now())
   endTime          DateTime?
@@ -536,4 +536,99 @@ enum AnalysisType {
   TOP_PERFORMERS
   SUBJECT_ANALYSIS
   TREND_ANALYSIS
+}
+
+enum ClassMemberRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum LearningStyle {
+  VISUAL
+  AUDITORY
+  KINESTHETIC
+  READING_WRITING
+}
+
+enum Subject {
+  KOREAN
+  MATH
+  ENGLISH
+  SCIENCE
+  SOCIAL_STUDIES
+  HISTORY
+  GEOGRAPHY
+  PHYSICS
+  CHEMISTRY
+  BIOLOGY
+  COMPUTER_SCIENCE
+  ART
+  MUSIC
+  PHYSICAL_EDUCATION
+  ETHICS
+  OTHER
+}
+
+enum MaterialStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum GradeLevel {
+  KINDERGARTEN
+  GRADE_1
+  GRADE_2
+  GRADE_3
+  GRADE_4
+  GRADE_5
+  GRADE_6
+  GRADE_7
+  GRADE_8
+  GRADE_9
+  GRADE_10
+  GRADE_11
+  GRADE_12
+  UNIVERSITY
+  ADULT
+}
+
+enum ReportType {
+  PROGRESS_REPORT
+  ACHIEVEMENT_REPORT
+  BEHAVIOR_REPORT
+  ATTENDANCE_REPORT
+  PERFORMANCE_REPORT
+  OTHER
+}
+
+enum TodoPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TodoCategory {
+  PERSONAL
+  WORK
+  STUDY
+  HEALTH
+  FINANCE
+  FAMILY
+  OTHER
+}
+
+enum TextbookStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum SyncType {
+  FULL_SYNC
+  INCREMENTAL_SYNC
+  MANUAL_SYNC
+  SCHEDULED_SYNC
 }

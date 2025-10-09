@@ -8,7 +8,23 @@ export interface LearningMaterial {
   id: string;
   title: string;
   description?: string;
-  subject: string;
+  subject:
+    | 'KOREAN'
+    | 'MATH'
+    | 'ENGLISH'
+    | 'SCIENCE'
+    | 'SOCIAL_STUDIES'
+    | 'HISTORY'
+    | 'GEOGRAPHY'
+    | 'PHYSICS'
+    | 'CHEMISTRY'
+    | 'BIOLOGY'
+    | 'COMPUTER_SCIENCE'
+    | 'ART'
+    | 'MUSIC'
+    | 'PHYSICAL_EDUCATION'
+    | 'ETHICS'
+    | 'OTHER';
 }
 
 export interface ProblemAnswer {

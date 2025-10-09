@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 export class ProgressService {
   async saveProgress(userId: string, data: z.infer<typeof ProgressPostSchema>) {
+    console.log('saveProgress called with:', { userId, data });
+
     const {
       studyId,
       problemId,
@@ -93,36 +95,53 @@ export class ProgressService {
         ? Math.floor((Date.now() - startedAt.getTime()) / 1000)
         : 0;
 
-    await prisma.problemProgress.upsert({
-      where: {
-        userId_studyId_problemId_attemptNumber: {
+    console.log('About to upsert with:', {
+      userId,
+      studyId,
+      problemId,
+      attemptNumber: resolvedAttemptNumber,
+      selectedAnswer,
+      isCorrect,
+      startedAt,
+      computedTimeSpent,
+    });
+
+    try {
+      await prisma.problemProgress.upsert({
+        where: {
+          userId_studyId_problemId_attemptNumber: {
+            userId,
+            studyId,
+            problemId,
+            attemptNumber: resolvedAttemptNumber,
+          },
+        },
+        update: {
+          selectedAnswer,
+          isCorrect,
+          startedAt: startedAt ?? new Date(Date.now() - computedTimeSpent * 1000),
+          completedAt: new Date(),
+          timeSpent: computedTimeSpent,
+          lastAccessed: new Date(),
+        },
+        create: {
           userId,
           studyId,
           problemId,
           attemptNumber: resolvedAttemptNumber,
+          selectedAnswer,
+          isCorrect,
+          startedAt: startedAt ?? new Date(Date.now() - computedTimeSpent * 1000),
+          completedAt: new Date(),
+          timeSpent: computedTimeSpent,
+          lastAccessed: new Date(),
         },
-      },
-      update: {
-        selectedAnswer,
-        isCorrect,
-        startedAt: startedAt ?? new Date(Date.now() - computedTimeSpent * 1000),
-        completedAt: new Date(),
-        timeSpent: computedTimeSpent,
-        lastAccessed: new Date(),
-      },
-      create: {
-        userId,
-        studyId,
-        problemId,
-        attemptNumber: resolvedAttemptNumber,
-        selectedAnswer,
-        isCorrect,
-        startedAt: startedAt ?? new Date(Date.now() - computedTimeSpent * 1000),
-        completedAt: new Date(),
-        timeSpent: computedTimeSpent,
-        lastAccessed: new Date(),
-      },
-    });
+      });
+      console.log('Upsert successful');
+    } catch (error) {
+      console.error('Upsert failed:', error);
+      throw error;
+    }
 
     const attemptEntries = await prisma.problemProgress.findMany({
       where: { userId, studyId, attemptNumber: resolvedAttemptNumber },
