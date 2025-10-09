@@ -1,4 +1,5 @@
 import { ApiSuccess } from '@/lib/api-response';
+import { withErrorHandler } from '@/lib/errors/error-handler';
 import { logger } from '@/lib/monitoring';
 import { CreateProblemSchema, ProblemQuerySchema } from '@/lib/validation/schemas';
 import { ok, withAuth } from '@/server/http/handler';
@@ -8,7 +9,7 @@ import { NextRequest } from 'next/server';
 /**
  * 문제 목록 조회
  */
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async (request: NextRequest) => {
   return withAuth(async ({ userId }) => {
     const { searchParams } = new URL(request.url);
     const query = ProblemQuerySchema.parse({
@@ -27,12 +28,12 @@ export async function GET(request: NextRequest) {
     logger.info('문제 목록 조회 성공', { userId, count: result.problems.length });
     return ApiSuccess.ok(result);
   });
-}
+});
 
 /**
  * 문제 생성
  */
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
   return withAuth(async ({ userId }) => {
     const body = await request.json();
     const data = CreateProblemSchema.parse(body);
@@ -41,4 +42,4 @@ export async function POST(request: NextRequest) {
     logger.info('문제 생성 성공', { userId, problemId: problem.id });
     return ApiSuccess.created(problem);
   });
-}
+});

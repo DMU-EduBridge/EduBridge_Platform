@@ -1,11 +1,12 @@
 import { ApiSuccess, ApiError } from '@/lib/api-response';
+import { withErrorHandler } from '@/lib/errors/error-handler';
 import { logger } from '@/lib/monitoring';
 import { withAuth } from '@/server/http/handler';
 import { learningService } from '@/server/services/learning/learning.service';
 import { NextRequest } from 'next/server';
 
 // 학습 완료 상태 조회
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async (request: NextRequest) => {
   return withAuth(async ({ userId }) => {
     const { searchParams } = new URL(request.url);
     const studyId = searchParams.get('studyId');
@@ -28,10 +29,10 @@ export async function GET(request: NextRequest) {
     logger.info('학습 완료 상태 조회 성공', { userId, studyId });
     return ApiSuccess.ok(result);
   });
-}
+});
 
 // 학습 완료 상태 초기화 (다시 풀기용)
-export async function DELETE(request: NextRequest) {
+export const DELETE = withErrorHandler(async (request: NextRequest) => {
   return withAuth(async ({ userId }) => {
     const { searchParams } = new URL(request.url);
     const studyId = searchParams.get('studyId');
@@ -44,4 +45,4 @@ export async function DELETE(request: NextRequest) {
     logger.info('학습 완료 상태 초기화 성공', { userId, studyId });
     return ApiSuccess.ok(result);
   });
-}
+});

@@ -15,7 +15,7 @@ export function fail(error: string, status = 400) {
 }
 
 export async function withAuth(
-  fn: (ctx: { userId: string; session?: Session | null }) => Promise<Response>,
+  fn: (ctx: { userId: string; session?: Session | null }) => Promise<NextResponse>,
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

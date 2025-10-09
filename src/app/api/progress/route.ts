@@ -1,4 +1,5 @@
 import { ApiSuccess, ApiError } from '@/lib/api-response';
+import { withErrorHandler } from '@/lib/errors/error-handler';
 import { logger } from '@/lib/monitoring';
 import { ProgressPostSchema } from '@/lib/validation/schemas';
 import { withAuth } from '@/server/http/handler';
@@ -8,7 +9,7 @@ import { NextRequest } from 'next/server';
 export const runtime = 'nodejs';
 
 // 문제 완료 상태 저장
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
   return withAuth(async ({ userId }) => {
     const body = await request.json();
     const data = ProgressPostSchema.parse(body);
@@ -33,10 +34,10 @@ export async function POST(request: NextRequest) {
       throw error;
     }
   });
-}
+});
 
 // 학습 진행 상태 조회
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async (request: NextRequest) => {
   return withAuth(async ({ userId }) => {
     const { searchParams } = new URL(request.url);
     const studyId = searchParams.get('studyId');
@@ -59,10 +60,10 @@ export async function GET(request: NextRequest) {
     logger.info('학습 진행 상태 조회 성공', { userId, studyId });
     return ApiSuccess.ok(result);
   });
-}
+});
 
 // 문제 진행 상태 삭제 (재시도용)
-export async function DELETE(request: NextRequest) {
+export const DELETE = withErrorHandler(async (request: NextRequest) => {
   return withAuth(async ({ userId }) => {
     const { searchParams } = new URL(request.url);
     const studyId = searchParams.get('studyId');
@@ -81,4 +82,4 @@ export async function DELETE(request: NextRequest) {
     });
     return ApiSuccess.ok(result);
   });
-}
+});
