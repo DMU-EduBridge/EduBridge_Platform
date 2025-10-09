@@ -2,7 +2,7 @@
  * 오답노트 API 엔드포인트
  */
 
-import { ApiSuccess, ApiError } from '@/lib/api-response';
+import { ApiError, ApiSuccess } from '@/lib/api-response';
 import { authOptions } from '@/lib/core/auth';
 import { withErrorHandler } from '@/lib/errors/error-handler';
 import { createIncorrectAnswersData } from '@/server/services/incorrect-answers.service';

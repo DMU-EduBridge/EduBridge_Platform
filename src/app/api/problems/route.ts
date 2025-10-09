@@ -2,7 +2,7 @@ import { ApiSuccess } from '@/lib/api-response';
 import { withErrorHandler } from '@/lib/errors/error-handler';
 import { logger } from '@/lib/monitoring';
 import { CreateProblemSchema, ProblemQuerySchema } from '@/lib/validation/schemas';
-import { ok, withAuth } from '@/server/http/handler';
+import { withAuth } from '@/server/http/handler';
 import { problemsService } from '@/server/services/problems/problems.service';
 import { NextRequest } from 'next/server';
 
