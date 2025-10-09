@@ -189,7 +189,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 OPENAI_API_KEY=your-openai-api-key
 
 # 개발용 비밀번호
-DEV_TEST_PASSWORD=student123
+DEV_TEST_PASSWORD=password123
 
 # 로깅 레벨
 LOG_LEVEL=info
@@ -243,18 +243,18 @@ npm run dev
 #### 관리자 계정
 
 - **이메일**: `admin@example.com`
-- **비밀번호**: `student123`
+- **비밀번호**: `password123`
 
 #### 교사 계정들
 
-- **수학 교사**: `math_teacher1@example.com` / `student123`
-- **과학 교사**: `science_teacher@example.com` / `student123`
-- **영어 교사**: `english_teacher@example.com` / `student123`
+- **수학 교사**: `math_teacher1@example.com` / `password123`
+- **과학 교사**: `science_teacher@example.com` / `password123`
+- **영어 교사**: `english_teacher@example.com` / `password123`
 
 #### 학생 계정들
 
-- **학생 1**: `student1@example.com` / `student123`
-- **학생 2**: `student2@example.com` / `student123`
+- **학생 1**: `student1@example.com` / `password123`
+- **학생 2**: `student2@example.com` / `password123`
 
 #### 데모 계정
 

@@ -13,7 +13,7 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - CHROMA_URL=http://chromadb:8000
-      - DEV_TEST_PASSWORD=${DEV_TEST_PASSWORD:-student123}
+      - DEV_TEST_PASSWORD=${DEV_TEST_PASSWORD:-password123}
     depends_on:
       db:
         condition: service_healthy
