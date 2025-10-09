@@ -81,18 +81,41 @@ export default async function ProblemDetailPage({ params, searchParams }: Proble
     const latestAttemptNumber =
       attemptNumbers.length > 0 ? attemptNumbers[attemptNumbers.length - 1] : 0;
 
+    const startNewAttemptParam =
+      (typeof searchParams?.startNewAttempt === 'string' && searchParams.startNewAttempt !== '') ||
+      (Array.isArray(searchParams?.startNewAttempt) && searchParams.startNewAttempt.length > 0);
+
+    // startNewAttempt가 있으면 해당 시도 번호 사용, 없으면 최신 시도 번호 사용
+    const targetAttemptNumber = startNewAttemptParam
+      ? typeof searchParams?.startNewAttempt === 'string'
+        ? parseInt(searchParams.startNewAttempt)
+        : latestAttemptNumber
+      : latestAttemptNumber;
+
     const latestAttemptEntries = progressEntries.filter(
-      (entry) => entry.attemptNumber === latestAttemptNumber,
+      (entry) => entry.attemptNumber === targetAttemptNumber,
     );
 
     const totalProblems = problems.length;
-    const latestCompleted = totalProblems > 0 && latestAttemptEntries.length >= totalProblems;
+    // 모든 문제가 실제로 완료되었는지 확인 (중복 제거)
+    const uniqueCompletedProblems = new Set(latestAttemptEntries.map((entry) => entry.problemId))
+      .size;
+    const latestCompleted = totalProblems > 0 && uniqueCompletedProblems >= totalProblems;
 
-    const startNewAttemptParam =
-      (typeof searchParams?.startNewAttempt === 'string' && searchParams.startNewAttempt === '1') ||
-      (Array.isArray(searchParams?.startNewAttempt) && searchParams.startNewAttempt.includes('1'));
+    // 남은 문항 수 계산 (현재 사용하지 않음)
+    // const remainingProblems = Math.max(0, totalProblems - uniqueCompletedProblems);
 
-    if (!startNewAttemptParam && latestCompleted && latestAttemptEntries.length > 0) {
+    // 오답체크나 오답노트가 아닌 경우에만 리다이렉트 (from=results 또는 from=incorrect 파라미터가 있으면 해당 플로우)
+    const fromResults = searchParams?.from === 'results';
+    const fromIncorrect = searchParams?.from === 'incorrect';
+
+    if (
+      !startNewAttemptParam &&
+      !fromResults &&
+      !fromIncorrect &&
+      latestCompleted &&
+      latestAttemptEntries.length > 0
+    ) {
       // 쿼리 보존
       const sp = new URLSearchParams();
       const startNewAttemptVal = searchParams?.startNewAttempt;
@@ -110,7 +133,12 @@ export default async function ProblemDetailPage({ params, searchParams }: Proble
       redirect(`/my/learning/${encodeURIComponent(studyId)}/results${suffix}`);
     }
 
-    if (!startNewAttemptParam && latestAttemptEntries.length > 0) {
+    if (
+      !startNewAttemptParam &&
+      !fromResults &&
+      !fromIncorrect &&
+      latestAttemptEntries.length > 0
+    ) {
       const existingEntry = latestAttemptEntries.find((entry) => entry.problemId === problemId);
 
       if (existingEntry) {

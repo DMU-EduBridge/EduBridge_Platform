@@ -155,24 +155,26 @@ export default async function StudyProblemsPage({
     redirect('/my/learning?error=no-problems');
   }
 
-  const retryRequested =
-    (typeof searchParams?.retry === 'string' && searchParams.retry === '1') ||
-    (Array.isArray(searchParams?.retry) && searchParams.retry.includes('1'));
-
-  if (retryRequested) {
-    redirect(
-      `/my/learning/${encodedStudyId}/problems/${firstProblem.id}?startNewAttempt=1${
-        suffixQuery ? `&${suffixQuery.slice(1)}` : ''
-      }`,
-    );
-  }
-
   const attemptNumbers = Array.from(
     new Set(progressEntries.map((entry) => entry.attemptNumber)),
   ).sort((a, b) => a - b);
 
   const latestAttemptNumber =
     attemptNumbers.length > 0 ? attemptNumbers[attemptNumbers.length - 1] : 0;
+
+  const retryRequested =
+    (typeof searchParams?.retry === 'string' && searchParams.retry === '1') ||
+    (Array.isArray(searchParams?.retry) && searchParams.retry.includes('1'));
+
+  if (retryRequested) {
+    // 다시 풀기: 다음 시도 번호로 새로운 시도 시작을 명시적으로 요청
+    const nextAttemptNumber = (latestAttemptNumber ?? 0) + 1;
+    redirect(
+      `/my/learning/${encodedStudyId}/problems/${firstProblem.id}?startNewAttempt=${nextAttemptNumber}${
+        suffixQuery ? `&${suffixQuery.slice(1)}` : ''
+      }`,
+    );
+  }
 
   const latestAttemptEntries = progressEntries.filter(
     (entry) => entry.attemptNumber === latestAttemptNumber,
