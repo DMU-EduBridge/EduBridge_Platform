@@ -1,14 +1,6 @@
+import { ApiError, ApiSuccess } from '@/lib/api-response';
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
-import {
-  addRequestId,
-  addSecurityHeaders,
-  createBadRequestResponse,
-  createErrorResponse,
-  createPaginatedResponse,
-  createSuccessResponse,
-  createUnauthorizedResponse,
-} from '@/lib/utils/api-response';
 import { getServerSession } from 'next-auth';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -17,7 +9,12 @@ import { z } from 'zod';
 const SaveReportSchema = z.object({
   title: z.string().min(1),
   content: z.string().min(1),
-  reportType: z.enum(['full', 'summary']),
+  reportType: z.enum([
+    'PROGRESS_REPORT',
+    'PERFORMANCE_ANALYSIS',
+    'CLASS_SUMMARY',
+    'STUDENT_INSIGHTS',
+  ]),
   classInfo: z.object({
     grade: z.number(),
     class: z.number(),
@@ -32,7 +29,9 @@ const SaveReportSchema = z.object({
 const GetReportsSchema = z.object({
   page: z.number().min(1).default(1),
   limit: z.number().min(1).max(100).default(10),
-  reportType: z.enum(['full', 'summary']).optional(),
+  reportType: z
+    .enum(['PROGRESS_REPORT', 'PERFORMANCE_ANALYSIS', 'CLASS_SUMMARY', 'STUDENT_INSIGHTS'])
+    .optional(),
 });
 
 /**
@@ -43,16 +42,14 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.role || !['TEACHER', 'ADMIN'].includes(session.user.role)) {
-      return addSecurityHeaders(addRequestId(createUnauthorizedResponse(), request));
+      return ApiError.unauthorized();
     }
 
     const body = await request.json();
     const parsed = SaveReportSchema.safeParse(body);
 
     if (!parsed.success) {
-      return addSecurityHeaders(
-        addRequestId(createBadRequestResponse('잘못된 요청 데이터입니다.'), request),
-      );
+      return ApiError.badRequest('잘못된 요청 데이터입니다.');
     }
 
     const { title, content, reportType, classInfo } = parsed.data;
@@ -63,13 +60,13 @@ export async function POST(request: NextRequest) {
         createdBy: session.user.id,
         title,
         content,
-        reportType: reportType.toUpperCase(), // FULL, SUMMARY
+        reportType: reportType as any, // PROGRESS_REPORT, PERFORMANCE_ANALYSIS, etc.
         classInfo: JSON.stringify(classInfo),
-        status: 'PUBLISHED',
+        status: 'COMPLETED' as any,
       },
     });
 
-    const response = createSuccessResponse(
+    return ApiSuccess.created(
       {
         id: report.id,
         title: report.title,
@@ -77,13 +74,9 @@ export async function POST(request: NextRequest) {
       },
       '리포트가 저장되었습니다.',
     );
-
-    return addSecurityHeaders(addRequestId(response, request));
   } catch (error) {
     console.error('리포트 저장 오류:', error);
-    return addSecurityHeaders(
-      addRequestId(createErrorResponse('리포트 저장 중 오류가 발생했습니다.'), request),
-    );
+    return ApiError.internalError('리포트 저장 중 오류가 발생했습니다.');
   }
 }
 
@@ -95,7 +88,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.role || !['TEACHER', 'ADMIN'].includes(session.user.role)) {
-      return addSecurityHeaders(addRequestId(createUnauthorizedResponse(), request));
+      return ApiError.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -106,19 +99,17 @@ export async function GET(request: NextRequest) {
     const parsed = GetReportsSchema.safeParse({ page, limit, reportType });
 
     if (!parsed.success) {
-      return addSecurityHeaders(
-        addRequestId(createBadRequestResponse('잘못된 요청 데이터입니다.'), request),
-      );
+      return ApiError.badRequest('잘못된 요청 데이터입니다.');
     }
 
     const { page: validPage, limit: validLimit, reportType: validReportType } = parsed.data;
 
     // 리포트 목록 조회
-    const where = {
-      teacherId: session.user.id, // 교사 ID로 필터링
+    const where: any = {
+      createdBy: session.user.id, // 교사 ID로 필터링
       deletedAt: null, // 소프트 삭제되지 않은 것만
       ...(validReportType && {
-        reportType: validReportType.toUpperCase(),
+        reportType: validReportType,
       }),
     };
 
@@ -133,7 +124,6 @@ export async function GET(request: NextRequest) {
           title: true,
           reportType: true,
           classInfo: true,
-          reportAnalyses: true,
           status: true,
           createdAt: true,
         },
@@ -146,29 +136,27 @@ export async function GET(request: NextRequest) {
       return {
         id: report.id,
         title: report.title,
-        type: report.reportType.toLowerCase(), // FULL -> full, SUMMARY -> summary
+        type: report.reportType.toLowerCase(), // PROGRESS_REPORT -> progress_report
         period: `${classInfo.grade}학년 ${classInfo.class}반 ${classInfo.subject}`,
-        studentCount: report.reportAnalyses?.length || 0,
+        studentCount: 0, // reportAnalyses 필드가 없으므로 0으로 설정
         status: report.status,
         createdAt: report.createdAt,
       };
     });
 
-    const response = createPaginatedResponse(
-      formattedReports,
+    return ApiSuccess.ok(
       {
-        page: validPage,
-        limit: validLimit,
-        total,
+        items: formattedReports,
+        pagination: {
+          page: validPage,
+          limit: validLimit,
+          total,
+        },
       },
       '리포트 목록을 성공적으로 조회했습니다.',
     );
-
-    return addSecurityHeaders(addRequestId(response, request));
   } catch (error) {
     console.error('리포트 조회 오류:', error);
-    return addSecurityHeaders(
-      addRequestId(createErrorResponse('리포트 조회 중 오류가 발생했습니다.'), request),
-    );
+    return ApiError.internalError('리포트 조회 중 오류가 발생했습니다.');
   }
 }
