@@ -36,6 +36,7 @@ model User {
   classMemberships     ClassMember[]
   createdClasses       Class[]             @relation("ClassCreator")
   assignedProblems     ProblemAssignment[] @relation("ProblemAssigner")
+  studentAssignments   ProblemAssignment[] @relation("StudentAssignments")
   progressEntries      ProblemProgress[]
   problems             Problem[]           @relation("ProblemCreator")
   reviewedProblems     Problem[]           @relation("ProblemReviewer")
@@ -53,21 +54,22 @@ model User {
 }
 
 model Class {
-  id          String              @id @default(cuid())
-  name        String
-  description String?
-  subject     String
-  gradeLevel  String
-  schoolYear  String
-  semester    String
-  isActive    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  deletedAt   DateTime?
-  createdBy   String
-  members     ClassMember[]
-  creator     User                @relation("ClassCreator", fields: [createdBy], references: [id], onDelete: Cascade)
-  assignments ProblemAssignment[]
+  id             String              @id @default(cuid())
+  name           String
+  description    String?
+  subject        String
+  gradeLevel     String
+  schoolYear     String
+  semester       String
+  isActive       Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  deletedAt      DateTime?
+  createdBy      String
+  members        ClassMember[]
+  creator        User                @relation("ClassCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  assignments    ProblemAssignment[]
+  teacherReports TeacherReport[]
 
   @@index([createdBy])
   @@index([subject, gradeLevel])
@@ -175,7 +177,6 @@ model Problem {
   deletedAt        DateTime?
   attempts         Attempt[]
   materialProblems LearningMaterialProblem[]
-  assignments      ProblemAssignment[]
   progressEntries  ProblemProgress[]
   creator          User?                     @relation("ProblemCreator", fields: [createdBy], references: [id])
   textbook         Textbook?                 @relation(fields: [textbookId], references: [id])
@@ -207,6 +208,7 @@ model TeacherReport {
   title            String
   content          String
   reportType       ReportType       @default(PROGRESS_REPORT)
+  classId          String?
   classInfo        Json?
   students         Json?
   analysisData     Json?
@@ -221,10 +223,13 @@ model TeacherReport {
   updatedAt        DateTime         @updatedAt
   reportAnalyses   ReportAnalysis[]
   user             User             @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  class            Class?           @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@index([createdBy])
+  @@index([classId])
   @@index([status])
   @@index([createdAt])
+  @@index([reportType])
   @@map("teacher_reports")
 }
 
@@ -232,6 +237,7 @@ model LearningMaterialProblem {
   id                 String           @id @default(cuid())
   learningMaterialId String
   problemId          String
+  order              Int              @default(0)
   createdAt          DateTime         @default(now())
   learningMaterial   LearningMaterial @relation(fields: [learningMaterialId], references: [id], onDelete: Cascade)
   problem            Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
@@ -239,6 +245,7 @@ model LearningMaterialProblem {
   @@unique([learningMaterialId, problemId])
   @@index([learningMaterialId])
   @@index([problemId])
+  @@index([learningMaterialId, order])
   @@map("learning_material_problems")
 }
 
@@ -295,24 +302,30 @@ model Attempt {
 }
 
 model ProblemAssignment {
-  id           String    @id @default(cuid())
-  classId      String
-  problemId    String
-  assignedBy   String
-  assignedAt   DateTime  @default(now())
-  dueDate      DateTime?
-  isActive     Boolean   @default(true)
-  instructions String?
-  assigner     User      @relation("ProblemAssigner", fields: [assignedBy], references: [id], onDelete: Cascade)
-  problem      Problem   @relation(fields: [problemId], references: [id], onDelete: Cascade)
-  class        Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  id             String           @id @default(cuid())
+  title          String
+  description    String?
+  assignmentType AssignmentType   @default(HOMEWORK)
+  status         AssignmentStatus @default(DRAFT)
+  classId        String?
+  studentId      String?
+  problemIds     Json             // Array of problem IDs
+  dueDate        DateTime?
+  instructions   String?
+  metadata       Json?
+  assignedBy     String
+  assignedAt     DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  assigner       User             @relation("ProblemAssigner", fields: [assignedBy], references: [id], onDelete: Cascade)
+  class          Class?           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student        User?            @relation("StudentAssignments", fields: [studentId], references: [id], onDelete: Cascade)
 
-  @@unique([classId, problemId])
   @@index([classId])
-  @@index([problemId])
+  @@index([studentId])
   @@index([assignedBy])
+  @@index([assignmentType])
+  @@index([status])
   @@index([dueDate])
-  @@index([isActive])
   @@map("problem_assignments")
 }
 
@@ -517,8 +530,9 @@ enum ProcessingStatus {
 
 enum ReportStatus {
   DRAFT
-  PUBLISHED
-  ARCHIVED
+  GENERATING
+  COMPLETED
+  FAILED
 }
 
 enum ServerStatus {
@@ -602,11 +616,9 @@ enum GradeLevel {
 
 enum ReportType {
   PROGRESS_REPORT
-  ACHIEVEMENT_REPORT
-  BEHAVIOR_REPORT
-  ATTENDANCE_REPORT
-  PERFORMANCE_REPORT
-  OTHER
+  PERFORMANCE_ANALYSIS
+  CLASS_SUMMARY
+  STUDENT_INSIGHTS
 }
 
 enum TodoPriority {
@@ -637,4 +649,21 @@ enum SyncType {
   INCREMENTAL_SYNC
   MANUAL_SYNC
   SCHEDULED_SYNC
+}
+
+enum AssignmentType {
+  HOMEWORK
+  QUIZ
+  EXAM
+  PRACTICE
+  REVIEW
+  PROJECT
+}
+
+enum AssignmentStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  OVERDUE
+  CANCELLED
 }
