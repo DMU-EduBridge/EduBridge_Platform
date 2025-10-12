@@ -41,24 +41,41 @@ export interface LearningMaterialsApiResponse {
 }
 
 export const learningService = {
-  getMaterials: (params?: {
+  getMaterials: async (params?: {
     search?: string;
     subject?: string;
     status?: string;
     page?: number;
     limit?: number;
-  }) => api.get('/learning-materials', { params }),
+  }) => {
+    const response = await api.get('/learning-materials', { params });
+    return response.data.data; // API 응답의 data 필드 반환
+  },
 
-  getMaterial: (id: string) => api.get(`/learning-materials?id=${id}`),
+  getMaterial: async (id: string) => {
+    const response = await api.get(`/learning-materials?id=${id}`);
+    return response.data;
+  },
 
-  createMaterial: (data: LearningMaterialPayload) => api.post('/learning-materials', data),
+  createMaterial: async (data: LearningMaterialPayload) => {
+    const response = await api.post('/learning-materials', data);
+    return response.data;
+  },
 
-  updateMaterial: (id: string, data: Partial<LearningMaterialPayload>) =>
-    api.put(`/learning-materials/${id}`, data),
+  updateMaterial: async (id: string, data: Partial<LearningMaterialPayload>) => {
+    const response = await api.put(`/learning-materials/${id}`, data);
+    return response.data;
+  },
 
-  deleteMaterial: (id: string) => api.delete(`/learning-materials/${id}`),
+  deleteMaterial: async (id: string) => {
+    const response = await api.delete(`/learning-materials/${id}`);
+    return response.data;
+  },
 
-  getMaterialStats: () => api.get('/learning-materials/stats'),
+  getMaterialStats: async () => {
+    const response = await api.get('/learning-materials/stats');
+    return response.data;
+  },
 
   // StudyItem 관련 메서드들 (기존 API를 StudyItem 형태로 변환)
   getStudyItems: () => api.get<LearningMaterialsApiResponse>('/learning-materials'),

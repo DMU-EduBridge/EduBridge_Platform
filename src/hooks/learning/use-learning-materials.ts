@@ -18,19 +18,19 @@ export function useLearningMaterials(params?: {
 
   const materialsQuery = useQuery({
     queryKey: learningKeys.list(params),
-    queryFn: () => learningService.getMaterials(params).then((r) => r.data),
+    queryFn: () => learningService.getMaterials(params),
   });
 
   const useMaterial = (id: string) =>
     useQuery({
       queryKey: learningKeys.detail(id),
-      queryFn: () => learningService.getMaterial(id).then((r) => r.data),
+      queryFn: () => learningService.getMaterial(id),
       enabled: !!id,
     });
 
   const statsQuery = useQuery({
     queryKey: learningKeys.stats,
-    queryFn: () => learningService.getMaterialStats().then((r) => r.data),
+    queryFn: () => learningService.getMaterialStats(),
   });
 
   const createMutation = useMutation({
