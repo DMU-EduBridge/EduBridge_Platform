@@ -1,3 +1,4 @@
+import { CacheKeyGenerator, cacheInvalidator, withCache } from '@/lib/cache/cache-manager';
 import { prisma } from '@/lib/core/prisma';
 import {
   CreateLearningMaterialSchema,
@@ -7,43 +8,88 @@ import {
 import { z } from 'zod';
 
 export class LearningMaterialsService {
-  async getLearningMaterials(_query: z.infer<typeof LearningMaterialsQuerySchema>) {
+  async getLearningMaterials(query: z.infer<typeof LearningMaterialsQuerySchema>) {
     try {
-      // 테스트 API에서 성공한 쿼리와 동일하게 사용
-      const materials = await prisma.learningMaterial.findMany({
-        take: 20,
-        select: {
-          id: true,
-          title: true,
-          subject: true,
-          difficulty: true,
-          isActive: true,
-          description: true,
-          content: true,
-          estimatedTime: true,
-          files: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          deletedAt: true,
-        },
+      // 캐시 우선 조회
+      const cacheKey = CacheKeyGenerator.classes({
+        resource: 'learning-materials',
+        page: query.page,
+        limit: query.limit,
       });
+      const fetcher = async () => {
+        const where: any = {};
 
-      const total = await prisma.learningMaterial.count();
+        // 검색 조건 추가
+        if (query.search) {
+          where.OR = [
+            { title: { contains: query.search, mode: 'insensitive' } },
+            { description: { contains: query.search, mode: 'insensitive' } },
+          ];
+        }
 
-      return {
-        materials: materials.map((material) => ({
-          ...material,
-          problemCount: 0, // 임시로 0으로 설정
-        })),
-        pagination: {
-          page: 1,
-          limit: 20,
+        if (query.subject) {
+          where.subject = query.subject;
+        }
+
+        if (query.difficulty) {
+          where.difficulty = query.difficulty;
+        }
+
+        if (query.isActive !== undefined) {
+          where.isActive = query.isActive;
+        }
+
+        const materials = await prisma.learningMaterial.findMany({
+          where,
+          take: query.limit,
+          skip: (query.page - 1) * query.limit,
+          select: {
+            id: true,
+            title: true,
+            subject: true,
+            difficulty: true,
+            isActive: true,
+            description: true,
+            content: true,
+            estimatedTime: true,
+            files: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            deletedAt: true,
+          },
+        });
+
+        const total = await prisma.learningMaterial.count({ where });
+
+        // 각 학습자료의 문제 수 계산
+        const materialsWithProblemCount = await Promise.all(
+          materials.map(async (material) => {
+            const problemCount = await prisma.learningMaterialProblem.count({
+              where: { learningMaterialId: material.id },
+            });
+            return {
+              ...material,
+              problemCount,
+            };
+          }),
+        );
+
+        return {
+          materials: materialsWithProblemCount,
+          pagination: {
+            page: query.page,
+            limit: query.limit,
+            total,
+            totalPages: Math.ceil(total / query.limit),
+          },
           total,
-          totalPages: Math.ceil(total / 20),
-        },
-        total,
+        };
       };
+
+      const cachedFetch = withCache(cacheKey, 60); // 1분 캐시로 시작
+      const result = await cachedFetch(fetcher);
+      return result;
     } catch (error) {
       console.error('Prisma query error:', error);
       throw error;
@@ -96,11 +142,11 @@ export class LearningMaterialsService {
         title: data.title,
         description: data.description ?? null,
         content: data.content,
-        subject: data.subject,
-        difficulty: data.difficulty,
+        subject: data.subject as any,
+        difficulty: data.difficulty as any,
         estimatedTime: data.estimatedTime ?? null,
-        files: data.files ?? null,
-        status: 'ACTIVE',
+        files: (data.files as any) ?? undefined,
+        status: 'PUBLISHED',
         isActive: true,
       },
       include: {
@@ -111,6 +157,9 @@ export class LearningMaterialsService {
         },
       },
     });
+
+    // 캐시 무효화: 학습자료 목록 관련 키 삭제
+    await cacheInvalidator.invalidateClass('learning-materials');
 
     return {
       ...material,
@@ -125,10 +174,10 @@ export class LearningMaterialsService {
         ...(data.title !== undefined && { title: data.title }),
         ...(data.description !== undefined && { description: data.description ?? null }),
         ...(data.content !== undefined && { content: data.content }),
-        ...(data.subject !== undefined && { subject: data.subject }),
-        ...(data.difficulty !== undefined && { difficulty: data.difficulty }),
+        ...(data.subject !== undefined && { subject: data.subject as any }),
+        ...(data.difficulty !== undefined && { difficulty: data.difficulty as any }),
         ...(data.estimatedTime !== undefined && { estimatedTime: data.estimatedTime ?? null }),
-        ...(data.files !== undefined && { files: data.files ?? null }),
+        ...(data.files !== undefined && { files: (data.files as any) ?? undefined }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
       include: {
@@ -140,6 +189,12 @@ export class LearningMaterialsService {
       },
     });
 
+    // 캐시 무효화: 단일 및 목록 캐시
+    await Promise.all([
+      cacheInvalidator.invalidateClass('learning-materials'),
+      cacheInvalidator.invalidateClass(id),
+    ]);
+
     return {
       ...material,
       problemCount: material._count.materialProblems,
@@ -150,6 +205,12 @@ export class LearningMaterialsService {
     await prisma.learningMaterial.delete({
       where: { id },
     });
+
+    // 캐시 무효화
+    await Promise.all([
+      cacheInvalidator.invalidateClass('learning-materials'),
+      cacheInvalidator.invalidateClass(id),
+    ]);
 
     return { success: true };
   }
