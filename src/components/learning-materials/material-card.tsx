@@ -6,10 +6,16 @@ import { Card } from '@/components/ui/card';
 import type { MaterialItem } from '@/types/domain/material';
 import { getMaterialDifficultyConfig, getMaterialStatusConfig } from '@/types/domain/material';
 import { BookOpen, MoreHorizontal } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export function MaterialCard({ item }: { item: MaterialItem }) {
+  const router = useRouter();
   const difficultyConfig = getMaterialDifficultyConfig(item.difficulty);
   const statusConfig = getMaterialStatusConfig(item.status);
+
+  const handleEdit = () => {
+    router.push(`/learning-materials/${item.id}/edit`);
+  };
 
   return (
     <Card className="p-5 transition-shadow hover:shadow-sm">
@@ -40,7 +46,7 @@ export function MaterialCard({ item }: { item: MaterialItem }) {
         </div>
 
         <div className="flex items-center space-x-1">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={handleEdit}>
             편집
           </Button>
           <Button variant="ghost" size="sm">

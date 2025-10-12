@@ -25,45 +25,11 @@ export default function LearningMaterialsList() {
 
   const { materials } = useLearningMaterials(query);
 
-  const items = useMemo(() => materials.data?.items || [], [materials.data?.items]);
-  const total = materials.data?.pagination?.total || 0;
+  const items = useMemo(() => materials.data?.materials || [], [materials.data?.materials]);
+  const total = materials.data?.total || 0;
   const totalPages = materials.data?.pagination?.totalPages || 1;
 
-  // 개발용 mock 데이터 (실제 API 연동 시 제거)
-  const mockItems = [
-    {
-      id: 'm1',
-      title: '수학 기초 - 이차방정식',
-      description: '이차방정식의 기본 개념과 풀이 방법을 학습합니다.',
-      subject: '수학',
-      difficulty: 'MEDIUM',
-      estimatedTime: 30,
-      status: 'PUBLISHED',
-      problemsCount: 5,
-    },
-    {
-      id: 'm2',
-      title: '과학 실험 - 광합성',
-      description: '식물의 광합성 과정을 실험을 통해 이해합니다.',
-      subject: '과학',
-      difficulty: 'HARD',
-      estimatedTime: 45,
-      status: 'PUBLISHED',
-      problemsCount: 8,
-    },
-    {
-      id: 'm3',
-      title: '국어 문법 - 조사와 어미',
-      description: '한국어의 조사와 어미에 대한 기본 문법을 학습합니다.',
-      subject: '국어',
-      difficulty: 'EASY',
-      estimatedTime: 20,
-      status: 'DRAFT',
-      problemsCount: 3,
-    },
-  ];
-
-  const displayItems = items.length > 0 ? items : mockItems;
+  const displayItems = items;
 
   const publishedCount = useMemo(
     () => displayItems.filter((m: any) => m.status === 'PUBLISHED').length,
@@ -74,7 +40,7 @@ export default function LearningMaterialsList() {
     [displayItems],
   );
   const problemsTotal = useMemo(
-    () => displayItems.reduce((sum: number, m: any) => sum + (m.problemsCount || 0), 0),
+    () => displayItems.reduce((sum: number, m: any) => sum + (m.problemCount || 0), 0),
     [displayItems],
   );
 
@@ -191,22 +157,23 @@ export default function LearningMaterialsList() {
         </div>
 
         <div className="space-y-4">
-          {materials.isLoading && (
+          {materials.isLoading ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <MaterialCardSkeleton key={i} />
               ))}
             </div>
+          ) : materials.isError ? (
+            <div className="text-sm text-red-600">데이터를 불러오는데 실패했습니다.</div>
+          ) : displayItems.length === 0 ? (
+            <div className="py-8 text-center text-gray-500">학습자료가 없습니다.</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {displayItems.map((material: any) => (
+                <MaterialCard key={material.id} item={material} />
+              ))}
+            </div>
           )}
-          {materials.isError && (
-            <div className="text-sm text-red-600">목록을 불러오지 못했습니다.</div>
-          )}
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {displayItems.map((material: any) => (
-              <MaterialCard key={material.id} item={material} />
-            ))}
-          </div>
         </div>
 
         {/* 페이지네이션 */}
