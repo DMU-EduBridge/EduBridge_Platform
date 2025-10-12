@@ -3,7 +3,7 @@ import { VectorSearchCard } from '@/components/vector/vector-search-card';
 
 export default function VectorSearchPage() {
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">의미적 검색</h1>
         <p className="text-muted-foreground">

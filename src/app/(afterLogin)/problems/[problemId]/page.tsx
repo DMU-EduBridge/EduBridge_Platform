@@ -1,7 +1,7 @@
 import ProblemDetailClient from '@/app/(afterLogin)/my/learning/[studyId]/problems/[problemId]/problem-detail-client';
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
-import { parseJsonArray } from '@/lib/utils/json';
+import { problemService } from '@/server/services/problem/problem-crud.service';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { notFound, redirect } from 'next/navigation';
@@ -43,28 +43,10 @@ export default async function ProblemDetailPage({ params }: { params: { problemI
       redirect('/login');
     }
 
-    // 학생만 문제 풀이 가능
-    if (session.user.role !== 'STUDENT') {
-      redirect('/dashboard');
-    }
+    // 학생이 아닌 경우 문제 풀이는 불가하지만 문제 보기는 가능
+    const isStudent = session.user.role === 'STUDENT';
 
-    const problem = await prisma.problem.findUnique({
-      where: { id: params.problemId },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        type: true,
-        options: true,
-        correctAnswer: true,
-        explanation: true,
-        hints: true,
-        content: true,
-        difficulty: true,
-        subject: true,
-        points: true,
-      },
-    });
+    const problem = await problemService.getProblemById(params.problemId);
 
     if (!problem) {
       notFound();
@@ -84,13 +66,13 @@ export default async function ProblemDetailPage({ params }: { params: { problemI
       description: problem.description ?? undefined,
       content: problem.content,
       type: problem.type,
-      options: parseJsonArray(problem.options as string),
+      options: problem.options, // 서버에서 이미 파싱된 배열
       correctAnswer: problem.correctAnswer,
       explanation: problem.explanation ?? undefined,
       difficulty: problem.difficulty,
       subject: problem.subject,
       points: problem.points,
-      hints: parseJsonArray(problem.hints as string),
+      hints: problem.hints, // 서버에서 이미 파싱된 배열
     };
 
     return (
@@ -100,6 +82,7 @@ export default async function ProblemDetailPage({ params }: { params: { problemI
         initialProblem={problemData}
         currentIndex={1}
         totalCount={1}
+        isStudent={isStudent}
       />
     );
   } catch (error) {

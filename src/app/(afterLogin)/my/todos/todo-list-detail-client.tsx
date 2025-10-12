@@ -202,7 +202,7 @@ export function TodoListDetailClient({
       <div className="p-6 pt-0">
         {/* 할 일 목록 */}
         <Card className="p-6">
-          <div className="space-y-6">
+          <div className="space-y-6 p-6">
             {/* 상단 카테고리 필터 한 줄 배치 */}
             <div className="flex flex-wrap gap-2 rounded-lg bg-gray-50 p-3">
               <button

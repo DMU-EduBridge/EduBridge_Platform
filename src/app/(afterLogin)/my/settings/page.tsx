@@ -19,7 +19,7 @@ export default async function StudentSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">설정</h1>
         <p className="mt-2 text-gray-600">학습 환경과 계정 정보를 관리하세요.</p>

@@ -197,7 +197,7 @@ export default function TermsPage() {
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-6 p-6">
               {serviceChanges.map((change, index) => (
                 <Card key={index}>
                   <CardHeader>
@@ -332,10 +332,3 @@ export default function TermsPage() {
     </div>
   );
 }
-
-
-
-
-
-
-

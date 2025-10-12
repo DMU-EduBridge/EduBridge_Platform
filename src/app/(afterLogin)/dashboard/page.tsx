@@ -15,7 +15,11 @@ export const metadata: Metadata = {
 async function getDashboardData() {
   try {
     const cookie = headers().get('cookie') || '';
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/dashboard/overview`, {
+    const host = headers().get('host') || 'localhost:3000';
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const baseUrl = `${protocol}://${host}`;
+
+    const res = await fetch(`${baseUrl}/api/dashboard/overview`, {
       headers: { cookie: cookie },
       cache: 'no-store',
     });

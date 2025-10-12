@@ -1,11 +1,21 @@
+import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
-import { ok, withAuth } from '@/server/http/handler';
 import { problemsService } from '@/server/services/problems/problems.service';
+import { getServerSession } from 'next-auth';
 import { NextRequest } from 'next/server';
 
 // GET /api/problems/material?ids=a,b,c
 export async function GET(request: NextRequest) {
-  return withAuth(async ({ userId }) => {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const { searchParams } = new URL(request.url);
     const idsParam = searchParams.get('ids') || '';
     const ids = idsParam
@@ -25,9 +35,17 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await problemsService.getProblemMaterialMappings(ids);
-    logger.info('문제-학습자료 매핑 조회 성공', { userId, count: data.length });
-    return new Response(JSON.stringify(ok(data)), {
+    logger.info('문제-학습자료 매핑 조회 성공', { userId: session.user.id, count: data.length });
+    return new Response(JSON.stringify({ success: true, data }), {
       headers: { 'Content-Type': 'application/json' },
     });
-  });
+  } catch (error) {
+    logger.error('문제-학습자료 매핑 조회 실패', undefined, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return new Response(JSON.stringify({ success: false, error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }

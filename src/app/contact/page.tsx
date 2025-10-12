@@ -181,7 +181,7 @@ export default function ContactPage() {
               <p className="text-lg text-gray-600">자주 문의하시는 내용들을 확인해보세요.</p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-6 p-6">
               {faqs.map((faq, index) => (
                 <Card key={index}>
                   <CardHeader>

@@ -237,7 +237,7 @@ export function IncorrectAnswersDetailClient({
       <div className="p-6 pt-0">
         {/* 오답 노트 목록 */}
         <Card className="p-6">
-          <div className="space-y-6">
+          <div className="space-y-6 p-6">
             <h2 className="text-xl font-semibold text-gray-900">
               {selectedSubject === '전체' ? '모든 오답 노트' : selectedSubject}
             </h2>

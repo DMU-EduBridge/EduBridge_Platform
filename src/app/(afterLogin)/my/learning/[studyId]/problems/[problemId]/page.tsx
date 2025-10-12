@@ -158,6 +158,15 @@ export default async function ProblemDetailPage({ params, searchParams }: Proble
       }
     }
 
+    // 디버깅을 위한 로그
+    console.log('=== 문제 데이터 디버깅 ===');
+    console.log('problem.id:', problem.id);
+    console.log('problem.title:', problem.title);
+    console.log('problem.type:', problem.type);
+    console.log('problem.options (raw):', problem.options);
+    console.log('problem.options type:', typeof problem.options);
+    console.log('problem.options isArray:', Array.isArray(problem.options));
+
     const formattedProblem = {
       id: problem.id,
       title: problem.title,
@@ -172,17 +181,20 @@ export default async function ProblemDetailPage({ params, searchParams }: Proble
         | 'MATH',
       difficulty: problem.difficulty as 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT',
       subject: problem.subject,
-      options: Array.isArray(problem.options)
-        ? problem.options
-        : problem.options
-          ? JSON.parse(problem.options as string)
-          : [],
+      options: problem.options, // 서버에서 이미 파싱된 배열
       correctAnswer: problem.correctAnswer,
       explanation: problem.explanation || null,
-      hints: problem.hints,
+      hints: problem.hints, // 서버에서 이미 파싱된 배열
       points: problem.points,
       timeLimit: problem.timeLimit || null,
     };
+
+    console.log('formattedProblem.options:', formattedProblem.options);
+    console.log(
+      'formattedProblem.options length:',
+      Array.isArray(formattedProblem.options) ? formattedProblem.options.length : 0,
+    );
+    console.log('=== 디버깅 끝 ===');
 
     const formattedNextProblem = nextProblem
       ? {
@@ -199,14 +211,10 @@ export default async function ProblemDetailPage({ params, searchParams }: Proble
             | 'MATH',
           difficulty: nextProblem.difficulty as 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT',
           subject: nextProblem.subject,
-          options: Array.isArray(nextProblem.options)
-            ? nextProblem.options
-            : nextProblem.options
-              ? JSON.parse(nextProblem.options as string)
-              : [],
+          options: nextProblem.options, // 서버에서 이미 파싱된 배열
           correctAnswer: nextProblem.correctAnswer,
           explanation: nextProblem.explanation || undefined,
-          hints: nextProblem.hints,
+          hints: nextProblem.hints, // 서버에서 이미 파싱된 배열
           points: nextProblem.points,
           timeLimit: nextProblem.timeLimit || undefined,
         }

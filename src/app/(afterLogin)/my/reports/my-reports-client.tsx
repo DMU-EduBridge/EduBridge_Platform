@@ -18,6 +18,14 @@ import {
 import { Session } from 'next-auth';
 import { useState } from 'react';
 
+interface ReportStats {
+  totalReports: number;
+  completedReports: number;
+  weeklyChange: number;
+  completionRate: number;
+  averageScore: number;
+}
+
 const typeLabels = {
   MONTHLY: '월간 리포트',
   INDIVIDUAL: '개별 리포트',
@@ -58,14 +66,20 @@ export function MyReportsClient({ session }: MyReportsClientProps) {
   });
 
   const reports = reportsQuery.data?.reports || [];
-  const stats = statsQuery.data;
+  const stats: ReportStats = (statsQuery.data as ReportStats) || {
+    totalReports: 0,
+    completedReports: 0,
+    weeklyChange: 0,
+    completionRate: 0,
+    averageScore: 0,
+  };
 
   const handleDownload = (reportId: string) => {
     downloadMutation.mutate(reportId as string);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>

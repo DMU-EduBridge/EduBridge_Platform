@@ -1,6 +1,7 @@
+import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
-import { ok, withAuth } from '@/server/http/handler';
 import { dashboardOverviewService } from '@/server/services/dashboard/overview.service';
+import { getServerSession } from 'next-auth';
 
 interface DashboardOverview {
   learningProgress: {
@@ -66,11 +67,27 @@ interface DashboardOverview {
 }
 
 export async function GET() {
-  return withAuth(async ({ userId }) => {
-    const data = (await dashboardOverviewService.getOverview(userId)) as DashboardOverview;
-    logger.info('대시보드 개요 조회 성공', { userId, summary: data.summary });
-    return new Response(JSON.stringify(ok(data)), {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const data = (await dashboardOverviewService.getOverview(session.user.id)) as DashboardOverview;
+    logger.info('대시보드 개요 조회 성공', { userId: session.user.id, summary: data.summary });
+
+    return new Response(JSON.stringify({ success: true, data }), {
       headers: { 'Content-Type': 'application/json' },
     });
-  });
+  } catch (error) {
+    logger.error('대시보드 개요 조회 실패', error instanceof Error ? error : undefined);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }

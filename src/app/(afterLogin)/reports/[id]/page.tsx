@@ -1,112 +1,107 @@
 'use client';
 
-import { ConceptMatrix } from '@/components/reports/concept-matrix';
-import { InsightsPanel } from '@/components/reports/insights-panel';
-import { KpiCards } from '@/components/reports/kpi-cards';
-import { RecentMistakes } from '@/components/reports/recent-mistakes';
-import { ReportHeader } from '@/components/reports/report-header';
-import { SubjectBreakdown } from '@/components/reports/subject-breakdown';
-import { TimelineSection } from '@/components/reports/timeline-section';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ReportDetail } from '@/components/reports/report-detail';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useReports } from '@/hooks/reports';
-import { useReportDetailSections } from '@/hooks/reports/use-report-detail';
-import { User } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-
-// const _statusColors: Record<string, string> = {
-//   COMPLETED: 'bg-green-100 text-green-800',
-//   IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
-//   PENDING: 'bg-gray-100 text-gray-800',
-// };
+import { toast } from 'sonner';
 
 export default function ReportDetailPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams();
   const router = useRouter();
-  const { useReport, download } = useReports();
-  const reportQuery = useReport(params.id);
-  const sections = useReportDetailSections(params.id);
+  const reportId = params.id as string;
 
-  if (reportQuery.isLoading) {
+  const { useReport, download: downloadMutation } = useReports();
+  const { data: reportResponse, isLoading, error } = useReport(reportId);
+  const reportData = reportResponse?.data;
+
+  const handleDownload = async () => {
+    try {
+      await downloadMutation.mutateAsync(reportId);
+      toast.success('리포트 다운로드가 시작되었습니다.');
+    } catch (err: any) {
+      toast.error('리포트 다운로드 실패', {
+        description: err.message || '리포트 다운로드 중 오류가 발생했습니다.',
+      });
+    }
+  };
+
+  if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-12 text-center">리포트를 불러오는 중...</CardContent>
-      </Card>
+      <div className="space-y-6 p-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            돌아가기
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">리포트 상세</h1>
+            <p className="mt-2 text-gray-600">리포트를 불러오는 중...</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+            <p className="text-gray-600">리포트 상세 정보를 불러오는 중...</p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
-  if (reportQuery.error || !reportQuery.data) {
+
+  if (error || !reportData) {
     return (
-      <Card>
-        <CardContent className="p-12 text-center">리포트를 불러오지 못했습니다.</CardContent>
-      </Card>
+      <div className="space-y-6 p-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            돌아가기
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">리포트 상세</h1>
+            <p className="mt-2 text-gray-600">리포트를 불러올 수 없습니다</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-red-600">리포트 상세 정보를 불러오는데 실패했습니다.</p>
+            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+              다시 시도
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
-
-  const r = reportQuery.data as any;
 
   return (
-    <div className="space-y-6">
-      <ReportHeader
-        backHref="/reports"
-        title={r.title}
-        status={r.status}
-        onDownload={() => download.mutate(r.id)}
-        downloading={download.isPending}
-      />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>학생 정보</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center gap-3">
-          <User className="h-6 w-6 text-gray-500" />
+    <div className="space-y-6 p-6">
+      {/* 헤더 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            돌아가기
+          </Button>
           <div>
-            <div className="font-semibold">{r.student?.name}</div>
-            <div className="text-sm text-gray-600">{r.period}</div>
+            <h1 className="text-3xl font-bold text-gray-900">{reportData.title}</h1>
+            <p className="mt-2 text-gray-600">
+              {reportData.type} • {reportData.period}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDownload} disabled={downloadMutation.isPending}>
+            <Download className="mr-2 h-4 w-4" />
+            {downloadMutation.isPending ? '다운로드 중...' : 'PDF 다운로드'}
+          </Button>
+        </div>
+      </div>
 
-      <KpiCards
-        totalProblems={r.totalProblems}
-        averageScore={r.averageScore}
-        completionRate={r.completionRate}
-        students={r.students}
-      />
-
-      <InsightsPanel insights={r.insights} recommendations={r.recommendations} />
-
-      <SubjectBreakdown items={sections.breakdown} loading={sections.isLoading} />
-      <ConceptMatrix items={sections.concepts} loading={sections.isLoading} />
-      <TimelineSection points={sections.timeline} loading={sections.isLoading} />
-      <RecentMistakes
-        items={sections.recentMistakes}
-        loading={sections.isLoading}
-        onRetry={async (pid) => {
-          try {
-            // 문제-학습자료 매핑 조회
-            const res = await fetch(`/api/problems/material?ids=${encodeURIComponent(pid)}`);
-            let studyId: string | null = null;
-            if (res.ok) {
-              const json = await res.json();
-              const rec = (json?.data || [])[0];
-              if (rec?.studyId) studyId = rec.studyId as string;
-            }
-            if (!studyId) {
-              router.push(`/problems/${encodeURIComponent(pid)}?retry=true`);
-              return;
-            }
-            const idsParam = encodeURIComponent(pid);
-            router.push(
-              `/my/learning/${encodeURIComponent(studyId)}/problems/${encodeURIComponent(
-                pid,
-              )}?wrongOnly=1&ids=${idsParam}&from=report`,
-            );
-          } catch (e) {
-            console.error('리포트에서 재풀이 이동 실패:', e);
-            router.push('/my/learning?error=server-error');
-          }
-        }}
-      />
+      {/* 리포트 상세 내용 */}
+      <ReportDetail report={reportData} />
     </div>
   );
 }

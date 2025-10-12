@@ -212,7 +212,7 @@ export default function StatusPage() {
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-6 p-6">
               {incidents.map((incident, index) => (
                 <Card key={index}>
                   <CardHeader>

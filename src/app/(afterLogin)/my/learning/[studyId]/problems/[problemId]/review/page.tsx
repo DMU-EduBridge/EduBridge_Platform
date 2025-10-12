@@ -1,6 +1,6 @@
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
-import { parseJsonArray } from '@/lib/utils/json';
+import { problemService } from '@/server/services/problem/problem-crud.service';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { notFound, redirect } from 'next/navigation';
@@ -57,27 +57,9 @@ export default async function StudyProblemReviewPage({
     const problemId = params.problemId;
 
     // 문제가 해당 단원에 속하는지 확인
-    const problem = await prisma.problem.findUnique({
-      where: {
-        id: problemId,
-        unit: studyId, // 단원이 일치하는지 확인
-        isActive: true,
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        type: true,
-        options: true,
-        correctAnswer: true,
-        explanation: true,
-        hints: true,
-        subject: true,
-        difficulty: true,
-      },
-    });
+    const problem = await problemService.getProblemById(problemId);
 
-    if (!problem) {
+    if (!problem || problem.unit !== studyId || !problem.isActive) {
       notFound();
     }
 
@@ -105,10 +87,10 @@ export default async function StudyProblemReviewPage({
           title: problem.title,
           description: problem.description,
           type: problem.type,
-          options: parseJsonArray(problem.options as string),
+          options: problem.options, // 서버에서 이미 파싱된 배열
           correctAnswer: problem.correctAnswer,
           explanation: problem.explanation ?? null,
-          hints: parseJsonArray(problem.hints as string),
+          hints: problem.hints, // 서버에서 이미 파싱된 배열
           subject: problem.subject,
           difficulty: problem.difficulty,
         }}

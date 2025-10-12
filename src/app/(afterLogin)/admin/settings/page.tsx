@@ -19,7 +19,7 @@ export default async function AdminSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">시스템 설정</h1>
         <p className="mt-2 text-gray-600">시스템 전반의 설정을 관리하고 보안 정책을 구성하세요.</p>
@@ -182,4 +182,3 @@ export default async function AdminSettingsPage() {
     </div>
   );
 }
-

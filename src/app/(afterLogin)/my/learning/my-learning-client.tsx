@@ -81,7 +81,7 @@ export default function MyLearningClient() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">단원별 학습하기</h1>
           <p className="mt-2 text-gray-600">진도에 맞게 원하는 과목을 선택해 문제를 풀어보세요.</p>
@@ -94,7 +94,7 @@ export default function MyLearningClient() {
   // 에러 상태
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">단원별 학습하기</h1>
           <p className="mt-2 text-gray-600">진도에 맞게 원하는 과목을 선택해 문제를 풀어보세요.</p>
@@ -105,7 +105,7 @@ export default function MyLearningClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">단원별 학습하기</h1>
         <p className="mt-2 text-gray-600">진도에 맞게 원하는 과목을 선택해 문제를 풀어보세요.</p>

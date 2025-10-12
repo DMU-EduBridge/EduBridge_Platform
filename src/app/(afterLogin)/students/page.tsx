@@ -1,5 +1,6 @@
 'use client';
 
+import { StudentInviteModal } from '@/components/students/student-invite-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +46,7 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   // TanStack Query 훅 사용
   const {
@@ -57,8 +59,16 @@ export default function StudentsPage() {
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
   });
 
-  const students = studentsQuery.data?.students || [];
-  const stats = statsQuery.data;
+  const students = studentsQuery.data?.data?.students || [];
+  // @ts-ignore - TypeScript strict mode issue
+  const stats = statsQuery.data?.data ?? {
+    totalStudents: 0,
+    activeStudents: 0,
+    weeklyChange: 0,
+    averageProgress: 0,
+    averageScore: 0,
+    activeStudentsRate: 0,
+  };
 
   // const handleSendMessage = (studentId: string, message: string) => {
   //   sendMessageMutation.mutate({ id: studentId, message });
@@ -71,7 +81,7 @@ export default function StudentsPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
@@ -85,7 +95,7 @@ export default function StudentsPage() {
             <Mail className="mr-2 h-4 w-4" />
             일괄 메일 발송
           </Button>
-          <Button>
+          <Button onClick={() => setInviteModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             학생 초대
           </Button>
@@ -222,7 +232,7 @@ export default function StudentsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-lg">{student.name}</CardTitle>
-                    <CardDescription>{student.grade}</CardDescription>
+                    <CardDescription>{student.gradeLevel}</CardDescription>
                   </div>
                   <Badge className={statusColors[student.status as keyof typeof statusColors]}>
                     {statusLabels[student.status as keyof typeof statusLabels]}
@@ -238,53 +248,67 @@ export default function StudentsPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="h-4 w-4" />
-                    <span>가입일: {new Date(student.joinDate).toLocaleDateString()}</span>
+                    <span>가입일: {new Date(student.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="h-4 w-4" />
-                    <span>마지막 활동: {new Date(student.lastActivity).toLocaleDateString()}</span>
-                  </div>
+                  {student.lastActivity && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Clock className="h-4 w-4" />
+                      <span>
+                        마지막 활동: {new Date(student.lastActivity).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* 학습 진도 */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">학습 진도</span>
-                    <span className="text-sm text-gray-600">{student.progress}%</span>
+                {student.progress !== undefined && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">학습 진도</span>
+                      <span className="text-sm text-gray-600">{student.progress}%</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-gray-200">
+                      <div
+                        className={`h-2 rounded-full ${getProgressColor(student.progress)}`}
+                        style={{ width: `${student.progress}%` }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
-                    <div
-                      className={`h-2 rounded-full ${getProgressColor(student.progress)}`}
-                      style={{ width: `${student.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
+                )}
 
                 {/* 학습 통계 */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="rounded bg-gray-50 p-2 text-center">
-                    <div className="font-semibold text-gray-900">
-                      {student.completedProblems}/{student.totalProblems}
-                    </div>
-                    <div className="text-gray-600">완료 문제</div>
+                {(student.totalProblems !== undefined || student.averageScore !== undefined) && (
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {student.totalProblems !== undefined && (
+                      <div className="rounded bg-gray-50 p-2 text-center">
+                        <div className="font-semibold text-gray-900">
+                          {student.completedProblems || 0}/{student.totalProblems}
+                        </div>
+                        <div className="text-gray-600">완료 문제</div>
+                      </div>
+                    )}
+                    {student.averageScore !== undefined && (
+                      <div className="rounded bg-gray-50 p-2 text-center">
+                        <div className="font-semibold text-gray-900">{student.averageScore}점</div>
+                        <div className="text-gray-600">평균 점수</div>
+                      </div>
+                    )}
                   </div>
-                  <div className="rounded bg-gray-50 p-2 text-center">
-                    <div className="font-semibold text-gray-900">{student.averageScore}점</div>
-                    <div className="text-gray-600">평균 점수</div>
-                  </div>
-                </div>
+                )}
 
                 {/* 수강 과목 */}
-                <div>
-                  <span className="text-sm font-medium text-gray-700">수강 과목:</span>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {student.subjects.map((subject: string) => (
-                      <Badge key={subject} variant="secondary" className="text-xs">
-                        {subject}
-                      </Badge>
-                    ))}
+                {student.subjects && student.subjects.length > 0 && (
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">수강 과목:</span>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {student.subjects.map((subject: string) => (
+                        <Badge key={subject} variant="secondary" className="text-xs">
+                          {subject}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* 액션 버튼 */}
                 <div className="flex gap-2 pt-2">
@@ -292,9 +316,11 @@ export default function StudentsPage() {
                     <MessageCircle className="mr-1 h-4 w-4" />
                     상담
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    <TrendingUp className="mr-1 h-4 w-4" />
-                    진도 확인
+                  <Button asChild variant="outline" size="sm" className="flex-1">
+                    <Link href={`/students/${student.id}/detail`}>
+                      <TrendingUp className="mr-1 h-4 w-4" />
+                      진도 확인
+                    </Link>
                   </Button>
                   <Button variant="outline" size="sm" className="flex-1">
                     <Mail className="mr-1 h-4 w-4" />
@@ -311,21 +337,24 @@ export default function StudentsPage() {
             </Card>
           ))
         )}
+
+        {!studentsQuery.isLoading && !studentsQuery.error && students.length === 0 && (
+          <Card className="col-span-2">
+            <CardContent className="p-12 text-center">
+              <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">학생을 찾을 수 없습니다</h3>
+              <p className="mb-4 text-gray-600">검색 조건에 맞는 학생이 없습니다.</p>
+              <Button onClick={() => setInviteModalOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                학생 초대하기
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {!studentsQuery.isLoading && !studentsQuery.error && students.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Users className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">학생을 찾을 수 없습니다</h3>
-            <p className="mb-4 text-gray-600">검색 조건에 맞는 학생이 없습니다.</p>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              학생 초대하기
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {/* 학생 초대 모달 */}
+      <StudentInviteModal open={inviteModalOpen} onOpenChange={setInviteModalOpen} />
     </div>
   );
 }

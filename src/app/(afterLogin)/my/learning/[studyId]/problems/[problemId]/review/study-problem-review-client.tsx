@@ -113,27 +113,36 @@ const StudyProblemReviewClient = memo(function StudyProblemReviewClient({
               <div className="mb-4 space-y-2">
                 <h4 className="font-medium text-gray-900">선택지:</h4>
                 <div className="grid gap-2">
-                  {problem.options.map((option, index) => (
-                    <div
-                      key={index}
-                      className={`rounded-lg border p-3 ${
-                        option === problem.correctAnswer
-                          ? 'border-green-200 bg-green-50 text-green-800'
-                          : option === userAnswer && !isCorrect
-                            ? 'border-red-200 bg-red-50 text-red-800'
-                            : 'border-gray-200 bg-gray-50'
-                      }`}
-                    >
-                      <span className="font-medium">{String.fromCharCode(65 + index)}.</span>{' '}
-                      {option}
-                      {option === problem.correctAnswer && (
-                        <CheckCircle className="ml-2 inline h-4 w-4 text-green-600" />
-                      )}
-                      {option === userAnswer && !isCorrect && (
-                        <XCircle className="ml-2 inline h-4 w-4 text-red-600" />
-                      )}
-                    </div>
-                  ))}
+                  {problem.options.map((option, index) => {
+                    const correctAnswerIndex = problem.options.findIndex(
+                      (opt) => opt === problem.correctAnswer,
+                    );
+                    const userAnswerIndex = problem.options.findIndex((opt) => opt === userAnswer);
+                    const isCorrectAnswer = index === correctAnswerIndex;
+                    const isUserAnswer = index === userAnswerIndex;
+
+                    return (
+                      <div
+                        key={index}
+                        className={`rounded-lg border p-3 ${
+                          isCorrectAnswer
+                            ? 'border-green-200 bg-green-50 text-green-800'
+                            : isUserAnswer && !isCorrect
+                              ? 'border-red-200 bg-red-50 text-red-800'
+                              : 'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        <span className="font-medium">{String.fromCharCode(65 + index)}.</span>{' '}
+                        {option}
+                        {isCorrectAnswer && (
+                          <CheckCircle className="ml-2 inline h-4 w-4 text-green-600" />
+                        )}
+                        {isUserAnswer && !isCorrect && (
+                          <XCircle className="ml-2 inline h-4 w-4 text-red-600" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

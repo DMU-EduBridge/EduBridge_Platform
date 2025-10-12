@@ -1,46 +1,56 @@
 import { logger } from '@/lib/monitoring';
 import { UpdateProblemSchema } from '@/lib/validation/schemas';
 import { ok, withAuth } from '@/server/http/handler';
-import { problemDetailService } from '@/server/services/problems/problem-detail.service';
-import { NextRequest } from 'next/server';
+import { problemService } from '@/server/services/problem/problem-crud.service';
+import type { UpdateProblemRequest } from '@/types/domain/problem';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET({ params }: { params: { problemId: string } }) {
-  return withAuth(async ({ userId }) => {
-    const problem = await problemDetailService.getProblemById(params.problemId);
+export async function GET(request: NextRequest, { params }: { params: { problemId: string } }) {
+  const authHandler = await withAuth(async ({ userId }) => {
+    const problem = await problemService.getProblemById(params.problemId);
 
     if (!problem) {
-      return new Response(
+      return new NextResponse(
         JSON.stringify({ success: false, error: 'Problem not found', code: 'NOT_FOUND' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
     logger.info('문제 조회 성공', { userId, problemId: params.problemId });
-    return new Response(JSON.stringify(ok(problem)), {
+    return new NextResponse(JSON.stringify(ok(problem)), {
       headers: { 'Content-Type': 'application/json' },
     });
   });
+
+  return authHandler(request);
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { problemId: string } }) {
-  return withAuth(async ({ userId }) => {
+  const authHandler = await withAuth(async ({ userId }) => {
     const body = await request.json();
     const data = UpdateProblemSchema.parse(body);
 
-    const result = await problemDetailService.updateProblem(params.problemId, data);
+    const result = await problemService.updateProblem(
+      params.problemId,
+      data as UpdateProblemRequest,
+    );
     logger.info('문제 업데이트 성공', { userId, problemId: params.problemId });
-    return new Response(JSON.stringify(ok(result)), {
+    return new NextResponse(JSON.stringify(ok(result)), {
       headers: { 'Content-Type': 'application/json' },
     });
   });
+
+  return authHandler(request);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { problemId: string } }) {
-  return withAuth(async ({ userId }) => {
-    const result = await problemDetailService.deleteProblem(params.problemId);
+export async function DELETE(request: NextRequest, { params }: { params: { problemId: string } }) {
+  const authHandler = await withAuth(async ({ userId }) => {
+    const result = await problemService.deleteProblem(params.problemId);
     logger.info('문제 삭제 성공', { userId, problemId: params.problemId });
-    return new Response(JSON.stringify(ok(result)), {
+    return new NextResponse(JSON.stringify(ok(result)), {
       headers: { 'Content-Type': 'application/json' },
     });
   });
+
+  return authHandler(request);
 }

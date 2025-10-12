@@ -1,6 +1,8 @@
 import { authOptions } from '@/lib/core/auth';
-import { materialService } from '@/server/services/material.service';
+import { learningMaterialsService } from '@/server/services/learning-materials/learning-materials.service';
 import { problemService } from '@/server/services/problem/problem-crud.service';
+import type { Problem } from '@/types/domain/problem';
+import type { LearningMaterial } from '@/types/learning';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import ResultsClient from './results-client';
@@ -34,13 +36,13 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
     });
 
     // 학습 자료 정보 가져오기 (제목 등)
-    const learningMaterial = await materialService.getMaterialById(studyId);
+    const learningMaterial = await learningMaterialsService.getLearningMaterialById(studyId);
 
     return (
       <ResultsClient
         studyId={studyId}
-        problems={allProblems}
-        learningMaterial={learningMaterial}
+        problems={allProblems as Problem[]}
+        learningMaterial={learningMaterial as LearningMaterial | null}
         userId={session.user.id}
       />
     );

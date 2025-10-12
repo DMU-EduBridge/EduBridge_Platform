@@ -261,7 +261,7 @@ export function AIAssistantDetailClient({ session, initialData }: AIAssistantDet
           {/* 채팅 영역 */}
           <div className="lg:col-span-3">
             <Card className="p-6">
-              <div className="space-y-6">
+              <div className="space-y-6 p-6">
                 {/* 새 질문 입력 */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="flex gap-3">

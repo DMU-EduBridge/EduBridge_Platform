@@ -161,8 +161,8 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
       </div>
 
       {/* 메인 콘텐츠 */}
-      <div className="p-6">
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div>
+        <div className="grid grid-cols-1 gap-6 p-6 pt-0 xl:grid-cols-3">
           {/* 왼쪽 열 - 학습 진도 */}
           <div className="space-y-6">
             {/* 학습 진도 카드들 */}
@@ -170,32 +170,8 @@ export function DashboardClient({ session, initialData }: DashboardClientProps) 
               {learningProgress.map((subject) => (
                 <Card key={subject.id} className="p-6">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">{subject.subject}</h3>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-3 py-1 text-sm font-medium ${
-                            subject.gradeColor === 'green'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {subject.grade}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => router.push(`/my/learning/${subject.id}`)}
-                          className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
                     <div className="space-y-2">
-                      <p className="text-sm text-gray-600">
-                        현재 배우고 있는 단원: {subject.currentUnit}
-                      </p>
+                      <p className="text-sm text-gray-600">{subject.currentUnit}</p>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">진도율</span>

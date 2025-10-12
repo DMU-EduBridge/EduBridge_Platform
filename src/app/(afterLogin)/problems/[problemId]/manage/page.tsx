@@ -1,7 +1,7 @@
 import ProblemManageClient from '@/components/problems/problem-manage-client';
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
-import { parseJsonArray } from '@/lib/utils/json';
+import { problemService } from '@/server/services/problem/problem-crud.service';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { notFound, redirect } from 'next/navigation';
@@ -48,38 +48,13 @@ export default async function ProblemManagePage({ params }: { params: { problemI
       redirect('/my/learning');
     }
 
-    const problem = await prisma.problem.findUnique({
-      where: { id: params.problemId },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        content: true,
-        type: true,
-        difficulty: true,
-        subject: true,
-        gradeLevel: true,
-        unit: true,
-        options: true,
-        correctAnswer: true,
-        explanation: true,
-        hints: true,
-        tags: true,
-        points: true,
-        timeLimit: true,
-        isActive: true,
-        isAIGenerated: true,
-        reviewStatus: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const problem = await problemService.getProblemById(params.problemId);
 
     if (!problem) {
       notFound();
     }
 
-    // 문제 시도 통계 조회
+    // 개별 문제 시도 통계 조회
     const attemptStats = await prisma.attempt.groupBy({
       by: ['isCorrect'],
       where: { problemId: params.problemId },
@@ -90,18 +65,35 @@ export default async function ProblemManagePage({ params }: { params: { problemI
     const correctAttempts = attemptStats.find((stat) => stat.isCorrect)?._count.isCorrect || 0;
     const correctRate = totalAttempts > 0 ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
 
+    // 전체 시스템 통계 조회
+    const [totalProblems, activeProblems, systemTotalAttempts, systemCorrectAttempts] =
+      await Promise.all([
+        prisma.problem.count(),
+        prisma.problem.count({ where: { isActive: true } }),
+        prisma.attempt.count(),
+        prisma.attempt.count({ where: { isCorrect: true } }),
+      ]);
+
+    const systemCorrectRate =
+      systemTotalAttempts > 0 ? Math.round((systemCorrectAttempts / systemTotalAttempts) * 100) : 0;
+
     return (
       <ProblemManageClient
         problem={{
           ...problem,
-          options: parseJsonArray(problem.options as string),
-          hints: parseJsonArray(problem.hints as string),
-          tags: parseJsonArray(problem.tags as string),
+          options: problem.options, // 서버에서 이미 파싱된 배열
+          hints: problem.hints, // 서버에서 이미 파싱된 배열
+          tags: problem.tags, // 서버에서 이미 파싱된 배열
         }}
         stats={{
           totalAttempts,
           correctAttempts,
           correctRate,
+          // 전체 시스템 통계
+          totalProblems,
+          activeProblems,
+          systemTotalAttempts,
+          systemCorrectRate,
         }}
         userRole={session.user.role}
       />

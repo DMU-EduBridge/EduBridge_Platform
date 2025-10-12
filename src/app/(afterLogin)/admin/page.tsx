@@ -59,7 +59,7 @@ export default async function AdminDashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">관리자 대시보드</h1>
         <p className="mt-2 text-gray-600">시스템 전체 현황을 확인하고 관리 기능에 접근하세요.</p>

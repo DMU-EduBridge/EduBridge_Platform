@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportCreateModal } from '@/components/reports/report-create-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +45,7 @@ export default function ReportsPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [studentId, setStudentId] = useState<string | undefined>(undefined);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -59,19 +61,25 @@ export default function ReportsPage() {
   } = useReports({
     type: selectedType !== 'all' ? selectedType : undefined,
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
-    // @ts-ignore - hook 서비스가 params를 그대로 전달하므로 studentId도 쿼리에 전달됨
-    studentId,
+    studentId: studentId || undefined,
   });
 
-  const reports = reportsQuery.data?.reports || [];
-  const stats = statsQuery.data;
+  const reports = reportsQuery.data?.data?.reports || [];
+  // @ts-ignore - TypeScript strict mode issue
+  const stats = statsQuery.data?.data ?? {
+    totalReports: 0,
+    completedReports: 0,
+    weeklyChange: 0,
+    averageAnalysisTime: 0,
+    totalSuggestions: 0,
+  };
 
   const handleDownload = (reportId: string) => {
     downloadMutation.mutate(reportId as string);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
@@ -85,7 +93,7 @@ export default function ReportsPage() {
             <Download className="mr-2 h-4 w-4" />
             리포트 다운로드
           </Button>
-          <Button>
+          <Button onClick={() => setCreateModalOpen(true)}>
             <TrendingUp className="mr-2 h-4 w-4" />새 리포트 생성
           </Button>
         </div>
@@ -117,7 +125,9 @@ export default function ReportsPage() {
               {statsQuery.isLoading ? '...' : stats?.completedReports || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats?.completionRate ? `${stats.completionRate}% 완료율` : '로딩 중...'}
+              {stats?.completedReports && stats?.totalReports
+                ? `${Math.round((stats.completedReports / stats.totalReports) * 100)}% 완료율`
+                : '로딩 중...'}
             </p>
           </CardContent>
         </Card>
@@ -308,12 +318,15 @@ export default function ReportsPage() {
             <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-400" />
             <h3 className="mb-2 text-lg font-semibold text-gray-900">리포트를 찾을 수 없습니다</h3>
             <p className="mb-4 text-gray-600">필터 조건에 맞는 리포트가 없습니다.</p>
-            <Button>
+            <Button onClick={() => setCreateModalOpen(true)}>
               <TrendingUp className="mr-2 h-4 w-4" />새 리포트 생성하기
             </Button>
           </CardContent>
         </Card>
       )}
+
+      {/* 리포트 생성 모달 */}
+      <ReportCreateModal open={createModalOpen} onOpenChange={setCreateModalOpen} />
     </div>
   );
 }

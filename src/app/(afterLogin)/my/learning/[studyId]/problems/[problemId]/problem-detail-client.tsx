@@ -33,6 +33,7 @@ export function ProblemDetailClient({
   currentIndex,
   totalCount,
   nextProblem,
+  isStudent = true,
 }: ProblemDetailClientProps) {
   const [problem, setProblem] = useState<Problem | undefined>(initialProblem);
   const [shouldStartNewAttempt, setShouldStartNewAttempt] = useState(false);
@@ -187,31 +188,61 @@ export function ProblemDetailClient({
             remainingProblems={clientRemainingProblems}
             attemptNumber={activeAttemptNumber}
             startTime={startTime}
-            isActive={!showResult}
+            isActive={isStudent && !showResult}
             studyTitle={studyItem?.title}
             subject={problem?.subject}
           />
           <div className="flex flex-col gap-4 px-6">
             <ProblemContent problem={problem} currentIndex={currentIndex} />
 
-            <ProblemOptions
-              problem={problem}
-              selectedAnswer={selectedAnswer}
-              showResult={showResult}
-              onAnswerSelect={handleAnswerSelect}
-            />
+            {isStudent ? (
+              <>
+                <ProblemOptions
+                  problem={problem}
+                  selectedAnswer={selectedAnswer}
+                  showResult={showResult}
+                  onAnswerSelect={handleAnswerSelect}
+                />
 
-            <ProblemExplanation problem={problem} showResult={showResult} isCorrect={isCorrect} />
+                <ProblemExplanation
+                  problem={problem}
+                  showResult={showResult}
+                  isCorrect={isCorrect}
+                />
 
-            <ProblemActions
-              selectedAnswer={selectedAnswer}
-              showResult={showResult}
-              isLastProblem={currentIndex >= totalCount}
-              onSubmit={handleSubmit}
-              onNext={handleNextEnsured}
-              onPrevious={handlePrevious}
-              currentIndex={currentIndex}
-            />
+                <ProblemActions
+                  selectedAnswer={selectedAnswer}
+                  showResult={showResult}
+                  isLastProblem={currentIndex >= totalCount}
+                  onSubmit={handleSubmit}
+                  onNext={handleNextEnsured}
+                  onPrevious={handlePrevious}
+                  currentIndex={currentIndex}
+                />
+              </>
+            ) : (
+              <>
+                <ProblemOptions
+                  problem={problem}
+                  selectedAnswer={(() => {
+                    const correctIndex = problem.options.findIndex(
+                      (opt) => opt === problem.correctAnswer,
+                    );
+                    return (correctIndex + 1).toString();
+                  })()}
+                  showResult={true}
+                  onAnswerSelect={() => {}}
+                />
+
+                <ProblemExplanation problem={problem} showResult={true} isCorrect={true} />
+
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-center text-blue-800">
+                    선생님은 문제를 볼 수만 있습니다. 문제 풀이는 학생만 가능합니다.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

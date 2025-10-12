@@ -1,12 +1,16 @@
 import { ProblemReviewClient, ProblemReviewViewModel } from '@/components/problems';
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
-import { parseJsonArray } from '@/lib/utils/json';
+import { problemService } from '@/server/services/problem/problem-crud.service';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { notFound, redirect } from 'next/navigation';
 
-export async function generateMetadata({ params }: { params: { problemId: string } }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { problemId: string };
+}): Promise<Metadata> {
   try {
     const problem = await prisma.problem.findUnique({
       where: { id: params.problemId },
@@ -44,27 +48,7 @@ export default async function ProblemReviewPage({ params }: { params: { problemI
       redirect('/dashboard');
     }
 
-    const problem = await prisma.problem.findUnique({
-      where: { id: params.problemId },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        content: true,
-        type: true,
-        difficulty: true,
-        subject: true,
-        options: true,
-        correctAnswer: true,
-        explanation: true,
-        hints: true,
-        tags: true,
-        points: true,
-        timeLimit: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const problem = await problemService.getProblemById(params.problemId);
 
     if (!problem) {
       notFound();
@@ -90,11 +74,11 @@ export default async function ProblemReviewPage({ params }: { params: { problemI
       type: problem.type,
       difficulty: problem.difficulty,
       subject: problem.subject,
-      options: parseJsonArray(problem.options as string),
+      options: problem.options, // 서버에서 이미 파싱된 배열
       correctAnswer: problem.correctAnswer,
       explanation: problem.explanation,
-      hints: parseJsonArray(problem.hints as string),
-      tags: parseJsonArray(problem.tags as string),
+      hints: problem.hints, // 서버에서 이미 파싱된 배열
+      tags: problem.tags, // 서버에서 이미 파싱된 배열
       points: problem.points,
       timeLimit: problem.timeLimit,
       createdAt: problem.createdAt,
