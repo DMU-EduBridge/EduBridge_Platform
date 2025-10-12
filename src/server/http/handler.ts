@@ -15,18 +15,24 @@ export function fail(error: string, status = 400) {
 }
 
 export async function withAuth(
-  fn: (ctx: { userId: string; session?: Session | null }) => Promise<NextResponse>,
+  fn: (ctx: {
+    userId: string;
+    session: Session;
+    request?: Request;
+  }) => Promise<Response | NextResponse>,
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return ApiError.unauthorized();
-  }
-  try {
-    return await fn({ userId: session.user.id, session });
-  } catch (error) {
-    logger.error('API 처리 실패', undefined, {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return ApiError.internalError();
-  }
+  return async (request: Request) => {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return ApiError.unauthorized();
+    }
+    try {
+      return await fn({ userId: session.user.id, session, request });
+    } catch (error) {
+      logger.error('API 처리 실패', undefined, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return ApiError.internalError();
+    }
+  };
 }
