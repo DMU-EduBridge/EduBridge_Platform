@@ -31,7 +31,6 @@ Thumbs.db
 
 # Prisma
 prisma/dev.db
-prisma/dev.db-journal
 
 # Public build outputs
 public/output.css
