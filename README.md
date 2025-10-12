@@ -145,12 +145,20 @@ EduBridge는 **AI 기술을 활용한 통합 교육 플랫폼**입니다. 교사
 
 ## 🚀 빠른 시작
 
+### 사전 요구사항
+
+- **Node.js**: 18.0.0 이상
+- **npm**: 9.0.0 이상
+- **Git**: 최신 버전
+
 ### 1. 저장소 클론
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/your-username/EduBridge.git
 cd EduBridge
 ```
+
+> **참고**: 실제 저장소 URL로 변경하세요.
 
 ### 2. 의존성 설치
 
@@ -210,9 +218,11 @@ npm run db:generate
 # 데이터베이스 마이그레이션
 npm run db:migrate
 
-# 시드 데이터 삽입 (선택사항)
+# 시드 데이터 삽입 (테스트용 계정 및 데이터 포함)
 npm run db:seed
 ```
+
+> **중요**: 시드 데이터에는 테스트용 계정들이 포함되어 있으므로 반드시 실행하세요.
 
 ### 5. 외부 서비스 실행 (선택사항)
 
@@ -243,23 +253,23 @@ npm run dev
 #### 관리자 계정
 
 - **이메일**: `admin@example.com`
-- **비밀번호**: `password123`
+- **비밀번호**: `password123` (소셜 전용 계정)
 
 #### 교사 계정들
 
-- **수학 교사**: `math_teacher1@example.com` / `password123`
-- **과학 교사**: `science_teacher@example.com` / `password123`
-- **영어 교사**: `english_teacher@example.com` / `password123`
+- **수학 교사**: `math_teacher1@example.com` / `password123` (소셜 전용 계정)
+- **과학 교사**: `science_teacher@example.com` / `password123` (소셜 전용 계정)
+- **영어 교사**: `english_teacher@example.com` / `password123` (소셜 전용 계정)
 
 #### 학생 계정들
 
 - **학생 1**: `student1@example.com` / `password123`
 - **학생 2**: `student2@example.com` / `password123`
+- **학생 3**: `student3@example.com` / `password123`
+- **최미나**: `choi_mina@example.com` / `password123`
+- **정현**: `jung_hyeon@example.com` / `password123`
 
-#### 데모 계정
-
-- **이메일**: `demo@example.com`
-- **비밀번호**: `demo123`
+> **참고**: 교사 계정은 소셜 전용 계정이므로 개발 환경에서는 `DEV_TEST_PASSWORD`로 로그인할 수 있습니다.
 
 ### 8. 프로덕션 빌드
 
@@ -276,6 +286,56 @@ npm run build
 # 프로덕션 실행
 npm start
 ```
+
+## 🔧 문제 해결
+
+### 일반적인 문제들
+
+#### 1. 포트 충돌 문제
+
+```bash
+# 포트 3000이 사용 중인 경우
+npm run dev -- -p 3001
+```
+
+#### 2. 데이터베이스 연결 문제
+
+```bash
+# 데이터베이스 리셋
+npm run db:reset
+
+# Prisma 클라이언트 재생성
+npm run db:generate
+```
+
+#### 3. 캐시 문제
+
+```bash
+# 캐시 정리
+npm run clean
+
+# node_modules 재설치
+rm -rf node_modules package-lock.json
+npm install
+```
+
+#### 4. 타입 에러
+
+```bash
+# TypeScript 타입 체크
+npm run type-check
+
+# 타입 정의 업데이트
+npm run db:generate
+```
+
+### 로그 확인
+
+개발 서버 실행 시 터미널에서 다음 로그들을 확인할 수 있습니다:
+
+- `✅ 시드 데이터 생성 완료` - 데이터베이스 초기화 성공
+- `🚀 서버가 포트 3000에서 실행 중` - 개발 서버 시작
+- `📊 Prisma Studio: http://localhost:5555` - 데이터베이스 GUI 접근
 
 ## 📚 문서
 
@@ -301,8 +361,8 @@ npm run test-data:stress
 # 더미 데이터 생성 (사용자, 문제, 교과서 등)
 npm run dummy-data
 
-# 모든 더미 데이터 정리
-npm run dummy-data:clean
+# 고아 데이터 정리
+npm run db:cleanup-orphans
 ```
 
 ### 데이터베이스 관리
@@ -314,17 +374,23 @@ npm run db:generate
 # 데이터베이스 마이그레이션
 npm run db:migrate
 
-# 데이터베이스 리셋 (개발 환경)
+# 데이터베이스 리셋 (개발 환경) - 모든 데이터 삭제 후 시드 재삽입
 npm run db:reset
 
 # 시드 데이터 삽입
 npm run db:seed
+
+# Prisma Studio 실행 (GUI로 데이터베이스 관리)
+npm run db:studio
 
 # 데이터베이스 최적화 (인덱스 생성)
 npm run db:optimize:indexes
 
 # 데이터베이스 성능 분석
 npm run db:optimize:analyze
+
+# 모든 최적화 작업 실행
+npm run db:optimize:all
 ```
 
 ### 서비스 관리
@@ -835,6 +901,7 @@ npm run lint:fix         # ESLint 자동 수정
 npm run format           # Prettier 포맷팅
 npm run format:check     # 포맷팅 검사
 npm run type-check       # TypeScript 타입 검사
+npm run precommit        # 커밋 전 검사 (lint + format + type-check)
 ```
 
 ### 데이터베이스 관리
@@ -846,12 +913,23 @@ npm run db:deploy        # 프로덕션 마이그레이션
 npm run db:seed          # 시드 데이터 삽입
 npm run db:reset         # 데이터베이스 리셋 + 시드
 npm run db:studio        # Prisma Studio 실행
+npm run db:cleanup-orphans # 고아 데이터 정리
+```
+
+### 테스트
+
+```bash
+npm run test             # Jest 테스트 실행
+npm run test:watch       # 테스트 감시 모드
+npm run test:coverage    # 커버리지 포함 테스트
+npm run test:ci          # CI 환경용 테스트
 ```
 
 ### 분석 및 디버깅
 
 ```bash
 npm run analyze          # 번들 분석 (webpack-bundle-analyzer)
+npm run clean            # 캐시 정리 (.next, node_modules/.cache)
 ```
 
 ## 🔒 보안 및 환경 관리
@@ -932,7 +1010,10 @@ npm start
 
 ### 단기 계획 (1-3개월)
 
-- [ ] AI 문제 생성 기능 구현
+- [x] AI 문제 생성 기능 구현
+- [x] 학습자료-문제 연결 시스템
+- [x] 클래스 관리 시스템
+- [x] 진도 추적 및 분석
 - [ ] 실시간 채팅 시스템
 - [ ] 모바일 앱 개발
 - [ ] 다국어 지원
@@ -943,6 +1024,7 @@ npm start
 - [ ] 게임화 요소 추가
 - [ ] 부모 모니터링 기능
 - [ ] API 문서화
+- [ ] 드래그 앤 드롭 UI 개선
 
 ### 장기 계획 (6개월+)
 
