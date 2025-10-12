@@ -21,6 +21,7 @@ export const ProblemHeader = memo(function ProblemHeader({
   totalCount,
   remainingProblems,
   startTime,
+  isActive,
   studyTitle,
   subject,
 }: ProblemHeaderProps) {
@@ -52,9 +53,11 @@ export const ProblemHeader = memo(function ProblemHeader({
       <div className="mb-6 flex flex-col gap-4 px-6 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">단원별 학습하기</h1>
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-base font-semibold text-gray-700 sm:text-lg">
-            <span className="text-blue-600">{formatTimer()}</span>
-          </div>
+          {isActive && (
+            <div className="flex items-center gap-2 text-base font-semibold text-gray-700 sm:text-lg">
+              <span className="text-blue-600">{formatTimer()}</span>
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"

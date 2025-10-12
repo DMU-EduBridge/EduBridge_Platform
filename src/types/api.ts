@@ -78,3 +78,33 @@ export interface FilterParams {
   type?: string;
   search?: string;
 }
+
+// 문제 시도 관련 타입
+export interface AttemptPostBody {
+  selected: string;
+}
+
+export interface AttemptPostResponse {
+  id: string;
+  problemId: string;
+  userId: string;
+  selectedAnswer: string;
+  isCorrect: boolean;
+  attemptNumber: number;
+  timeSpent: number;
+  startedAt: string;
+  completedAt: string;
+}
+
+export interface SolutionResponse {
+  id: string;
+  problemId: string;
+  userId: string;
+  attempts: AttemptPostResponse[];
+  totalAttempts: number;
+  correctAttempts: number;
+  latestAttempt?: AttemptPostResponse;
+  isCompleted: boolean;
+  averageTimeSpent: number;
+  explanation?: string;
+}

@@ -63,7 +63,9 @@ export function createErrorResponse(error: Error, request?: NextRequest): NextRe
 /**
  * 에러 핸들링 래퍼 함수
  */
-export function withErrorHandler<T extends any[]>(handler: (...args: T) => Promise<NextResponse>) {
+export function withErrorHandler<T extends any[]>(
+  handler: (...args: T) => Promise<NextResponse>,
+): (...args: T) => Promise<NextResponse> {
   return async (...args: T): Promise<NextResponse> => {
     try {
       return await handler(...args);

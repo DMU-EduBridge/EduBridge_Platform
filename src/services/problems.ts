@@ -11,9 +11,13 @@ export const problemsService = {
     search?: string;
     subject?: string;
     difficulty?: string;
+    creationType?: string;
     page?: number;
     limit?: number;
-  }) => api.get<{ problems: Problem[]; total: number }>('/problems', { params }),
+  }) =>
+    api.get<{ success: boolean; data: { problems: Problem[]; total: number } }>('/problems', {
+      params,
+    }),
 
   getProblem: (id: string) => api.get<Problem>(`/problems/${id}`),
 
@@ -27,7 +31,7 @@ export const problemsService = {
 
   deleteProblem: (id: string) => api.delete(`/problems/${id}`),
 
-  getProblemStats: () => api.get('/problems/stats'),
+  getProblemStats: () => api.get<{ success: boolean; data: any }>('/problems/stats'),
 
   getProblemAttempts: (id: string) => api.get(`/problems/${id}/attempts`),
 

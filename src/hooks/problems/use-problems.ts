@@ -13,6 +13,7 @@ export function useProblems(params?: {
   search?: string;
   subject?: string;
   difficulty?: string;
+  creationType?: string;
   page?: number;
   limit?: number;
 }) {
@@ -20,7 +21,12 @@ export function useProblems(params?: {
 
   const problemsQuery = useQuery({
     queryKey: problemKeys.list(params),
-    queryFn: () => problemsService.getProblems(params).then((r) => r.data),
+    queryFn: () =>
+      problemsService.getProblems(params).then((r) => {
+        // 서버 응답: { success: true, data: { problems: [...], total: 118 } }
+        // 우리가 필요한 것: { problems: [...], total: 118 }
+        return r.data.data || { problems: [], total: 0 };
+      }),
   });
 
   const useProblem = (id: string) =>
@@ -32,7 +38,12 @@ export function useProblems(params?: {
 
   const statsQuery = useQuery({
     queryKey: problemKeys.stats,
-    queryFn: () => problemsService.getProblemStats().then((r) => r.data),
+    queryFn: () =>
+      problemsService.getProblemStats().then((r) => {
+        // 서버 응답: { success: true, data: { ... } }
+        // 우리가 필요한 것: { ... }
+        return r.data.data || {};
+      }),
   });
 
   const createMutation = useMutation({

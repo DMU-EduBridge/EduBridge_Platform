@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Filter, Search } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export type StudyFiltersProps = {
   query: string;
@@ -19,12 +19,20 @@ export function StudyFilters({
   onQueryChange,
   onDifficultyChange,
 }: StudyFiltersProps) {
+  const [mounted, setMounted] = useState(false);
+
   // Best practice: URL 쿼리 동기화(뒤로가기/공유/새로고침 복원), scroll 방지 replace
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const sp = new URLSearchParams(searchParams?.toString());
     if (query && query.trim().length > 0) sp.set('query', query.trim());
     else sp.delete('query');
@@ -36,7 +44,11 @@ export function StudyFilters({
     const nextUrl = qs ? `${pathname}?${qs}` : pathname;
     // shallow replace to avoid full reload
     router.replace(nextUrl, { scroll: false });
-  }, [query, difficulty, router, pathname, searchParams]);
+  }, [query, difficulty, router, pathname, searchParams, mounted]);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <Card className="rounded-xl p-4">

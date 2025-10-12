@@ -107,6 +107,7 @@ export interface ProblemDetailClientProps {
   currentIndex: number;
   totalCount: number;
   nextProblem?: { id: string } | undefined;
+  isStudent?: boolean;
 }
 
 export interface ResultsClientProps {

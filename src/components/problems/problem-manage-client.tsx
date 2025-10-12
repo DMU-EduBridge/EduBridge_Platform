@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   getProblemDifficultyConfig,
   getProblemStatusConfig,
@@ -10,7 +11,7 @@ import {
 } from '@/types/domain/problem';
 import { ArrowLeft, BarChart3, Edit, Eye, Settings, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 
 interface ProblemManageViewModel {
   id: string;
@@ -40,6 +41,11 @@ interface ProblemStats {
   totalAttempts: number;
   correctAttempts: number;
   correctRate: number;
+  // 전체 시스템 통계
+  totalProblems?: number;
+  activeProblems?: number;
+  systemTotalAttempts?: number;
+  systemCorrectRate?: number;
 }
 
 interface ProblemManageClientProps {
@@ -54,6 +60,7 @@ const ProblemManageClient = memo(function ProblemManageClient({
   userRole,
 }: ProblemManageClientProps) {
   const router = useRouter();
+  const [showPreview, setShowPreview] = useState(false);
 
   const difficultyConfig = getProblemDifficultyConfig(problem.difficulty);
   const statusConfig = getProblemStatusConfig(problem.isActive ? 'ACTIVE' : 'DRAFT');
@@ -109,7 +116,7 @@ const ProblemManageClient = memo(function ProblemManageClient({
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
             <Eye className="mr-2 h-4 w-4" />
             미리보기
           </Button>
@@ -160,22 +167,29 @@ const ProblemManageClient = memo(function ProblemManageClient({
                 <div>
                   <h4 className="font-medium text-gray-900">선택지</h4>
                   <div className="mt-2 space-y-2">
-                    {problem.options.map((option, index) => (
-                      <div
-                        key={index}
-                        className={`rounded-lg border p-3 ${
-                          option === problem.correctAnswer
-                            ? 'border-green-200 bg-green-50'
-                            : 'border-gray-200 bg-gray-50'
-                        }`}
-                      >
-                        <span className="font-medium">{String.fromCharCode(65 + index)}.</span>{' '}
-                        {option}
-                        {option === problem.correctAnswer && (
-                          <Badge className="ml-2 bg-green-100 text-green-800">정답</Badge>
-                        )}
-                      </div>
-                    ))}
+                    {problem.options.map((option, index) => {
+                      const correctAnswerIndex = problem.options.findIndex(
+                        (opt) => opt === problem.correctAnswer,
+                      );
+                      const isCorrectAnswer = index === correctAnswerIndex;
+
+                      return (
+                        <div
+                          key={index}
+                          className={`rounded-lg border p-3 ${
+                            isCorrectAnswer
+                              ? 'border-green-200 bg-green-50'
+                              : 'border-gray-200 bg-gray-50'
+                          }`}
+                        >
+                          <span className="font-medium">{String.fromCharCode(65 + index)}.</span>{' '}
+                          {option}
+                          {isCorrectAnswer && (
+                            <Badge className="ml-2 bg-green-100 text-green-800">정답</Badge>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -233,13 +247,62 @@ const ProblemManageClient = memo(function ProblemManageClient({
         </div>
 
         {/* 사이드바 */}
-        <div className="space-y-6">
-          {/* 통계 */}
+        <div className="space-y-6 p-6">
+          {/* 전체 시스템 통계 */}
+          {(stats.totalProblems !== undefined || stats.activeProblems !== undefined) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  전체 시스템 통계
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {stats.totalProblems !== undefined && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">총 문제수</span>
+                    </div>
+                    <span className="font-semibold">{stats.totalProblems}</span>
+                  </div>
+                )}
+                {stats.activeProblems !== undefined && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">활성 문제</span>
+                    </div>
+                    <span className="font-semibold">{stats.activeProblems}</span>
+                  </div>
+                )}
+                {stats.systemTotalAttempts !== undefined && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">총 시도수</span>
+                    </div>
+                    <span className="font-semibold">{stats.systemTotalAttempts}</span>
+                  </div>
+                )}
+                {stats.systemCorrectRate !== undefined && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">평균 정답률</span>
+                    </div>
+                    <span className="font-semibold">{stats.systemCorrectRate}%</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 개별 문제 통계 */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                통계
+                <BarChart3 className="h-5 w-5" />이 문제 통계
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -314,6 +377,105 @@ const ProblemManageClient = memo(function ProblemManageClient({
           </Card>
         </div>
       </div>
+
+      {/* 미리보기 모달 */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>문제 미리보기</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* 문제 제목 */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">{problem.title}</h2>
+              {problem.description && <p className="mt-2 text-gray-600">{problem.description}</p>}
+            </div>
+
+            {/* 문제 내용 */}
+            <div className="prose max-w-none">
+              <div className="rounded-lg bg-gray-50 p-4">
+                <p className="whitespace-pre-wrap text-gray-800">{problem.content}</p>
+              </div>
+            </div>
+
+            {/* 객관식 옵션 */}
+            {problem.type === 'MULTIPLE_CHOICE' && problem.options.length > 0 && (
+              <div>
+                <h4 className="mb-3 font-medium text-gray-900">선택지</h4>
+                <div className="space-y-2">
+                  {problem.options.map((option, index) => {
+                    const correctAnswerIndex = problem.options.findIndex(
+                      (opt) => opt === problem.correctAnswer,
+                    );
+                    const isCorrectAnswer = index === correctAnswerIndex;
+
+                    return (
+                      <div
+                        key={index}
+                        className={`rounded-lg border p-3 ${
+                          isCorrectAnswer
+                            ? 'border-green-200 bg-green-50'
+                            : 'border-gray-200 bg-gray-50'
+                        }`}
+                      >
+                        <span className="font-medium">{String.fromCharCode(65 + index)}.</span>{' '}
+                        {option}
+                        {isCorrectAnswer && (
+                          <Badge className="ml-2 bg-green-100 text-green-800">정답</Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 해설 */}
+            {problem.explanation && (
+              <div>
+                <h4 className="mb-3 font-medium text-gray-900">해설</h4>
+                <div className="rounded-lg bg-blue-50 p-4">
+                  <p className="whitespace-pre-wrap text-gray-800">{problem.explanation}</p>
+                </div>
+              </div>
+            )}
+
+            {/* 힌트 */}
+            {problem.hints.length > 0 && (
+              <div>
+                <h4 className="mb-3 font-medium text-gray-900">힌트</h4>
+                <div className="space-y-2">
+                  {problem.hints.map((hint, index) => (
+                    <div key={index} className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                      <span className="text-blue-800">{hint}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 문제 정보 */}
+            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+              <div>
+                <span className="text-sm text-gray-500">과목:</span>
+                <span className="ml-2 font-medium">{problem.subject}</span>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">난이도:</span>
+                <span className="ml-2 font-medium">{difficultyConfig.label}</span>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">유형:</span>
+                <span className="ml-2 font-medium">{typeConfig.label}</span>
+              </div>
+              <div>
+                <span className="text-sm text-gray-500">점수:</span>
+                <span className="ml-2 font-medium">{problem.points}점</span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 });

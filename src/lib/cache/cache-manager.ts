@@ -1,30 +1,99 @@
-import { Redis } from 'ioredis';
 import { logger } from '../monitoring';
 
 /**
  * Redis 캐시 관리자
  */
+//
+
+/**
+ * 간단한 메모리 캐시 어댑터 (ioredis 미설치/비가용 시 대체)
+ */
+class MemoryCacheAdapter {
+  private store = new Map<string, { value: string; expiresAt: number }>();
+
+  async get(key: string): Promise<string | null> {
+    const entry = this.store.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.store.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+
+  async setex(key: string, ttlSeconds: number, value: string): Promise<void> {
+    const expiresAt = Date.now() + ttlSeconds * 1000;
+    this.store.set(key, { value, expiresAt });
+  }
+
+  async del(...keys: string[]): Promise<number> {
+    let count = 0;
+    keys.forEach((k) => {
+      if (this.store.delete(k)) count++;
+    });
+    return count;
+  }
+
+  async keys(pattern: string): Promise<string[]> {
+    if (pattern === '*') return Array.from(this.store.keys());
+    const regex = new RegExp('^' + pattern.replace('*', '.*') + '$');
+    return Array.from(this.store.keys()).filter((k) => regex.test(k));
+  }
+
+  async exists(key: string): Promise<number> {
+    return this.store.has(key) ? 1 : 0;
+  }
+
+  async ttl(key: string): Promise<number> {
+    const entry = this.store.get(key);
+    if (!entry) return -2; // nonexistent
+    const ms = entry.expiresAt - Date.now();
+    return ms > 0 ? Math.ceil(ms / 1000) : -2;
+  }
+
+  on() {
+    // no-op for memory adapter
+  }
+
+  async quit(): Promise<void> {
+    this.store.clear();
+  }
+}
+
 export class CacheManager {
-  private redis: Redis;
+  private redis: any;
   private defaultTTL: number = 3600; // 1시간
 
   constructor() {
-    this.redis = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      retryDelayOnFailover: 100,
-      maxRetriesPerRequest: 3,
-      lazyConnect: true,
-    });
+    // 개발 환경에서는 메모리 캐시 사용, 프로덕션에서는 Redis 사용
+    if (process.env.NODE_ENV === 'development' || !process.env.REDIS_HOST) {
+      logger.info('개발 환경 또는 Redis 미설정 - 메모리 캐시 사용');
+      this.redis = new MemoryCacheAdapter();
+    } else {
+      // 프로덕션 환경에서만 ioredis 동적 로드
+      try {
+        const { Redis } = require('ioredis');
+        this.redis = new Redis({
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT || '6379'),
+          password: process.env.REDIS_PASSWORD,
+          retryDelayOnFailover: 100,
+          maxRetriesPerRequest: 3,
+          lazyConnect: true,
+        });
 
-    this.redis.on('error', (error) => {
-      logger.error('Redis 연결 오류', undefined, { error: error.message });
-    });
+        this.redis.on('error', (error: Error) => {
+          logger.error('Redis 연결 오류', undefined, { error: error.message });
+        });
 
-    this.redis.on('connect', () => {
-      logger.info('Redis 연결 성공');
-    });
+        this.redis.on('connect', () => {
+          logger.info('Redis 연결 성공');
+        });
+      } catch (_e) {
+        logger.info('ioredis 미설치 또는 사용 불가 - 메모리 캐시 사용');
+        this.redis = new MemoryCacheAdapter();
+      }
+    }
   }
 
   /**
@@ -216,12 +285,12 @@ export function withCache<T extends any[], R>(
     // 캐시에서 조회 시도
     const cached = await cache.get<R>(key);
     if (cached !== null) {
-      logger.debug('캐시 히트', { key });
+      logger.info('캐시 히트', { key });
       return cached;
     }
 
     // 캐시 미스 - 함수 실행
-    logger.debug('캐시 미스', { key });
+    logger.info('캐시 미스', { key });
     const result = await fn(...args);
 
     // 결과 캐시에 저장

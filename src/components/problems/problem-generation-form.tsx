@@ -92,7 +92,7 @@ export default function ProblemGenerationForm({
   const difficulties: LLMProblemDifficulty[] = ['easy', 'medium', 'hard', 'expert'];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* 생성 폼 */}
       <Card>
         <CardHeader>

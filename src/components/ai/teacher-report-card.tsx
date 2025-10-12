@@ -178,7 +178,7 @@ export function TeacherReportCard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* 메인 리포트 생성 카드 */}
       <Card className="w-full max-w-4xl">
         <CardHeader>

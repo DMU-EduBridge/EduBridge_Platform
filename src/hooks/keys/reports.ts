@@ -1,7 +1,14 @@
 export const reportKeys = {
   all: ['reports'] as const,
-  list: (params?: { type?: string; status?: string; page?: number; limit?: number }) =>
-    ['reports', 'list', params] as const,
-  detail: (id: string) => ['reports', 'detail', id] as const,
-  stats: ['reports', 'stats'] as const,
-};
+  lists: () => [...reportKeys.all, 'list'] as const,
+  list: (params?: {
+    type?: string | undefined;
+    status?: string | undefined;
+    page?: number;
+    limit?: number;
+    studentId?: string | undefined;
+  }) => [...reportKeys.lists(), params] as const,
+  details: () => [...reportKeys.all, 'detail'] as const,
+  detail: (id: string) => [...reportKeys.details(), id] as const,
+  stats: () => [...reportKeys.all, 'stats'] as const,
+} as const;

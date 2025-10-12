@@ -5,6 +5,7 @@ interface Problem {
   title: string;
   correctAnswer: string;
   points: number;
+  options: string[];
 }
 
 interface UseProblemSubmissionProps {
@@ -21,6 +22,7 @@ export function useProblemSubmission({
   onSubmissionComplete,
 }: UseProblemSubmissionProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,9 +30,14 @@ export function useProblemSubmission({
   const initialStartNewAttemptRef = useRef(false);
 
   const handleAnswerSelect = useCallback(
-    (answer: string) => {
+    (answer: string, index: number) => {
       if (!showResult) {
-        setSelectedAnswer(answer);
+        console.log('handleAnswerSelect 호출:', { answer, index });
+        // 인덱스+1을 문자열로 변환하여 저장
+        const selectedAnswerValue = (index + 1).toString();
+        setSelectedAnswer(selectedAnswerValue);
+        setSelectedIndex(index);
+        console.log('selectedAnswer 설정됨:', selectedAnswerValue);
       }
     },
     [showResult],
@@ -44,8 +51,11 @@ export function useProblemSubmission({
     setIsSubmitting(true);
 
     try {
-      // 로컬에서 정답 확인
-      const correct = selectedAnswer === problem.correctAnswer;
+      // 로컬에서 정답 확인 - 인덱스 기반으로 비교
+      const correctAnswerIndex = problem.options.findIndex(
+        (option) => option === problem.correctAnswer,
+      );
+      const correct = selectedIndex === correctAnswerIndex;
       setIsCorrect(correct);
       setShowResult(true);
 
@@ -55,6 +65,7 @@ export function useProblemSubmission({
       );
 
       // 문제 완료 상태 추가 및 정답/오답 정보 저장
+      console.log('제출 전 데이터 확인:', { selectedAnswer, correctAnswer: problem.correctAnswer });
       const answerData = {
         isCorrect: correct,
         selectedAnswer: selectedAnswer,

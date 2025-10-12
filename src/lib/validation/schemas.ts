@@ -13,6 +13,7 @@ export const ProblemQuerySchema = z.object({
   status: z.enum(['DRAFT', 'PENDING', 'PUBLISHED', 'ARCHIVED']).optional(),
   search: z.string().optional(),
   createdBy: z.string().optional(),
+  creationType: z.enum(['ai', 'manual']).optional(),
 });
 
 export const CreateProblemSchema = z.object({

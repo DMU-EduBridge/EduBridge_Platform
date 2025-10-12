@@ -143,7 +143,7 @@ export function VectorDatabaseMonitor() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* 벡터 데이터베이스 상태 */}
       <Card>
         <CardHeader>

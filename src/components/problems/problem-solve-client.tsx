@@ -42,8 +42,8 @@ export default function ProblemSolveClient({ problem }: { problem: ProblemSolveV
       {
         onSuccess: (data) => {
           setResult({
-            correct: data.correct,
-            message: data.correct ? '정답입니다!' : '오답입니다.',
+            correct: data.isCorrect,
+            message: data.isCorrect ? '정답입니다!' : '오답입니다.',
           });
           setSubmitted(true);
         },

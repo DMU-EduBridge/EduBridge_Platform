@@ -5,6 +5,7 @@ import {
   CheckSquare,
   FileText,
   FolderOpen,
+  GraduationCap,
   LayoutDashboard,
   Mail,
   MessageSquare,
@@ -33,9 +34,10 @@ export function getStudentNav(): NavItem[] {
 export function getTeacherNav(): NavItem[] {
   return [
     { name: '대시보드', href: '/dashboard', icon: LayoutDashboard },
+    { name: '내 클래스', href: '/classes', icon: GraduationCap },
+    { name: '학생 관리', href: '/students', icon: Users },
     { name: '문제', href: '/problems', icon: FileText },
     { name: '학습 관리', href: '/learning-materials', icon: FolderOpen },
-    { name: '학생 관리', href: '/students', icon: Users },
     { name: '분석 리포트', href: '/reports', icon: Calendar },
     { name: 'AI 교사 리포트', href: '/teacher-reports', icon: Bot },
     { name: '의미적 검색', href: '/vector-search', icon: Search },

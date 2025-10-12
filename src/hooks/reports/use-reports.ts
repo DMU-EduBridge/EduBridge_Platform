@@ -8,29 +8,29 @@ import { reportKeys } from '../keys/reports';
  * @param params 검색 및 필터 파라미터
  */
 export function useReports(params?: {
-  type?: string;
-  status?: string;
+  type?: string | undefined;
+  status?: string | undefined;
   page?: number;
   limit?: number;
-  studentId?: string;
+  studentId?: string | undefined;
 }) {
   const queryClient = useQueryClient();
 
   const reports = useQuery({
     queryKey: reportKeys.list(params),
-    queryFn: () => reportsService.getReports(params).then((r) => r.data),
+    queryFn: () => reportsService.getReports(params),
   });
 
   const useReport = (id: string) =>
     useQuery({
       queryKey: reportKeys.detail(id),
-      queryFn: () => reportsService.getReport(id).then((r) => r.data),
+      queryFn: () => reportsService.getReport(id),
       enabled: !!id,
     });
 
   const stats = useQuery({
     queryKey: reportKeys.stats,
-    queryFn: () => reportsService.getReportStats().then((r) => r.data),
+    queryFn: () => reportsService.getReportStats(),
   });
 
   const create = useMutation({

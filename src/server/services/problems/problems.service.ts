@@ -4,7 +4,18 @@ import { z } from 'zod';
 
 export class ProblemsService {
   async getProblems(query: z.infer<typeof ProblemQuerySchema>) {
-    const { page, limit, subject, gradeLevel, difficulty, type, status, search, createdBy } = query;
+    const {
+      page,
+      limit,
+      subject,
+      gradeLevel,
+      difficulty,
+      type,
+      status,
+      search,
+      createdBy,
+      creationType,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -14,11 +25,14 @@ export class ProblemsService {
       ...(difficulty && { difficulty }),
       ...(type && { type }),
       ...(createdBy && { createdBy }),
+      ...(creationType && {
+        isAIGenerated: creationType === 'ai' ? true : false,
+      }),
       ...(search && {
         OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { content: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
+          { title: { contains: search } },
+          { content: { contains: search } },
+          { description: { contains: search } },
         ],
       }),
     };
@@ -57,8 +71,8 @@ export class ProblemsService {
         content: data.content,
         type: data.type,
         difficulty: data.difficulty,
-        subject: data.subject,
-        gradeLevel: data.gradeLevel ?? null,
+        subject: data.subject as any,
+        gradeLevel: data.gradeLevel as any,
         options: data.options ?? null,
         correctAnswer: data.correctAnswer,
         explanation: data.explanation ?? null,
@@ -86,6 +100,29 @@ export class ProblemsService {
 
     const map = new Map(links.map((l) => [l.problemId, l.learningMaterialId] as const));
     return problemIds.map((id) => ({ problemId: id, studyId: map.get(id) || null }));
+  }
+
+  async getProblemStats() {
+    const [totalCount, activeCount, totalAttempts, correctAttempts] = await Promise.all([
+      prisma.problem.count(),
+      prisma.problem.count({ where: { isActive: true } }),
+      prisma.attempt.count(),
+      prisma.attempt.count({ where: { isCorrect: true } }),
+    ]);
+
+    const averageAccuracy = totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0;
+
+    return {
+      // 클라이언트가 기대하는 필드명으로 매핑
+      totalProblems: totalCount,
+      activeProblems: activeCount,
+      totalAttempts,
+      averageSuccessRate: Math.round(averageAccuracy),
+      // 추가 필드들 (향후 확장용)
+      weeklyChange: 0, // TODO: 주간 변화량 계산
+      successRateChange: 0, // TODO: 정답률 변화량 계산
+      attemptsChange: 0, // TODO: 시도수 변화량 계산
+    };
   }
 }
 

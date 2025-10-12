@@ -1,17 +1,16 @@
 import { api } from '@/lib/core/api';
-import type { Report } from '@/types/domain/report';
 
 export const reportsService = {
   getReports: (params?: {
-    type?: string;
-    status?: string;
+    type?: string | undefined;
+    status?: string | undefined;
     page?: number;
     limit?: number;
-    studentId?: string;
-  }) => api.get<{ reports: Report[]; total: number }>('/reports', { params }),
+    studentId?: string | undefined;
+  }) => api.get('/reports', { params }).then((res) => res.data),
 
-  getReport: (id: string) => api.get<Report>(`/reports/${id}`),
-  getReportDetail: (id: string) => api.get(`/reports/${id}/detail`),
+  getReport: (id: string) => api.get(`/reports/${id}`).then((res) => res.data),
+  getReportDetail: (id: string) => api.get(`/reports/${id}/detail`).then((res) => res.data),
 
   createReport: (data: {
     title: string;
@@ -19,13 +18,15 @@ export const reportsService = {
     period: string;
     studentIds?: string[];
     subjectIds?: string[];
-  }) => api.post<Report>('/reports', data),
+  }) => api.post('/reports', data).then((res) => res.data),
 
   downloadReport: (id: string) =>
-    api.get(`/reports/${id}/download`, {
-      responseType: 'blob',
-    }),
+    api
+      .get(`/reports/${id}/download`, {
+        responseType: 'blob',
+      })
+      .then((res) => res.data),
 
-  getReportStats: () => api.get('/reports/stats'),
+  getReportStats: () => api.get('/reports/stats').then((res) => res.data),
   // 단일 상세 API만 유지
 };

@@ -9,9 +9,9 @@ import { studentKeys } from '../keys/students';
  * @param params 검색 및 필터 파라미터
  */
 export function useStudents(params?: {
-  search?: string;
-  grade?: string;
-  status?: string;
+  search?: string | undefined;
+  grade?: string | undefined;
+  status?: string | undefined;
   page?: number;
   limit?: number;
 }) {
@@ -19,26 +19,26 @@ export function useStudents(params?: {
 
   const studentsQuery = useQuery({
     queryKey: studentKeys.list(params),
-    queryFn: () => studentsService.getStudents(params).then((r) => r.data),
+    queryFn: () => studentsService.getStudents(params),
   });
 
   const useStudent = (id: string) =>
     useQuery({
       queryKey: studentKeys.detail(id),
-      queryFn: () => studentsService.getStudent(id).then((r) => r.data),
+      queryFn: () => studentsService.getStudent(id),
       enabled: !!id,
     });
 
   const useStudentProgress = (id: string) =>
     useQuery({
       queryKey: studentKeys.progress(id),
-      queryFn: () => studentsService.getStudentProgress(id).then((r) => r.data),
+      queryFn: () => studentsService.getStudentProgress(id),
       enabled: !!id,
     });
 
   const statsQuery = useQuery({
     queryKey: studentKeys.stats,
-    queryFn: () => studentsService.getStudentStats().then((r) => r.data),
+    queryFn: () => studentsService.getStudentStats(),
   });
 
   const update = useMutation({

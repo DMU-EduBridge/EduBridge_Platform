@@ -1,4 +1,4 @@
-import { Prisma, Problem } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/core/prisma';
 import { handlePrismaError } from '../../../lib/errors';
 import { logger } from '../../../lib/monitoring';
@@ -8,7 +8,11 @@ import {
   UpdateProblemSchema,
   validateWithSchema,
 } from '../../../lib/validation';
-import { CreateProblemRequest, UpdateProblemRequest } from '../../../types/domain/problem';
+import {
+  CreateProblemRequest,
+  Problem as ProblemType,
+  UpdateProblemRequest,
+} from '../../../types/domain/problem';
 
 export class ProblemCrudService {
   /**
@@ -17,7 +21,7 @@ export class ProblemCrudService {
   async getProblemsByStudyId(
     studyId: string,
     options: { page?: number; limit?: number } = {},
-  ): Promise<Problem[]> {
+  ): Promise<ProblemType[]> {
     try {
       // 학습 자료에 연결된 모든 문제를 가져오기 위해 페이지네이션 제거
       const problems = await prisma.problem.findMany({
@@ -43,7 +47,67 @@ export class ProblemCrudService {
         },
       });
 
-      return problems;
+      // 각 문제의 JSON 필드들을 파싱하여 반환
+      return problems.map((problem) => ({
+        ...problem,
+        options: (() => {
+          try {
+            if (Array.isArray(problem.options)) {
+              return problem.options;
+            }
+            if (problem.options && typeof problem.options === 'string') {
+              const parsed = JSON.parse(problem.options);
+              return Array.isArray(parsed) ? parsed : [];
+            }
+            return [];
+          } catch (error) {
+            logger.error('옵션 파싱 오류', undefined, {
+              problemId: problem.id,
+              options: problem.options,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return [];
+          }
+        })(),
+        hints: (() => {
+          try {
+            if (Array.isArray(problem.hints)) {
+              return problem.hints;
+            }
+            if (problem.hints && typeof problem.hints === 'string') {
+              const parsed = JSON.parse(problem.hints);
+              return Array.isArray(parsed) ? parsed : [];
+            }
+            return [];
+          } catch (error) {
+            logger.error('힌트 파싱 오류', undefined, {
+              problemId: problem.id,
+              hints: problem.hints,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return [];
+          }
+        })(),
+        tags: (() => {
+          try {
+            if (Array.isArray(problem.tags)) {
+              return problem.tags;
+            }
+            if (problem.tags && typeof problem.tags === 'string') {
+              const parsed = JSON.parse(problem.tags);
+              return Array.isArray(parsed) ? parsed : [];
+            }
+            return [];
+          } catch (error) {
+            logger.error('태그 파싱 오류', undefined, {
+              problemId: problem.id,
+              tags: problem.tags,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return [];
+          }
+        })(),
+      })) as ProblemType[];
     } catch (error) {
       logger.error('학습 자료별 문제 조회 실패', undefined, {
         studyId,
@@ -119,9 +183,9 @@ export class ProblemCrudService {
       throw new Error('정답 검증에 실패했습니다.');
     }
   }
-  async getProblemById(id: string): Promise<Problem | null> {
+  async getProblemById(id: string): Promise<ProblemType | null> {
     try {
-      return await prisma.problem.findUnique({
+      const problem = await prisma.problem.findUnique({
         where: { id },
         include: {
           creator: {
@@ -134,19 +198,87 @@ export class ProblemCrudService {
           },
         },
       });
+
+      if (!problem) {
+        return null;
+      }
+
+      // options 필드를 파싱하여 반환
+      const parsedProblem = {
+        ...problem,
+        options: (() => {
+          try {
+            if (Array.isArray(problem.options)) {
+              return problem.options;
+            }
+            if (problem.options && typeof problem.options === 'string') {
+              const parsed = JSON.parse(problem.options);
+              return Array.isArray(parsed) ? parsed : [];
+            }
+            return [];
+          } catch (error) {
+            logger.error('옵션 파싱 오류', undefined, {
+              problemId: id,
+              options: problem.options,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return [];
+          }
+        })(),
+        hints: (() => {
+          try {
+            if (Array.isArray(problem.hints)) {
+              return problem.hints;
+            }
+            if (problem.hints && typeof problem.hints === 'string') {
+              const parsed = JSON.parse(problem.hints);
+              return Array.isArray(parsed) ? parsed : [];
+            }
+            return [];
+          } catch (error) {
+            logger.error('힌트 파싱 오류', undefined, {
+              problemId: id,
+              hints: problem.hints,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return [];
+          }
+        })(),
+        tags: (() => {
+          try {
+            if (Array.isArray(problem.tags)) {
+              return problem.tags;
+            }
+            if (problem.tags && typeof problem.tags === 'string') {
+              const parsed = JSON.parse(problem.tags);
+              return Array.isArray(parsed) ? parsed : [];
+            }
+            return [];
+          } catch (error) {
+            logger.error('태그 파싱 오류', undefined, {
+              problemId: id,
+              tags: problem.tags,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return [];
+          }
+        })(),
+      };
+
+      return parsedProblem as ProblemType;
     } catch (error) {
       logger.error('문제 조회 실패', undefined, {
         problemId: id,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as any);
     }
   }
 
   /**
    * 문제 생성
    */
-  async createProblem(data: CreateProblemRequest, createdBy: string): Promise<Problem> {
+  async createProblem(data: CreateProblemRequest, createdBy: string): Promise<ProblemType> {
     try {
       // 입력 검증
       const validatedData = validateWithSchema(CreateProblemSchema, data) as {
@@ -177,8 +309,8 @@ export class ProblemCrudService {
             content: validatedData.content,
             type: validatedData.type,
             difficulty: validatedData.difficulty,
-            subject: validatedData.subject,
-            gradeLevel: validatedData.gradeLevel || null,
+            subject: validatedData.subject as any,
+            gradeLevel: (validatedData.gradeLevel as any) || null,
             unit: validatedData.unit || null,
             options: validatedData.options
               ? JSON.stringify(validatedData.options)
@@ -212,7 +344,7 @@ export class ProblemCrudService {
         });
 
         logger.info('문제 생성 성공', { problemId: problem.id, createdBy });
-        return problem;
+        return problem as ProblemType;
       });
     } catch (error) {
       logger.error('문제 생성 실패', undefined, {
@@ -220,14 +352,14 @@ export class ProblemCrudService {
         createdBy,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as any);
     }
   }
 
   /**
    * 문제 수정
    */
-  async updateProblem(id: string, data: UpdateProblemRequest): Promise<Problem> {
+  async updateProblem(id: string, data: UpdateProblemRequest): Promise<ProblemType> {
     try {
       // 입력 검증
       const validatedData = validateWithSchema(UpdateProblemSchema, data) as {
@@ -305,21 +437,21 @@ export class ProblemCrudService {
       });
 
       logger.info('문제 수정 성공', { problemId: id });
-      return updatedProblem;
+      return updatedProblem as ProblemType;
     } catch (error) {
       logger.error('문제 수정 실패', undefined, {
         problemId: id,
         data,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as any);
     }
   }
 
   /**
    * 문제 삭제 (soft delete)
    */
-  async deleteProblem(id: string): Promise<Problem> {
+  async deleteProblem(id: string): Promise<ProblemType> {
     try {
       const existingProblem = await prisma.problem.findUnique({ where: { id } });
       if (!existingProblem) {
@@ -335,20 +467,20 @@ export class ProblemCrudService {
       });
 
       logger.info('문제 삭제 성공', { problemId: id });
-      return deletedProblem;
+      return deletedProblem as ProblemType;
     } catch (error) {
       logger.error('문제 삭제 실패', undefined, {
         problemId: id,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as any);
     }
   }
 
   /**
    * 문제 복원
    */
-  async restoreProblem(id: string): Promise<Problem> {
+  async restoreProblem(id: string): Promise<ProblemType> {
     try {
       const restoredProblem = await prisma.problem.update({
         where: { id },
@@ -359,13 +491,13 @@ export class ProblemCrudService {
       });
 
       logger.info('문제 복원 성공', { problemId: id });
-      return restoredProblem;
+      return restoredProblem as ProblemType;
     } catch (error) {
       logger.error('문제 복원 실패', undefined, {
         problemId: id,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as any);
     }
   }
 }
