@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../src/lib/monitoring';
+import { hashPassword } from '../src/services/auth';
 
 const prisma = new PrismaClient();
 
@@ -93,6 +94,7 @@ async function main() {
           gradeLevel: 'GRADE_9',
           avatar: 'https://example.com/student1.jpg',
           bio: '중학교 3학년 학생입니다.',
+          password: await hashPassword('password123'),
         },
       }),
       prisma.user.upsert({
@@ -106,6 +108,7 @@ async function main() {
           gradeLevel: 'GRADE_8',
           avatar: 'https://example.com/student2.jpg',
           bio: '중학교 2학년 학생입니다.',
+          password: await hashPassword('password123'),
         },
       }),
       prisma.user.upsert({
@@ -119,6 +122,134 @@ async function main() {
           gradeLevel: 'GRADE_10',
           avatar: 'https://example.com/student3.jpg',
           bio: '고등학교 1학년 학생입니다.',
+          password: await hashPassword('password123'),
+        },
+      }),
+      // 추가 학생들
+      prisma.user.upsert({
+        where: { email: 'choi_mina@example.com' },
+        update: {},
+        create: {
+          name: '최미나',
+          email: 'choi_mina@example.com',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          gradeLevel: 'GRADE_9',
+          avatar: 'https://example.com/student4.jpg',
+          bio: '중학교 3학년 학생입니다.',
+          password: await hashPassword('password123'),
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'jung_hyeon@example.com' },
+        update: {},
+        create: {
+          name: '정현',
+          email: 'jung_hyeon@example.com',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          gradeLevel: 'GRADE_8',
+          avatar: 'https://example.com/student5.jpg',
+          bio: '중학교 2학년 학생입니다.',
+          password: await hashPassword('password123'),
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'kang_soyeon@example.com' },
+        update: {},
+        create: {
+          name: '강소연',
+          email: 'kang_soyeon@example.com',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          gradeLevel: 'GRADE_11',
+          avatar: 'https://example.com/student6.jpg',
+          bio: '고등학교 2학년 학생입니다.',
+          password: await hashPassword('password123'),
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'lee_donghyun@example.com' },
+        update: {},
+        create: {
+          name: '이동현',
+          email: 'lee_donghyun@example.com',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          gradeLevel: 'GRADE_7',
+          avatar: 'https://example.com/student7.jpg',
+          bio: '중학교 1학년 학생입니다.',
+          password: await hashPassword('password123'),
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'kim_yuna@example.com' },
+        update: {},
+        create: {
+          name: '김유나',
+          email: 'kim_yuna@example.com',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          gradeLevel: 'GRADE_12',
+          avatar: 'https://example.com/student8.jpg',
+          bio: '고등학교 3학년 학생입니다.',
+          password: await hashPassword('password123'),
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'park_seojun@example.com' },
+        update: {},
+        create: {
+          name: '박서준',
+          email: 'park_seojun@example.com',
+          role: 'STUDENT',
+          status: 'INACTIVE',
+          gradeLevel: 'GRADE_9',
+          avatar: 'https://example.com/student9.jpg',
+          bio: '중학교 3학년 학생입니다. (비활성)',
+          password: await hashPassword('password123'),
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'han_jimin@example.com' },
+        update: {},
+        create: {
+          name: '한지민',
+          email: 'han_jimin@example.com',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          gradeLevel: 'GRADE_10',
+          avatar: 'https://example.com/student10.jpg',
+          bio: '고등학교 1학년 학생입니다.',
+          password: await hashPassword('password123'),
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'oh_taehyun@example.com' },
+        update: {},
+        create: {
+          name: '오태현',
+          email: 'oh_taehyun@example.com',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          gradeLevel: 'GRADE_8',
+          avatar: 'https://example.com/student11.jpg',
+          bio: '중학교 2학년 학생입니다.',
+          password: await hashPassword('password123'),
+        },
+      }),
+      prisma.user.upsert({
+        where: { email: 'yoon_jihoon@example.com' },
+        update: {},
+        create: {
+          name: '윤지훈',
+          email: 'yoon_jihoon@example.com',
+          role: 'STUDENT',
+          status: 'ACTIVE',
+          gradeLevel: 'GRADE_11',
+          avatar: 'https://example.com/student12.jpg',
+          bio: '고등학교 2학년 학생입니다.',
+          password: await hashPassword('password123'),
         },
       }),
     ]);
@@ -127,6 +258,9 @@ async function main() {
     const mathTeacher2 = users[2];
     const scienceTeacher = users[3];
     const englishTeacher = users[4];
+    const _student1 = users[5]; // 김민수
+    const _student2 = users[6]; // 이지영
+    const _student3 = users[7]; // 박준호
 
     // 2. 교과서 데이터 생성 (다양한 과목과 학년)
     const textbooks = await Promise.all([
@@ -268,10 +402,7 @@ async function main() {
           options: ['x = 2, 3', 'x = 1, 6', 'x = -2, -3', '해가 없음'],
           correctAnswer: 'x = 2, 3',
           explanation: '인수분해를 이용하여 (x-2)(x-3) = 0이므로 x = 2, 3입니다.',
-          hints: [
-            '인수분해를 사용해보세요',
-            '두 수의 곱이 6이고 합이 5인 수를 찾아보세요',
-          ],
+          hints: ['인수분해를 사용해보세요', '두 수의 곱이 6이고 합이 5인 수를 찾아보세요'],
           tags: ['이차방정식', '인수분해', '수학'],
           points: 5,
           timeLimit: 300,
@@ -348,10 +479,7 @@ async function main() {
             '빛에너지가 엽록소에 의해 흡수되어 ATP와 NADPH를 생성하고, 이를 이용해 포도당을 합성합니다.',
           explanation:
             '광합성은 빛에너지를 화학에너지로 변환하는 과정으로, 엽록소가 빛을 흡수하여 ATP와 NADPH를 만들고, 이를 이용해 포도당을 합성합니다.',
-          hints: [
-            '엽록소의 역할을 생각해보세요',
-            'ATP와 NADPH의 생성 과정을 설명해보세요',
-          ],
+          hints: ['엽록소의 역할을 생각해보세요', 'ATP와 NADPH의 생성 과정을 설명해보세요'],
           tags: ['광합성', '과학', '생물'],
           points: 10,
           timeLimit: 900,
@@ -406,10 +534,7 @@ async function main() {
           correctAnswer: 'x = 2, 3',
           explanation: '인수분해를 이용하여 (x-2)(x-3) = 0이므로 x = 2, 3입니다.',
           generationPrompt: '이차방정식의 해를 구하는 문제를 생성해주세요.',
-          contextChunkIds: [
-            documentChunks[0]?.id || '',
-            documentChunks[1]?.id || '',
-          ],
+          contextChunkIds: [documentChunks[0]?.id || '', documentChunks[1]?.id || ''],
           qualityScore: 0.85,
           generationTimeMs: 2500,
           modelName: 'gpt-4',
@@ -674,7 +799,9 @@ async function main() {
       }),
     ]);
 
-    // 9. 교사 리포트 데이터 생성
+    // 9. 리포트 데이터 생성은 클래스 정의 이후 섹션 10에서 처리
+
+    // 10. 교사 리포트 데이터 생성
     const teacherReports = await Promise.all([
       prisma.teacherReport.create({
         data: {
@@ -711,7 +838,7 @@ async function main() {
               below_average: 3,
             },
           }),
-          status: 'PUBLISHED',
+          status: 'COMPLETED',
           createdBy: mathTeacher1.id,
         },
       }),
@@ -719,7 +846,7 @@ async function main() {
         data: {
           title: '2학년 3반 과학 과목 리포트',
           content: '과학 과목 학습 현황 및 개선 방안을 제시한 리포트입니다.',
-          reportType: 'PERFORMANCE_REPORT',
+          reportType: 'PERFORMANCE_ANALYSIS',
           classInfo: JSON.stringify({
             gradeLevel: 2,
             class: 3,
@@ -747,7 +874,7 @@ async function main() {
               below_average: 0,
             },
           }),
-          status: 'PUBLISHED',
+          status: 'COMPLETED',
           createdBy: scienceTeacher.id,
         },
       }),
@@ -926,6 +1053,10 @@ async function main() {
       }),
     ]);
 
+    const _class1 = classes[0]; // 중3 수학 A반
+    const _class2 = classes[1]; // 중2 과학 B반
+    const _class3 = classes[2]; // 고1 수학 C반
+
     // 18. 클래스 멤버 데이터 생성
     const classMembers = await Promise.all([
       // 중3 수학 A반 멤버들
@@ -969,7 +1100,47 @@ async function main() {
       }),
     ]);
 
-    // 19. 사용자 설정 데이터 생성
+    // 19. 할 일 목록 데이터 생성
+    const todos = await Promise.all([
+      prisma.todo.create({
+        data: {
+          userId: users[5].id, // 김민수
+          text: '이차방정식 문제 풀이 완료하기',
+          completed: false,
+          priority: 'HIGH',
+          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3일 후
+        },
+      }),
+      prisma.todo.create({
+        data: {
+          userId: users[5].id, // 김민수
+          text: '수학 시험 준비하기',
+          completed: false,
+          priority: 'MEDIUM',
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7일 후
+        },
+      }),
+      prisma.todo.create({
+        data: {
+          userId: users[6].id, // 이지영
+          text: '과학 실험 보고서 작성하기',
+          completed: true,
+          priority: 'HIGH',
+          dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1일 전
+        },
+      }),
+      prisma.todo.create({
+        data: {
+          userId: users[7].id, // 박준호
+          text: '영어 단어 암기하기',
+          completed: false,
+          priority: 'LOW',
+          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5일 후
+        },
+      }),
+    ]);
+
+    // 20. 사용자 설정 데이터 생성
     const userPreferences = await Promise.all([
       prisma.userPreferences.upsert({
         where: { userId: mathTeacher1.id },
@@ -1091,22 +1262,30 @@ async function main() {
     const problemAssignments = await Promise.all([
       prisma.problemAssignment.create({
         data: {
+          title: '이차방정식 과제',
+          description: '이차방정식 문제 풀이 과제입니다.',
+          assignmentType: 'HOMEWORK',
+          status: 'ACTIVE',
           classId: classes[0].id,
-          problemId: problems[0].id,
+          problemIds: [problems[0].id],
           assignedBy: mathTeacher1.id,
           assignedAt: new Date(),
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7일 후
-          isActive: true,
+          instructions: '이차방정식을 인수분해하여 해를 구하세요.',
         },
       }),
       prisma.problemAssignment.create({
         data: {
+          title: '광합성 실험 과제',
+          description: '광합성 과정에 대한 과학 실험 과제입니다.',
+          assignmentType: 'PROJECT',
+          status: 'ACTIVE',
           classId: classes[1].id,
-          problemId: problems[3].id,
+          problemIds: [problems[3].id],
           assignedBy: scienceTeacher.id,
           assignedAt: new Date(),
           dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5일 후
-          isActive: true,
+          instructions: '광합성 과정을 실험을 통해 관찰하고 보고서를 작성하세요.',
         },
       }),
     ]);
@@ -1571,6 +1750,7 @@ async function main() {
       // questionHistory: questionHistory.length, // 제거된 모델
       classes: classes.length,
       classMembers: classMembers.length,
+      todos: todos.length,
       userPreferences: userPreferences.length,
       learningMaterials: learningMaterials.length,
       learningMaterialProblems: learningMaterialProblems.length,
