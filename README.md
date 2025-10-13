@@ -180,8 +180,8 @@ cp env.local.example .env.local
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-super-secret-key-minimum-32-characters-for-development
 
-# 데이터베이스 (SQLite - 로컬 파일)
-DATABASE_URL="file:./prisma/dev.db"
+# 데이터베이스 (PostgreSQL - Neon 등 무료 플랜 권장)
+DATABASE_URL="postgres://username:password@host/dbname?sslmode=require"
 
 # ChromaDB 설정 (선택사항 - 벡터 검색 기능용)
 CHROMA_URL=http://localhost:8000
@@ -518,7 +518,7 @@ EduBridge/
 │   ├── 📄 schema.prisma                 # 데이터베이스 스키마
 │   ├── 📄 seed.ts                       # 시드 데이터
 │   ├── 📁 migrations/                   # 마이그레이션 파일
-│   └── 📄 dev.db                        # SQLite 데이터베이스
+│   └── 📄 dev.db                        # (개발 전용) SQLite DB - 프로덕션은 Postgres 사용
 ├── 📁 public/                           # 정적 파일
 ├── 📄 package.json                       # 프로젝트 설정
 ├── 📄 next.config.js                    # Next.js 설정
@@ -960,7 +960,33 @@ npm run clean            # 캐시 정리 (.next, node_modules/.cache)
 
 ## 🚀 배포 가이드
 
-### 프로덕션 환경 설정
+### 무료 배포 가이드 (Vercel + Neon)
+
+1. **Neon에서 Postgres 생성** → 연결 문자열 복사 (`sslmode=require` 권장)
+2. **Vercel 프로젝트 Import** (GitHub 연결)
+3. **Vercel 환경변수 설정**
+
+```env
+DATABASE_URL="postgres://username:password@host/dbname?sslmode=require"
+NEXTAUTH_URL="https://your-vercel-domain.vercel.app"
+NEXTAUTH_SECRET="set-a-strong-secret"
+DEV_TEST_PASSWORD="password123"
+```
+
+4. **마이그레이션/시드**
+   - 로컬에서 Neon DB 대상으로 실행:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+npm run db:seed
+```
+
+5. **배포 트리거** (Vercel → Deploy)
+
+> 업로드/벡터검색이 필요 없으면 관련 기능을 임시 비활성화해도 됩니다.
+
+### 프로덕션 환경 설정 (자체 서버 배포 시)
 
 1. **환경변수 설정**
 
