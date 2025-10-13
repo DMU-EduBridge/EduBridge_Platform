@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { logger } from '@/lib/monitoring';
+import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   Eye,
@@ -21,6 +22,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 export default function SignupPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,7 +30,7 @@ export default function SignupPage() {
     confirmPassword: '',
     phone: '',
     school: '',
-    department: '',
+    subject: '',
     role: 'TEACHER',
     location: '',
     agreeTerms: false,
@@ -106,10 +108,29 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      // 실제로는 API 호출
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          school: formData.school,
+          subject: formData.subject,
+          role: formData.role,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('회원가입 실패');
+      }
+      const result = await response.json();
+      console.log(result);
       logger.info('회원가입 성공', { email: formData.email });
       // 성공 후 로그인 페이지로 리다이렉트
+      router.push('/login');
     } catch (error) {
       console.error('회원가입 실패:', error);
     } finally {
@@ -343,11 +364,11 @@ export default function SignupPage() {
 
               {formData.role === 'TEACHER' && (
                 <div>
-                  <Label htmlFor="department">학과/부서</Label>
+                  <Label htmlFor="subject">학과/부서</Label>
                   <Input
-                    id="department"
-                    name="department"
-                    value={formData.department}
+                    id="subject"
+                    name="subject"
+                    value={formData.subject}
                     onChange={handleInputChange}
                     placeholder="수학과"
                   />
