@@ -40,11 +40,29 @@ model User {
   todos                Todo[]
   preferences          UserPreferences?
 
+  // TeacherToStudent 관계
+  students        TeacherStudent[]  @relation("TeacherToStudent")
+  // StudentToTeacher 관계
+  teachers        TeacherStudent[]  @relation("StudentToTeacher")
   @@index([role])
   @@index([status])
   @@index([deletedAt])
   @@index([lastLoginAt])
   @@map("users")
+}
+
+model TeacherStudent {
+  id         String  @id @default(cuid())
+  teacherId  String
+  studentId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  teacher    User    @relation("TeacherToStudent", fields: [teacherId], references: [id])
+  student    User    @relation("StudentToTeacher", fields: [studentId], references: [id])
+
+  @@unique([teacherId, studentId])
+  @@map("teacher_students")
 }
 
 model Class {
