@@ -1,5 +1,5 @@
 import { authOptions } from '@/lib/core/auth';
-import { UnauthorizedError } from '@/lib/utils/error-handler';
+import { createAuthError } from '@/lib/errors/error-handler';
 import { getServerSession } from 'next-auth';
 
 export async function getOptionalSession() {
@@ -8,6 +8,6 @@ export async function getOptionalSession() {
 
 export async function requireSession() {
   const session = await getServerSession(authOptions);
-  if (!session) throw new UnauthorizedError();
+  if (!session) throw createAuthError();
   return session;
 }

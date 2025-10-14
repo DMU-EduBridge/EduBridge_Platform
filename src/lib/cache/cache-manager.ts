@@ -72,7 +72,8 @@ export class CacheManager {
     } else {
       // 프로덕션 환경에서만 ioredis 동적 로드
       try {
-        const { Redis } = require('ioredis');
+        // webpack 번들링 시 'ioredis' 미설치 오류를 피하기 위해 eval 사용
+        const { Redis } = eval('require')('ioredis');
         this.redis = new Redis({
           host: process.env.REDIS_HOST || 'localhost',
           port: parseInt(process.env.REDIS_PORT || '6379'),

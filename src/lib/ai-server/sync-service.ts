@@ -91,7 +91,7 @@ export class ProblemSyncService {
       content: aiProblem.content,
       type: aiProblem.type,
       difficulty: aiProblem.difficulty === 'EXPERT' ? 'HARD' : (aiProblem.difficulty as any),
-      subject: aiProblem.subject,
+      subject: aiProblem.subject as any,
       options: aiProblem.options ? JSON.stringify(aiProblem.options) : null,
       correctAnswer: aiProblem.correctAnswer,
       explanation: aiProblem.explanation || null,
@@ -114,10 +114,10 @@ export class ProblemSyncService {
             ...problemData,
             type:
               problemData.type === 'CODING'
-                ? 'MULTIPLE_CHOICE'
+                ? ('MULTIPLE_CHOICE' as any)
                 : problemData.type === 'MATH'
-                  ? 'MULTIPLE_CHOICE'
-                  : problemData.type,
+                  ? ('MULTIPLE_CHOICE' as any)
+                  : (problemData.type as any),
             options: problemData.options ? JSON.parse(problemData.options) : null,
             hints: problemData.hints ? JSON.parse(problemData.hints) : null,
             tags: problemData.tags ? JSON.parse(problemData.tags) : null,
@@ -137,10 +137,10 @@ export class ProblemSyncService {
           ...problemData,
           type:
             problemData.type === 'CODING'
-              ? 'MULTIPLE_CHOICE'
+              ? ('MULTIPLE_CHOICE' as any)
               : problemData.type === 'MATH'
-                ? 'MULTIPLE_CHOICE'
-                : problemData.type,
+                ? ('MULTIPLE_CHOICE' as any)
+                : (problemData.type as any),
           options: problemData.options ? JSON.parse(problemData.options) : null,
           hints: problemData.hints ? JSON.parse(problemData.hints) : null,
           tags: problemData.tags ? JSON.parse(problemData.tags) : null,

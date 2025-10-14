@@ -54,27 +54,6 @@ export class QueryOptimizer {
     }
   }
 
-  // WHERE 절 최적화
-  private static optimizeWhereClause(where: Record<string, unknown>): Record<string, unknown> {
-    const optimized = { ...where };
-
-    // 인덱스가 있는 필드 우선 정렬
-    const indexedFields = ['id', 'email', 'status', 'createdAt', 'updatedAt'];
-    const sortedWhere: Record<string, unknown> = {};
-
-    indexedFields.forEach((field) => {
-      if (optimized[field] !== undefined) {
-        sortedWhere[field] = optimized[field];
-        delete optimized[field];
-      }
-    });
-
-    // 나머지 필드들 추가
-    Object.assign(sortedWhere, optimized);
-
-    return sortedWhere;
-  }
-
   // 페이지네이션 최적화
   static async optimizedPaginate(
     model: PrismaModel,
@@ -325,7 +304,6 @@ export class QueryCacheOptimizer {
 
 // 데이터베이스 연결 모니터링
 export class DatabaseMonitor {
-  private static connectionCount = 0;
   private static maxConnections = 20;
 
   // 연결 상태 확인
