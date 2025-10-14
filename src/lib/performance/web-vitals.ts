@@ -19,9 +19,10 @@ const sendToAnalytics = (metric: Metric) => {
     });
   }
 
-  // 프로덕션 환경에서는 분석 서비스로 전송
+  // 프로덕션 환경에서는 분석 서비스로 전송 (임시로 비활성화)
   if (process.env.NODE_ENV === 'production') {
-    // Google Analytics 4로 전송
+    // Google Analytics 4로 전송 (임시로 비활성화)
+    /*
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', metric.name, {
         event_category: 'Web Vitals',
@@ -30,6 +31,7 @@ const sendToAnalytics = (metric: Metric) => {
         non_interaction: true,
       });
     }
+    */
 
     // 자체 분석 API로 전송 (임시로 비활성화)
     // TODO: Web Vitals API 엔드포인트 구현 필요
