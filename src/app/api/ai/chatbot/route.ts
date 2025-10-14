@@ -10,6 +10,7 @@ const ChatbotRequestSchema = z.object({
   message: z.string().min(1, '메시지는 필수입니다.'),
   context: z.string().optional(),
   userId: z.string().optional(),
+  conversationId: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -28,7 +29,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await chatbotService.chat(parsed.data as unknown as ChatbotRequest);
+    // ChatbotRequest 형식으로 변환
+    const chatbotRequest: ChatbotRequest = {
+      ...(parsed.data.conversationId && { conversationId: parsed.data.conversationId }),
+      messages: [
+        {
+          role: 'user',
+          content: parsed.data.message,
+        },
+      ],
+    };
+
+    const response = await chatbotService.chat(chatbotRequest);
     return NextResponse.json(response);
   } catch (error) {
     logger.error('챗봇 API 오류', undefined, {
