@@ -6,6 +6,71 @@ import {
   CreateClassRequest,
   UpdateClassRequest,
 } from '@/types/domain/class';
+import type { UserRole, UserStatus } from '@/types/domain/user';
+import type { $Enums } from '@prisma/client';
+
+// Prisma → Domain 매핑 유틸 (any 사용 금지)
+function mapPrismaUserRole(role: $Enums.UserRole): UserRole {
+  return role === 'ADMIN' || role === 'TEACHER' || role === 'STUDENT' ? role : 'STUDENT';
+}
+
+function mapPrismaUserStatus(status: $Enums.UserStatus): UserStatus {
+  if (status === 'ACTIVE' || status === 'INACTIVE' || status === 'SUSPENDED') return status;
+  // Prisma에만 존재할 수 있는 상태는 도메인에서는 INACTIVE로 폴백
+  return 'INACTIVE';
+}
+
+function toDomainUser(u: {
+  id: string;
+  name: string | null;
+  email: string;
+  role: $Enums.UserRole;
+  status: $Enums.UserStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: u.id,
+    name: u.name ?? '',
+    email: u.email,
+    role: mapPrismaUserRole(u.role),
+    status: mapPrismaUserStatus(u.status),
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt,
+  } as const;
+}
+
+function toDomainMemberUser(u: {
+  id: string;
+  name: string | null;
+  email: string;
+  role: $Enums.UserRole;
+  status: $Enums.UserStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: u.id,
+    name: u.name ?? '',
+    email: u.email,
+    role: mapPrismaUserRole(u.role),
+    status: mapPrismaUserStatus(u.status),
+    createdAt: u.createdAt,
+    updatedAt: u.updatedAt,
+  } as const;
+}
+
+function mapPrismaClassMemberRole(
+  role: $Enums.ClassMemberRole,
+): 'STUDENT' | 'TEACHER' | 'ASSISTANT' {
+  switch (role) {
+    case 'STUDENT':
+    case 'TEACHER':
+      return role;
+    default:
+      return 'STUDENT';
+  }
+}
 
 export class ClassService {
   /**
@@ -24,6 +89,10 @@ export class ClassService {
               id: true,
               name: true,
               email: true,
+              role: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
           members: {
@@ -36,6 +105,10 @@ export class ClassService {
                   id: true,
                   name: true,
                   email: true,
+                  role: true,
+                  status: true,
+                  createdAt: true,
+                  updatedAt: true,
                 },
               },
             },
@@ -57,13 +130,37 @@ export class ClassService {
 
       return classes.map((cls) => ({
         ...cls,
+        description: cls.description ?? '',
+        creator: toDomainUser({
+          id: cls.creator!.id,
+          name: cls.creator!.name,
+          email: cls.creator!.email,
+          role: cls.creator!.role as $Enums.UserRole,
+          status: cls.creator!.status as $Enums.UserStatus,
+          createdAt: cls.creator!.createdAt,
+          updatedAt: cls.creator!.updatedAt,
+        }),
+        members: cls.members.map((m) => ({
+          ...m,
+          role: mapPrismaClassMemberRole(m.role as $Enums.ClassMemberRole),
+          ...(m.leftAt ? { leftAt: m.leftAt } : {}),
+          user: toDomainMemberUser({
+            id: m.user!.id,
+            name: m.user!.name,
+            email: m.user!.email,
+            role: m.user!.role as $Enums.UserRole,
+            status: m.user!.status as $Enums.UserStatus,
+            createdAt: m.user!.createdAt,
+            updatedAt: m.user!.updatedAt,
+          }),
+        })),
         memberCount: cls._count.members,
         stats: {
           totalMembers: cls._count.members,
           activeMembers: cls._count.members,
-          totalAssignments: 0, // TODO: ProblemAssignment 연동 시 구현
+          totalAssignments: 0,
           completedAssignments: 0,
-          averageProgress: 0, // TODO: 진도 계산 로직 구현
+          averageProgress: 0,
         },
       }));
     } catch (error) {
@@ -99,6 +196,10 @@ export class ClassService {
               id: true,
               name: true,
               email: true,
+              role: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
           members: {
@@ -112,6 +213,9 @@ export class ClassService {
                   name: true,
                   email: true,
                   role: true,
+                  status: true,
+                  createdAt: true,
+                  updatedAt: true,
                 },
               },
             },
@@ -137,13 +241,37 @@ export class ClassService {
 
       return {
         ...cls,
+        description: cls.description ?? '',
+        creator: toDomainUser({
+          id: cls.creator!.id,
+          name: cls.creator!.name,
+          email: cls.creator!.email,
+          role: cls.creator!.role as $Enums.UserRole,
+          status: cls.creator!.status as $Enums.UserStatus,
+          createdAt: cls.creator!.createdAt,
+          updatedAt: cls.creator!.updatedAt,
+        }),
+        members: cls.members.map((m) => ({
+          ...m,
+          role: mapPrismaClassMemberRole(m.role as $Enums.ClassMemberRole),
+          ...(m.leftAt ? { leftAt: m.leftAt } : {}),
+          user: toDomainMemberUser({
+            id: m.user!.id,
+            name: m.user!.name,
+            email: m.user!.email,
+            role: m.user!.role as $Enums.UserRole,
+            status: m.user!.status as $Enums.UserStatus,
+            createdAt: m.user!.createdAt,
+            updatedAt: m.user!.updatedAt,
+          }),
+        })),
         memberCount: cls._count.members,
         stats: {
           totalMembers: cls._count.members,
           activeMembers: cls._count.members,
-          totalAssignments: 0, // TODO: ProblemAssignment 연동 시 구현
+          totalAssignments: 0,
           completedAssignments: 0,
-          averageProgress: 0, // TODO: 진도 계산 로직 구현
+          averageProgress: 0,
         },
       };
     } catch (error) {
@@ -168,6 +296,10 @@ export class ClassService {
               id: true,
               name: true,
               email: true,
+              role: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
           members: {
@@ -180,6 +312,10 @@ export class ClassService {
                   id: true,
                   name: true,
                   email: true,
+                  role: true,
+                  status: true,
+                  createdAt: true,
+                  updatedAt: true,
                 },
               },
             },
@@ -201,15 +337,39 @@ export class ClassService {
         data: {
           classId: cls.id,
           userId: createdBy,
-          role: 'TEACHER',
+          role: 'TEACHER' as $Enums.ClassMemberRole,
         },
       });
 
       return {
         ...cls,
+        description: cls.description ?? '',
+        creator: toDomainUser({
+          id: cls.creator!.id,
+          name: cls.creator!.name,
+          email: cls.creator!.email,
+          role: cls.creator!.role as $Enums.UserRole,
+          status: cls.creator!.status as $Enums.UserStatus,
+          createdAt: cls.creator!.createdAt,
+          updatedAt: cls.creator!.updatedAt,
+        }),
+        members: cls.members.map((m) => ({
+          ...m,
+          role: mapPrismaClassMemberRole(m.role as $Enums.ClassMemberRole),
+          ...(m.leftAt ? { leftAt: m.leftAt } : {}),
+          user: toDomainMemberUser({
+            id: m.user!.id,
+            name: m.user!.name,
+            email: m.user!.email,
+            role: m.user!.role as $Enums.UserRole,
+            status: m.user!.status as $Enums.UserStatus,
+            createdAt: m.user!.createdAt,
+            updatedAt: m.user!.updatedAt,
+          }),
+        })),
         memberCount: cls._count.members,
         stats: {
-          totalMembers: 1, // 생성자 포함
+          totalMembers: 1,
           activeMembers: 1,
           totalAssignments: 0,
           completedAssignments: 0,
@@ -253,6 +413,10 @@ export class ClassService {
               id: true,
               name: true,
               email: true,
+              role: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
           members: {
@@ -265,6 +429,10 @@ export class ClassService {
                   id: true,
                   name: true,
                   email: true,
+                  role: true,
+                  status: true,
+                  createdAt: true,
+                  updatedAt: true,
                 },
               },
             },
@@ -283,6 +451,30 @@ export class ClassService {
 
       return {
         ...cls,
+        description: cls.description ?? '',
+        creator: toDomainUser({
+          id: cls.creator!.id,
+          name: cls.creator!.name,
+          email: cls.creator!.email,
+          role: cls.creator!.role as $Enums.UserRole,
+          status: cls.creator!.status as $Enums.UserStatus,
+          createdAt: cls.creator!.createdAt,
+          updatedAt: cls.creator!.updatedAt,
+        }),
+        members: cls.members.map((m) => ({
+          ...m,
+          role: mapPrismaClassMemberRole(m.role as $Enums.ClassMemberRole),
+          ...(m.leftAt ? { leftAt: m.leftAt } : {}),
+          user: toDomainMemberUser({
+            id: m.user!.id,
+            name: m.user!.name,
+            email: m.user!.email,
+            role: m.user!.role as $Enums.UserRole,
+            status: m.user!.status as $Enums.UserStatus,
+            createdAt: m.user!.createdAt,
+            updatedAt: m.user!.updatedAt,
+          }),
+        })),
         memberCount: cls._count.members,
         stats: {
           totalMembers: cls._count.members,
@@ -395,7 +587,7 @@ export class ClassService {
         data: {
           classId,
           userId: data.userId,
-          role: data.role || 'STUDENT',
+          role: (data.role ?? 'STUDENT') as $Enums.ClassMemberRole,
         },
       });
     } catch (error) {
