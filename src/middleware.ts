@@ -30,25 +30,7 @@ const reviewPaths = ['/problems']; // 오답체크 페이지들 (/problems/*/rev
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 디버깅 로그 추가
   console.log(`[Middleware] Processing: ${pathname}`);
-
-  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
-  const isSetupPath = setupPaths.some((path) => pathname.startsWith(path));
-  const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
-  const isTeacherOnlyPath = teacherOnlyPaths.some((path) => pathname.startsWith(path));
-  const isStudentOnlyPath = studentOnlyPaths.some((path) => pathname.startsWith(path));
-  const isReviewPath = reviewPaths.some((_path) => pathname.includes('/review'));
-
-  console.log(`[Middleware] Path analysis:`, {
-    pathname,
-    isProtectedPath,
-    isSetupPath,
-    isAdminPath,
-    isTeacherOnlyPath,
-    isStudentOnlyPath,
-    isReviewPath,
-  });
 
   // 공통 보안 헤더 적용
   const applySecurityHeaders = (res: NextResponse) => {
@@ -58,6 +40,16 @@ export async function middleware(request: NextRequest) {
     res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     return res;
   };
+
+  // 대시보드는 항상 허용 (임시 해결책)
+  if (pathname === '/dashboard') {
+    console.log(`[Middleware] Dashboard access - always allowing`);
+    return applySecurityHeaders(NextResponse.next());
+  }
+
+  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
+  const isSetupPath = setupPaths.some((path) => pathname.startsWith(path));
+  const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
 
   if (!isProtectedPath && !isAdminPath && !isSetupPath) {
     console.log(`[Middleware] Non-protected path, allowing: ${pathname}`);
@@ -98,44 +90,15 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL(redirectUrl, request.url)));
   }
 
-  // 역할 기반 접근 제한 (역할이 있는 경우에만 적용)
-  if (userRole) {
-    if (isAdminPath && userRole !== 'ADMIN') {
-      console.log(`[Middleware] Admin path access denied for role: ${userRole}`);
-      const dashboardUrl = new URL('/dashboard', request.url);
-      dashboardUrl.searchParams.set('error', 'forbidden');
-      return applySecurityHeaders(NextResponse.redirect(dashboardUrl));
-    }
-
-    // 학생 역할은 교사용 경로 접근 제한
-    if (isTeacherOnlyPath && userRole === 'STUDENT') {
-      console.log(`[Middleware] Teacher path access denied for student`);
-      const redirectUrl = new URL('/problems', request.url);
-      redirectUrl.searchParams.set('error', 'forbidden');
-      return applySecurityHeaders(NextResponse.redirect(redirectUrl));
-    }
-
-    // 교사/관리자 역할은 학생 전용 경로 접근 제한
-    if (isStudentOnlyPath && (userRole === 'TEACHER' || userRole === 'ADMIN')) {
-      console.log(`[Middleware] Student path access denied for ${userRole}`);
-      const redirectUrl = new URL('/dashboard', request.url);
-      redirectUrl.searchParams.set('error', 'forbidden');
-      return applySecurityHeaders(NextResponse.redirect(redirectUrl));
-    }
-
-    // 오답체크 페이지는 학생 전용 (독립적 오답체크와 학습 내 오답체크 모두 포함)
-    if (isReviewPath && userRole !== 'STUDENT') {
-      console.log(`[Middleware] Review path access denied for ${userRole}`);
-      const redirectUrl = new URL('/problems', request.url);
-      redirectUrl.searchParams.set('error', 'forbidden');
-      return applySecurityHeaders(NextResponse.redirect(redirectUrl));
-    }
+  // 관리자 경로 접근 제한
+  if (isAdminPath && userRole !== 'ADMIN') {
+    console.log(`[Middleware] Admin path access denied for role: ${userRole}`);
+    const dashboardUrl = new URL('/dashboard', request.url);
+    dashboardUrl.searchParams.set('error', 'forbidden');
+    return applySecurityHeaders(NextResponse.redirect(dashboardUrl));
   }
 
-  // 역할이 없는 사용자도 기본적으로 허용 (JWT 토큰이 있으면 인증된 사용자로 간주)
-  // 이는 데모 계정이나 역할 정보가 제대로 설정되지 않은 경우를 대비한 안전장치
   console.log(`[Middleware] Allowing access to: ${pathname}`);
-
   return applySecurityHeaders(NextResponse.next());
 }
 
@@ -144,5 +107,4 @@ export const config = {
     // protect all but public assets and api route; keep _next and favicon free
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-  runtime: 'nodejs',
 };
