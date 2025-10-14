@@ -127,16 +127,16 @@ class ChromaDBClient {
 
         // 기존 컬렉션이 있는지 확인
         try {
-          collection = await this.client.getCollection({
+          collection = (await this.client.getCollection({
             name: collectionConfig.name,
-          });
+          })) as ChromaCollection & { metadata: Record<string, any> };
           logger.info(`기존 컬렉션 사용: ${collectionConfig.name}`);
         } catch {
           // 컬렉션이 없으면 새로 생성
-          collection = await this.client.createCollection({
+          collection = (await this.client.createCollection({
             name: collectionConfig.name,
             metadata: collectionConfig.metadata,
-          });
+          })) as ChromaCollection & { metadata: Record<string, any> };
           logger.info(`새 컬렉션 생성: ${collectionConfig.name}`);
         }
 
