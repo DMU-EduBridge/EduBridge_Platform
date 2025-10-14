@@ -7,7 +7,7 @@ import { z } from 'zod';
 const setupSchema = z.object({
   role: z.enum(['STUDENT', 'TEACHER']),
   school: z.string().optional(),
-  grade: z.string().optional(),
+  gradeLevel: z.string().optional(),
   subject: z.string().optional(),
 });
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { role, school, grade, subject } = parsed.data;
+    const { role, school, gradeLevel, subject } = parsed.data;
 
     // 사용자 정보 업데이트
     const updatedUser = await prisma.user.update({
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       data: {
         role,
         school: school || null,
-        grade: grade || null,
+        gradeLevel: gradeLevel || null,
         subject: subject || null,
       },
     });

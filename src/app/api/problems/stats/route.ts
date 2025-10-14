@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * 문제 통계 조회
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

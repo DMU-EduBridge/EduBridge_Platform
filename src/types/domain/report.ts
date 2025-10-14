@@ -1,4 +1,5 @@
 import { ReportStatus, ReportType } from '@prisma/client';
+export { ReportType };
 
 export interface Report {
   id: string;

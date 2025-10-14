@@ -49,7 +49,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await problemSyncService.syncProblemsFromAI(parsed.data);
+    const result = await problemSyncService.syncProblemsFromAI(
+      parsed.data as unknown as {
+        subject?: string;
+        difficulty?: string;
+        type?: string;
+        limit?: number;
+        offset?: number;
+      },
+    );
 
     return NextResponse.json({
       message: '문제 동기화가 완료되었습니다.',

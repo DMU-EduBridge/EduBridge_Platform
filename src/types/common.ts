@@ -21,8 +21,8 @@ export interface SearchParams {
 }
 
 // API 응답 타입들 (통합됨)
-import type { ApiResponse } from '@/lib/api-response';
+import type { ApiSuccessResponse } from '@/lib/api-response';
 
-export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
+export type PaginatedResponse<T = any> = ApiSuccessResponse<T[]> & {
   pagination: PaginationResult;
-}
+};

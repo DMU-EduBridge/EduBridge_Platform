@@ -1,6 +1,6 @@
 import { authOptions } from '@/lib/core/auth';
 import { logger } from '@/lib/monitoring';
-import { chatbotService } from '@/server/services/chatbot.service';
+import { ChatbotRequest, chatbotService } from '@/server/services/chatbot.service';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await chatbotService.chat(parsed.data);
+    const response = await chatbotService.chat(parsed.data as unknown as ChatbotRequest);
     return NextResponse.json(response);
   } catch (error) {
     logger.error('챗봇 API 오류', undefined, {

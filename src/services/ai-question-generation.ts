@@ -46,7 +46,7 @@ export const aiQuestionGenerationService = {
   /**
    * 생성된 문제를 데이터베이스에 저장
    */
-  saveGeneratedQuestions: async (questions: any[], createdBy: string) => {
+  saveGeneratedQuestions: async (questions: any[], _createdBy: string) => {
     return api
       .post('/problems/batch', {
         problems: questions.map((q) => ({
@@ -78,9 +78,10 @@ export const aiQuestionGenerationService = {
                   : 'GRADE_10'
             : 'GRADE_9', // 기본값
           options: q.options || [],
-          correctAnswer: q.options && q.options.length > 0 && !isNaN(Number(q.correctAnswer))
-            ? q.options[Number(q.correctAnswer) - 1] || q.correctAnswer
-            : q.correctAnswer,
+          correctAnswer:
+            q.options && q.options.length > 0 && !isNaN(Number(q.correctAnswer))
+              ? q.options[Number(q.correctAnswer) - 1] || q.correctAnswer
+              : q.correctAnswer,
           explanation: q.explanation || '',
           hints: q.hints || [],
           tags: q.tags || [],

@@ -6,7 +6,7 @@ import { z } from 'zod';
 // Educational AI System 클라이언트
 class EducationalAIClient {
   private baseUrl: string;
-  private apiKey?: string;
+  private apiKey?: string | undefined;
 
   constructor() {
     this.baseUrl = process.env.EDUCATIONAL_AI_URL || 'http://localhost:8000';
@@ -15,10 +15,10 @@ class EducationalAIClient {
 
   async generateQuestions(params: {
     subject: string;
-    unit?: string;
+    unit?: string | undefined;
     difficulty: 'easy' | 'medium' | 'hard';
     count: number;
-    textbookContent?: string;
+    textbookContent?: string | undefined;
   }) {
     const url = new URL('/api/generate-questions', this.baseUrl);
 

@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 /**
  * 학습자료 통계 조회
  */
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

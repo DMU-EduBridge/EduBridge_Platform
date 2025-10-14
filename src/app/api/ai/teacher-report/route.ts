@@ -6,7 +6,7 @@ import { z } from 'zod';
 // Teacher Report System 클라이언트
 class TeacherReportClient {
   private baseUrl: string;
-  private apiKey?: string;
+  private apiKey?: string | undefined;
 
   constructor() {
     this.baseUrl = process.env.TEACHER_REPORT_URL || 'http://localhost:8001';

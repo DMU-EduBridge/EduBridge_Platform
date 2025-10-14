@@ -16,7 +16,7 @@ const updateClassSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export async function GET(request: NextRequest, { params }: { params: { classId: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: { classId: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { classI
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { classId: string } }) {
+export async function DELETE(_request: NextRequest, { params }: { params: { classId: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

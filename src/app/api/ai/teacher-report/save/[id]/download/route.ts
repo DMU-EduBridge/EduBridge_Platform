@@ -3,7 +3,7 @@ import { prisma } from '@/lib/core/prisma';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       where: {
         id: reportId,
         createdBy: session.user.id, // 본인이 생성한 리포트만 다운로드 가능
-        status: { not: 'ARCHIVED' },
+        status: { not: 'ARCHIVED' as any },
       },
       select: {
         id: true,
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 - **과목**: ${classInfo.subject}
 - **담당교사**: ${classInfo.teacher}
 - **학생 수**: ${report.reportAnalyses?.length || 0}명
-- **리포트 타입**: ${report.reportType === 'FULL' ? '상세 리포트' : '요약 리포트'}
+- **리포트 타입**: ${report.reportType === 'PROGRESS_REPORT' ? '진도' : report.reportType === 'PERFORMANCE_ANALYSIS' ? '성과 분석' : report.reportType === 'CLASS_SUMMARY' ? '클래스 요약' : '학생 인사이트'}
 - **생성일**: ${new Date(report.createdAt).toLocaleDateString('ko-KR')}
 
 ## 리포트 내용

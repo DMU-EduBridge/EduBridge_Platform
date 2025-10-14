@@ -15,7 +15,7 @@ const createClassSchema = z.object({
   semester: z.string().min(1, '학기는 필수입니다'),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

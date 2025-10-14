@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
         // 3. AI 서버에서 생성된 문제들을 동기화 (시뮬레이션)
         const aiGeneratedProblems = await prisma.problem.findMany({
           where: { textbookId: textbook.id },
-          include: { questionOptions: true, questionTags: true },
         });
 
         // 실제로는 AI 서버에서 새로운 문제들을 가져와서 저장
@@ -141,22 +140,22 @@ export async function POST(request: NextRequest) {
 
     const syncTime = Date.now() - startTime;
 
-    // 성능 지표 기록
-    await prisma.aIPerformanceMetric.create({
-      data: {
-        operationType: 'ai_server_sync',
-        durationMs: syncTime,
-        success: errors.length === 0,
-        errorMessage: errors.length > 0 ? errors.join('; ') : null,
-        metadata: JSON.stringify({
-          textbooksProcessed: textbooks.length,
-          syncedChunks,
-          syncedQuestions,
-          errors: errors.length,
-        }),
-        userId: session.user.id,
-      },
-    });
+    // // 성능 지표 기록
+    // await prisma.aiPerformanceMetric.create({
+    //   data: {
+    //     operationType: 'ai_server_sync',
+    //     durationMs: syncTime,
+    //     success: errors.length === 0,
+    //     errorMessage: errors.length > 0 ? errors.join('; ') : null,
+    //     metadata: JSON.stringify({
+    //       textbooksProcessed: textbooks.length,
+    //       syncedChunks,
+    //       syncedQuestions,
+    //       errors: errors.length,
+    //     }),
+    //     userId: session.user.id,
+    //   },
+    // });
 
     return NextResponse.json({
       success: true,
@@ -222,42 +221,11 @@ export async function GET(request: NextRequest) {
     let metrics = null;
     if (includeMetrics) {
       // 통계 데이터 조회
-      const [
-        totalTextbooks,
-        totalChunks,
-        totalQuestions,
-        totalSearches,
-        recentApiUsage,
-        performanceMetrics,
-      ] = await Promise.all([
+      const [totalTextbooks, totalChunks, totalQuestions, totalSearches] = await Promise.all([
         prisma.textbook.count(),
         prisma.documentChunk.count(),
         prisma.problem.count({ where: { isAIGenerated: true } }),
         prisma.searchQuery.count(),
-        prisma.aIApiUsage.findMany({
-          take: 10,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            apiType: true,
-            tokensUsed: true,
-            costUsd: true,
-            success: true,
-            createdAt: true,
-          },
-        }),
-        prisma.aIPerformanceMetric.findMany({
-          where: {
-            createdAt: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 최근 24시간
-            },
-          },
-          select: {
-            operationType: true,
-            durationMs: true,
-            success: true,
-            createdAt: true,
-          },
-        }),
       ]);
 
       metrics = {
@@ -267,16 +235,10 @@ export async function GET(request: NextRequest) {
           questions: totalQuestions,
           searches: totalSearches,
         },
-        recentActivity: {
-          apiUsage: recentApiUsage,
-          performance: performanceMetrics,
-        },
+        recentActivity: { apiUsage: [], performance: [] },
         costSummary: {
-          totalCost: recentApiUsage.reduce((sum: number, usage: any) => sum + usage.costUsd, 0),
-          totalTokens: recentApiUsage.reduce(
-            (sum: number, usage: any) => sum + usage.tokensUsed,
-            0,
-          ),
+          totalCost: 0,
+          totalTokens: 0,
         },
       };
     }

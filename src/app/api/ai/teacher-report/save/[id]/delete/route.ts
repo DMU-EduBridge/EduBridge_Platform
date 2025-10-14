@@ -3,7 +3,7 @@ import { prisma } from '@/lib/core/prisma';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -18,7 +18,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       where: {
         id: reportId,
         createdBy: session.user.id, // 본인이 생성한 리포트만 삭제 가능
-        status: { not: 'ARCHIVED' },
+        status: { not: 'ARCHIVED' as any },
       },
     });
 
@@ -29,7 +29,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // 소프트 삭제 (deletedAt 필드 설정)
     await prisma.teacherReport.update({
       where: { id: reportId },
-      data: { status: 'ARCHIVED' },
+      data: { status: 'ARCHIVED' as any },
     });
 
     return NextResponse.json({

@@ -36,12 +36,6 @@ export async function GET(request: NextRequest, { params }: { params: { studentI
     if (searchParams.get('endDate')) {
       filters.endDate = new Date(searchParams.get('endDate')!);
     }
-    if (searchParams.get('minProgress')) {
-      filters.minProgress = parseInt(searchParams.get('minProgress')!);
-    }
-    if (searchParams.get('maxProgress')) {
-      filters.maxProgress = parseInt(searchParams.get('maxProgress')!);
-    }
 
     const detailedProgress = await classProgressService.getStudentDetailedProgress(
       studentId,

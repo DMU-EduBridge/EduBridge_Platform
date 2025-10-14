@@ -4,7 +4,7 @@ import { classProgressService } from '@/server/services/progress/class-progress.
 import { getServerSession } from 'next-auth';
 import { NextRequest } from 'next/server';
 
-export async function GET(request: NextRequest, { params }: { params: { classId: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: { classId: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

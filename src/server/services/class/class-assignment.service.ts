@@ -1,21 +1,40 @@
 import { prisma } from '../../../lib/core/prisma';
 import { logger } from '../../../lib/monitoring';
-import {
-  CreateProblemAssignmentRequest,
-  PaginatedResponse,
-  ProblemAssignment,
-  ProblemAssignmentQueryParams,
-  ProblemAssignmentWithDetails,
-  UpdateProblemAssignmentRequest,
-} from '../../../types/domain/class';
+import type { ProblemAssignment } from '../../../types/domain/assignment';
+
+type ProblemAssignmentQueryParams = {
+  page?: number;
+  limit?: number;
+  classId?: string;
+  problemId?: string;
+  assignedBy?: string;
+  isActive?: boolean;
+  dueDate?: Date;
+};
+
+type CreateProblemAssignmentRequest = {
+  classId: string;
+  problemId: string;
+  dueDate?: Date;
+  instructions?: string;
+  isActive?: boolean;
+};
+
+type UpdateProblemAssignmentRequest = {
+  dueDate?: Date;
+  instructions?: string;
+  isActive?: boolean;
+};
 
 export class ClassAssignmentService {
   /**
    * 과제 목록 조회
    */
-  async getProblemAssignments(
-    params: ProblemAssignmentQueryParams = {},
-  ): Promise<PaginatedResponse<ProblemAssignmentWithDetails>> {
+  async getProblemAssignments(params: ProblemAssignmentQueryParams = {}): Promise<{
+    success: true;
+    data: ProblemAssignment[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     try {
       const { page = 1, limit = 10, classId, problemId, assignedBy, isActive, dueDate } = params;
 
@@ -33,29 +52,14 @@ export class ClassAssignmentService {
           where,
           skip,
           take: limit,
-          include: {
-            class: true,
-            problem: true,
-            assigner: true,
-          },
-          orderBy: {
-            assignedAt: 'desc',
-          },
+          orderBy: { assignedAt: 'desc' },
         }),
         prisma.problemAssignment.count({ where }),
       ]);
 
-      const assignmentsWithDetails: ProblemAssignmentWithDetails[] = assignments.map(
-        (assignment) => ({
-          ...assignment,
-          problem: assignment.problem as any, // Prisma에서 모든 필드를 가져왔으므로 타입 캐스팅
-          assigner: assignment.assigner as any, // Prisma에서 모든 필드를 가져왔으므로 타입 캐스팅
-        }),
-      );
-
       return {
         success: true,
-        data: assignmentsWithDetails,
+        data: assignments as unknown as ProblemAssignment[],
         pagination: {
           page,
           limit,
@@ -75,24 +79,13 @@ export class ClassAssignmentService {
   /**
    * 과제 상세 조회
    */
-  async getProblemAssignmentById(id: string): Promise<ProblemAssignmentWithDetails | null> {
+  async getProblemAssignmentById(id: string): Promise<ProblemAssignment | null> {
     try {
-      const assignment = await prisma.problemAssignment.findUnique({
-        where: { id },
-        include: {
-          class: true,
-          problem: true,
-          assigner: true,
-        },
-      });
+      const assignment = await prisma.problemAssignment.findUnique({ where: { id } });
 
       if (!assignment) return null;
 
-      return {
-        ...assignment,
-        problem: assignment.problem as any, // Prisma에서 모든 필드를 가져왔으므로 타입 캐스팅
-        assigner: assignment.assigner as any, // Prisma에서 모든 필드를 가져왔으므로 타입 캐스팅
-      };
+      return assignment as unknown as ProblemAssignment;
     } catch (error) {
       logger.error('과제 조회 실패', undefined, {
         assignmentId: id,
@@ -114,8 +107,8 @@ export class ClassAssignmentService {
       const existingAssignment = await prisma.problemAssignment.findFirst({
         where: {
           classId: data.classId,
-          problemId: data.problemId,
-          isActive: true,
+          // 배열 포함 여부는 스키마에 따라 다름: JSON 배열이면 array_contains 사용, Prisma Array이면 has 사용
+          problemIds: { array_contains: [data.problemId] } as any,
         },
       });
 
@@ -125,13 +118,13 @@ export class ClassAssignmentService {
 
       const newAssignment = await prisma.problemAssignment.create({
         data: {
+          title: 'Assignment',
           classId: data.classId,
-          problemId: data.problemId,
+          problemIds: [data.problemId],
           assignedBy,
           assignedAt: new Date(),
-          dueDate: data.dueDate || null,
-          instructions: data.instructions || null,
-          isActive: data.isActive ?? true,
+          dueDate: data.dueDate ?? null,
+          instructions: data.instructions ?? null,
         },
       });
 
@@ -140,7 +133,7 @@ export class ClassAssignmentService {
         classId: data.classId,
         problemId: data.problemId,
       });
-      return newAssignment;
+      return newAssignment as unknown as ProblemAssignment;
     } catch (error) {
       logger.error('과제 추가 실패', undefined, {
         data,
@@ -174,7 +167,7 @@ export class ClassAssignmentService {
       });
 
       logger.info('과제 수정 성공', { assignmentId: id });
-      return updatedAssignment;
+      return updatedAssignment as unknown as ProblemAssignment;
     } catch (error) {
       logger.error('과제 수정 실패', undefined, {
         assignmentId: id,
@@ -197,11 +190,11 @@ export class ClassAssignmentService {
 
       const removedAssignment = await prisma.problemAssignment.update({
         where: { id },
-        data: { isActive: false },
+        data: { status: 'INACTIVE' as any },
       });
 
       logger.info('과제 제거 성공', { assignmentId: id });
-      return removedAssignment;
+      return removedAssignment as unknown as ProblemAssignment;
     } catch (error) {
       logger.error('과제 제거 실패', undefined, {
         assignmentId: id,

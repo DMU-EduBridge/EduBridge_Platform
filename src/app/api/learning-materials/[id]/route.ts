@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 /**
  * 특정 학습자료 조회
  */
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

@@ -9,14 +9,14 @@ const AddProblemSchema = z.object({
   problemId: z.string(),
 });
 
-const RemoveProblemSchema = z.object({
-  problemId: z.string(),
-});
+// const RemoveProblemSchema = z.object({
+//   problemId: z.string(),
+// });
 
 /**
  * 학습자료에 연결된 문제 목록 조회
  */
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
 

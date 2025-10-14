@@ -20,7 +20,7 @@ const updateAssignmentSchema = z.object({
   metadata: z.any().optional(),
 });
 
-export async function GET(request: NextRequest, { params }: { params: { assignmentId: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: { assignmentId: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -84,7 +84,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { assignmentId: string } },
 ) {
   try {

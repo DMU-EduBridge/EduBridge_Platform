@@ -4,7 +4,7 @@ export interface Message {
   id: string;
   senderId: string;
   sender: string;
-  messageType: 'text' | 'system' | 'notification';
+  messageType: 'text' | 'system' | 'notification' | 'question' | 'reminder' | 'general';
   subject: string;
   message: string;
   category: MessageCategory;

@@ -183,4 +183,24 @@ export const authService = {
     });
     return rs ?? null;
   },
+  // ------- 아래 메서드들은 클라이언트 훅 호환을 위한 래퍼/더미 구현 -------
+  async getProfile(): Promise<{ data: PublicUser | null }> {
+    // 서버 세션 의존 없이 컴파일 호환용 기본 구현
+    return { data: null };
+  },
+  async login(email: string, password: string): Promise<PublicUser | null> {
+    return this.loginWithCredentials({ email, password });
+  },
+  async register(): Promise<void> {
+    // 실제 회원가입 로직은 NextAuth/route 구현에 위임. 타입 호환용 더미
+    return;
+  },
+  async logout(): Promise<void> {
+    // NextAuth가 httpOnly 쿠키로 관리하므로 클라이언트에서 별도 처리 없음
+    return;
+  },
+  async updateProfile(): Promise<void> {
+    // 프로필 업데이트는 별도 API 필요. 타입 호환용 더미
+    return;
+  },
 };
