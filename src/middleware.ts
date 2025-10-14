@@ -17,15 +17,14 @@ const protectedPaths = [
 ];
 const setupPaths = ['/setup'];
 const adminPaths = ['/admin'];
-// const teacherOnlyPaths = [
-//   '/students',
-//   '/learning-materials',
-//   '/reports',
-//   '/teacher-reports',
-//   '/vector-search',
-// ];
-// const studentOnlyPaths = ['/my'];
-// const reviewPaths = ['/problems']; // 오답체크 페이지들 (/problems/*/review, /my/learning/*/problems/*/review)
+const teacherOnlyPaths = [
+  '/students',
+  '/learning-materials',
+  '/reports',
+  '/teacher-reports',
+  '/vector-search',
+];
+const studentOnlyPaths = ['/my'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -41,11 +40,8 @@ export async function middleware(request: NextRequest) {
     return res;
   };
 
-  // 대시보드는 항상 허용 (임시 해결책)
-  if (pathname === '/dashboard') {
-    console.log(`[Middleware] Dashboard access - always allowing`);
-    return applySecurityHeaders(NextResponse.next());
-  }
+  // 대시보드는 모든 역할 접근 허용(권한별 UI는 페이지에서 제어)
+  if (pathname === '/dashboard') return applySecurityHeaders(NextResponse.next());
 
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
   const isSetupPath = setupPaths.some((path) => pathname.startsWith(path));
@@ -79,8 +75,8 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
-  // JWT 토큰에서 역할 정보 가져오기
-  const userRole = token.role;
+  // JWT 토큰에서 역할 정보 가져오기 (없을 때 학생 기본값)
+  const userRole = (token.role as string | undefined) ?? 'STUDENT';
   console.log(`[Middleware] User role: ${userRole}`);
 
   // setup 페이지에 접근하는 경우 역할이 있으면 적절한 페이지로 리다이렉트
@@ -90,12 +86,33 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(new URL(redirectUrl, request.url)));
   }
 
-  // 관리자 경로 접근 제한
+  // 안전 리다이렉트 유틸: 대상 경로면 루프 방지 위해 통과
+  const safeRedirect = (target: string) => {
+    if (pathname.startsWith(target)) return applySecurityHeaders(NextResponse.next());
+    const url = new URL(target, request.url);
+    url.searchParams.set('error', 'forbidden');
+    return applySecurityHeaders(NextResponse.redirect(url));
+  };
+
+  // 관리자 전용 경로
   if (isAdminPath && userRole !== 'ADMIN') {
-    console.log(`[Middleware] Admin path access denied for role: ${userRole}`);
-    const dashboardUrl = new URL('/dashboard', request.url);
-    dashboardUrl.searchParams.set('error', 'forbidden');
-    return applySecurityHeaders(NextResponse.redirect(dashboardUrl));
+    console.log(`[Middleware] Admin path denied for role: ${userRole}`);
+    return safeRedirect('/dashboard');
+  }
+
+  // 교사 전용 경로: 학생이면 학생 홈으로
+  if (teacherOnlyPaths.some((p) => pathname.startsWith(p)) && userRole === 'STUDENT') {
+    console.log('[Middleware] Teacher-only path denied for STUDENT');
+    return safeRedirect('/my/learning');
+  }
+
+  // 학생 전용 경로: 교사/관리자는 교사 홈으로
+  if (
+    studentOnlyPaths.some((p) => pathname.startsWith(p)) &&
+    (userRole === 'TEACHER' || userRole === 'ADMIN')
+  ) {
+    console.log(`[Middleware] Student-only path denied for ${userRole}`);
+    return safeRedirect('/dashboard');
   }
 
   console.log(`[Middleware] Allowing access to: ${pathname}`);
