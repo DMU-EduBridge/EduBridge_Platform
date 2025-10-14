@@ -115,6 +115,13 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       // 로그인 직후(user가 있을 때)만 DB 조회
       if (user?.email) {
+        // 데모 계정의 경우 특별 처리
+        if (user.email === 'demo@example.com') {
+          token.role = 'TEACHER';
+          token.status = 'ACTIVE';
+          return token;
+        }
+
         try {
           const rs = await authService.getRoleStatusByEmail(user.email);
           if (rs) {
