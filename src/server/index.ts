@@ -1,4 +1,4 @@
-import { AnalyticsService } from './services/analytics.service';
+// import { AnalyticsService } from './services/analytics.service'; // 파일이 존재하지 않음
 import { ChatbotService } from './services/chatbot.service';
 import { ProblemService } from './services/problem';
 import { ProblemStatsService } from './services/problem/problem-stats.service';
@@ -8,7 +8,7 @@ import { userService } from './services/user';
 export { userService };
 export const problemService = new ProblemService();
 export const chatbotService = new ChatbotService();
-export const analytics = new AnalyticsService();
+// export const analytics = new AnalyticsService(); // 서비스가 존재하지 않음
 export const problemStatsService = new ProblemStatsService();
 
 // 대시보드 API용 서비스들 (시뮬레이션 모드)

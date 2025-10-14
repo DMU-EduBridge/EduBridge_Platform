@@ -10,7 +10,7 @@ export function ok<T>(data: T): ApiResult<T> {
   return { success: true, data };
 }
 
-export function fail(error: string, status = 400) {
+export function fail(error: string, _status = 400) {
   return ApiError.badRequest(error);
 }
 

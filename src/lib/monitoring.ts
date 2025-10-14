@@ -459,10 +459,10 @@ export class SlackNotificationChannel implements NotificationChannel {
 // 이메일 알림 채널
 export class EmailNotificationChannel implements NotificationChannel {
   name = 'email';
-  private smtpConfig: any;
+  // private _smtpConfig: any; // 사용되지 않음
 
-  constructor(smtpConfig: any) {
-    this.smtpConfig = smtpConfig;
+  constructor(_smtpConfig: any) {
+    // this._smtpConfig = smtpConfig; // 사용되지 않음
   }
 
   async send(alert: any): Promise<void> {
@@ -480,7 +480,7 @@ export class DashboardDataProvider {
         prisma.user.count(),
         prisma.problem.count(),
         prisma.user.count({ where: { role: 'STUDENT' } }), // 학생 수 계산
-        prisma.analysisReport.count(),
+        0, // prisma.analysisReport.count() - 모델이 존재하지 않음
         this.getRecentActivity(),
         PerformanceMetrics.getAllMetrics(),
       ]);

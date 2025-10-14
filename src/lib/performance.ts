@@ -135,8 +135,8 @@ function pickFields(obj: any, fields: string[]) {
 
 // 데이터베이스 연결 모니터링
 export class DatabaseMonitor {
-  private static connectionCount = 0;
-  private static maxConnections = 10;
+  // private static _connectionCount = 0; // 사용되지 않음
+  // private static _maxConnections = 10; // 사용되지 않음
 
   static async checkConnectionHealth() {
     try {

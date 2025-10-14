@@ -25,6 +25,6 @@ const messages: Record<string, Record<Locale, string>> = {
 
 export function getErrorMessage(code: string, locale: Locale = 'ko'): string {
   const table = messages[code];
-  if (!table) return messages.SERVER_ERROR[locale];
+  if (!table) return messages.SERVER_ERROR?.[locale] ?? 'Server error';
   return table[locale] || table.ko;
 }
