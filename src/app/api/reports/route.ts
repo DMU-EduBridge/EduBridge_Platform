@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const type = searchParams.get('type') || undefined;
     const status = searchParams.get('status') || undefined;
-    const studentId = searchParams.get('studentId') || undefined;
+    // const studentId = searchParams.get('studentId') || undefined;
 
     const skip = (page - 1) * limit;
 

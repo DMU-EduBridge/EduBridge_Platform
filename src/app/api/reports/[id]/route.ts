@@ -33,27 +33,22 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     }
 
     const { id } = params;
-    const report = await prisma.report.findUnique({
+    const report = await prisma.teacherReport.findUnique({
       where: { id, createdBy: session.user.id },
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        class: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        subjects: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        reportType: true,
+        status: true,
+        metadata: true,
+        tokenUsage: true,
+        generationTimeMs: true,
+        modelName: true,
+        costUsd: true,
+        createdAt: true,
+        createdBy: true,
+        updatedAt: true,
       },
     });
 
@@ -62,27 +57,29 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     }
 
     // 리포트 데이터 변환 (클라이언트에서 필요한 형태로)
+    const meta = (report.metadata as any) || {};
+    const startDateStr = meta?.analysisPeriod?.startDate
+      ? new Date(meta.analysisPeriod.startDate).toLocaleDateString()
+      : 'N/A';
+    const endDateStr = meta?.analysisPeriod?.endDate
+      ? new Date(meta.analysisPeriod.endDate).toLocaleDateString()
+      : 'N/A';
+
     const transformedReport = {
       id: report.id,
       title: report.title,
       type: report.reportType,
-      period: `${report.analysisPeriod.startDate.toLocaleDateString()} - ${report.analysisPeriod.endDate.toLocaleDateString()}`,
+      period: `${startDateStr} - ${endDateStr}`,
       content: report.content,
-      insights: report.insights as string[],
-      recommendations: report.recommendations as string[],
-      strengths: report.strengths as string[],
-      weaknesses: report.weaknesses as string[],
       status: report.status,
-      studentId: report.studentId,
       teacherId: report.createdBy,
       createdAt: report.createdAt,
       updatedAt: report.updatedAt,
-      deletedAt: report.deletedAt,
-      students: report.student ? 1 : 0, // 단일 학생 리포트 가정
-      totalProblems: 0, // TODO: 실제 데이터로 채우기
-      averageScore: 0, // TODO: 실제 데이터로 채우기
-      completionRate: 0, // TODO: 실제 데이터로 채우기
-    };
+      tokenUsage: report.tokenUsage,
+      generationTimeMs: report.generationTimeMs,
+      modelName: report.modelName,
+      costUsd: report.costUsd,
+    } as const;
 
     logger.info('리포트 상세 조회 성공', { userId: session.user.id, reportId: id });
     return NextResponse.json({ success: true, data: transformedReport });
@@ -103,27 +100,31 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json();
     const data = UpdateReportSchema.parse(body);
 
-    const updatedReport = await prisma.report.update({
+    const updateData: any = {
+      ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.reportType !== undefined ? { reportType: data.reportType } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.content !== undefined ? { content: data.content ?? '' } : {}),
+      ...(data.analysisPeriod || data.metadata
+        ? {
+            metadata: {
+              ...(data.metadata as any),
+              ...(data.analysisPeriod
+                ? {
+                    analysisPeriod: {
+                      startDate: new Date(data.analysisPeriod.startDate),
+                      endDate: new Date(data.analysisPeriod.endDate),
+                    },
+                  }
+                : {}),
+            },
+          }
+        : {}),
+    };
+
+    const updatedReport = await prisma.teacherReport.update({
       where: { id, createdBy: session.user.id },
-      data: {
-        ...data,
-        analysisPeriod: data.analysisPeriod
-          ? {
-              startDate: new Date(data.analysisPeriod.startDate),
-              endDate: new Date(data.analysisPeriod.endDate),
-            }
-          : undefined,
-        class:
-          data.classId !== undefined
-            ? { connect: data.classId ? { id: data.classId } : undefined }
-            : undefined,
-        students: data.studentIds
-          ? { set: data.studentIds.map((sId) => ({ id: sId })) }
-          : undefined,
-        subjects: data.subjectIds
-          ? { set: data.subjectIds.map((sId) => ({ id: sId })) }
-          : undefined,
-      },
+      data: updateData,
     });
 
     logger.info('리포트 업데이트 성공', { userId: session.user.id, reportId: id });
@@ -142,7 +143,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
     }
 
     const { id } = params;
-    await prisma.report.delete({
+    await prisma.teacherReport.delete({
       where: { id, createdBy: session.user.id },
     });
 
