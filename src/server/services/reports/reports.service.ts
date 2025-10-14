@@ -3,7 +3,7 @@ import { prisma } from '@/lib/core/prisma';
 export class ReportsService {
   async getReportDetail(userId: string, reportId: string) {
     // 리포트 기본 정보 조회
-    const report = await prisma.report.findUnique({
+    const report = await prisma.teacherReport.findUnique({
       where: { id: reportId },
       include: {
         user: { select: { id: true, name: true, email: true } },

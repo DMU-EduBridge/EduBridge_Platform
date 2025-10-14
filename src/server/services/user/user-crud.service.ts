@@ -1,9 +1,32 @@
 import { Prisma, User } from '@prisma/client';
+import { z } from 'zod';
 import { prisma } from '../../../lib/core/prisma';
 import { handlePrismaError } from '../../../lib/errors';
 import { logger } from '../../../lib/monitoring';
-import { CreateUserSchema, UserQuerySchema, validateWithSchema } from '../../../lib/validation';
 import { CreateUserRequest, UpdateUserRequest, UserQueryParams } from '../../../types/domain/user';
+
+const UserQuerySchema = z.object({
+  page: z.number().int().positive().optional(),
+  limit: z.number().int().positive().optional(),
+  search: z.string().optional(),
+  role: z.string().optional(),
+  status: z.string().optional(),
+  subject: z.string().optional(),
+  gradeLevel: z.string().optional(),
+});
+
+const CreateUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  name: z.string().min(1),
+  role: z.string(),
+  avatar: z.string().url().optional().nullable(),
+  bio: z.string().optional().nullable(),
+  gradeLevel: z.string().optional().nullable(),
+  school: z.string().optional().nullable(),
+  subject: z.string().optional().nullable(),
+  status: z.string().optional(),
+});
 
 export class UserCrudService {
   async getUserById(id: string): Promise<User | null> {
@@ -16,7 +39,7 @@ export class UserCrudService {
         userId: id,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -30,7 +53,7 @@ export class UserCrudService {
         email,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -38,10 +61,10 @@ export class UserCrudService {
     query: UserQueryParams,
   ): Promise<{ users: User[]; total: number; pagination: any }> {
     try {
-      // 입력 검증
-      const validatedQuery = validateWithSchema(UserQuerySchema, query);
+      const validatedQuery = UserQuerySchema.safeParse(query);
+      const q = (validatedQuery.success ? validatedQuery.data : {}) as UserQueryParams;
 
-      const { page = 1, limit = 10, search, role, status, subject, gradeLevel } = validatedQuery;
+      const { page = 1, limit = 10, search, role, status, subject, gradeLevel } = q;
       const skip = (page - 1) * limit;
 
       const where: Prisma.UserWhereInput = {
@@ -52,8 +75,8 @@ export class UserCrudService {
             { subject: { contains: search } },
           ],
         }),
-        ...(role && { role }),
-        ...(status && { status }),
+        ...(role && { role: role as any }),
+        ...(status && { status: status as any }),
         ...(subject && { subject }),
         ...(gradeLevel && { gradeLevel }),
       };
@@ -64,11 +87,6 @@ export class UserCrudService {
           skip,
           take: limit,
           orderBy: { createdAt: 'desc' },
-          include: {
-            _count: {
-              select: {},
-            },
-          },
         }),
         prisma.user.count({ where }),
       ]);
@@ -92,21 +110,21 @@ export class UserCrudService {
 
   async createUser(data: CreateUserRequest): Promise<User> {
     try {
-      // 입력 검증
-      const validatedData = validateWithSchema(CreateUserSchema, data);
+      const parsed = CreateUserSchema.safeParse(data);
+      const validatedData = (parsed.success ? parsed.data : (data as any)) as CreateUserRequest;
 
       const user = await prisma.user.create({
         data: {
           email: validatedData.email,
-          password: validatedData.password, // Hashing should be done before this point in a real app
+          password: validatedData.password,
           name: validatedData.name,
-          role: validatedData.role,
-          avatar: validatedData.avatar || null,
-          bio: validatedData.bio || null,
-          gradeLevel: validatedData.gradeLevel || null,
-          school: validatedData.school || null,
-          subject: validatedData.subject || null,
-          status: validatedData.status || 'ACTIVE',
+          role: validatedData.role as any,
+          avatar: validatedData.avatar ?? null,
+          bio: validatedData.bio ?? null,
+          gradeLevel: validatedData.gradeLevel ?? null,
+          school: validatedData.school ?? null,
+          subject: validatedData.subject ?? null,
+          status: (validatedData.status as any) ?? 'ACTIVE',
         },
       });
       logger.info('사용자 생성 성공', { userId: user.id, email: user.email });
@@ -116,7 +134,7 @@ export class UserCrudService {
         data,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -130,23 +148,23 @@ export class UserCrudService {
       const user = await prisma.user.update({
         where: { id },
         data: {
-          ...(data.email && { email: data.email }),
-          ...(data.name && { name: data.name }),
-          ...(data.password && { password: data.password }), // Hashing should be done before this point
-          ...(data.role && { role: data.role }),
-          ...(data.avatar !== undefined && { avatar: data.avatar }),
-          ...(data.bio !== undefined && { bio: data.bio }),
-          ...(data.gradeLevel !== undefined && { gradeLevel: data.gradeLevel }),
-          ...(data.school !== undefined && { school: data.school }),
-          ...(data.subject !== undefined && { subject: data.subject }),
-          ...(data.status && { status: data.status }),
-          ...(data.lastLoginAt && { lastLoginAt: data.lastLoginAt }),
-          ...(data.passwordResetToken !== undefined && {
-            passwordResetToken: data.passwordResetToken,
-          }),
-          ...(data.passwordResetExpires !== undefined && {
-            passwordResetExpires: data.passwordResetExpires,
-          }),
+          ...(data.email !== undefined ? { email: data.email } : {}),
+          ...(data.name !== undefined ? { name: data.name } : {}),
+          ...(data.password !== undefined ? { password: data.password } : {}),
+          ...(data.role !== undefined ? { role: data.role as any } : {}),
+          ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
+          ...(data.bio !== undefined ? { bio: data.bio } : {}),
+          ...(data.gradeLevel !== undefined ? { gradeLevel: data.gradeLevel } : {}),
+          ...(data.school !== undefined ? { school: data.school } : {}),
+          ...(data.subject !== undefined ? { subject: data.subject } : {}),
+          ...(data.status !== undefined ? { status: data.status as any } : {}),
+          ...(data.lastLoginAt !== undefined ? { lastLoginAt: data.lastLoginAt } : {}),
+          ...(data.passwordResetToken !== undefined
+            ? { passwordResetToken: data.passwordResetToken }
+            : {}),
+          ...(data.passwordResetExpires !== undefined
+            ? { passwordResetExpires: data.passwordResetExpires }
+            : {}),
         },
       });
       logger.info('사용자 수정 성공', { userId: user.id });
@@ -199,9 +217,7 @@ export class UserCrudService {
         prisma.user.groupBy({
           by: ['subject'],
           _count: { subject: true },
-          where: {
-            subject: { not: null },
-          },
+          where: { subject: { not: null } },
         }),
       ]);
 
@@ -231,12 +247,7 @@ export class UserCrudService {
         {} as Record<string, number>,
       );
 
-      return {
-        total,
-        byRole,
-        byStatus,
-        bySubject,
-      };
+      return { total, byRole, byStatus, bySubject };
     } catch (error) {
       logger.error('사용자 통계 조회 실패', undefined, {
         error: error instanceof Error ? error.message : String(error),

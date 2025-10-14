@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/core/prisma';
 import { handlePrismaError } from '../../../lib/errors';
 import { logger } from '../../../lib/monitoring';
@@ -54,7 +55,8 @@ export class ProblemStatsService {
 
       const difficultyStats = byDifficulty.reduce(
         (acc, stat) => {
-          acc[stat.difficulty] = stat._count.difficulty;
+          const count = (stat as any)._count?.difficulty ?? 0;
+          acc[(stat as any).difficulty] = count;
           return acc;
         },
         {} as Record<string, number>,
@@ -62,7 +64,8 @@ export class ProblemStatsService {
 
       const typeStats = byType.reduce(
         (acc, stat) => {
-          acc[stat.type] = stat._count.type;
+          const count = (stat as any)._count?.type ?? 0;
+          acc[(stat as any).type] = count;
           return acc;
         },
         {} as Record<string, number>,
@@ -70,7 +73,8 @@ export class ProblemStatsService {
 
       const subjectStats = bySubject.reduce(
         (acc, stat) => {
-          acc[stat.subject] = stat._count.subject;
+          const count = (stat as any)._count?.subject ?? 0;
+          acc[(stat as any).subject] = count;
           return acc;
         },
         {} as Record<string, number>,
@@ -91,7 +95,7 @@ export class ProblemStatsService {
       logger.error('문제 통계 조회 실패', undefined, {
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -124,7 +128,7 @@ export class ProblemStatsService {
         userId,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -181,7 +185,7 @@ export class ProblemStatsService {
         problemId,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -192,20 +196,20 @@ export class ProblemStatsService {
     try {
       const [totalProblems, publishedProblems, byDifficulty, byType, averageAttempts] =
         await Promise.all([
-          prisma.problem.count({ where: { subject } }),
-          prisma.problem.count({ where: { subject, status: 'PUBLISHED' } }),
+          prisma.problem.count({ where: { subject: subject as any } }),
+          prisma.problem.count({ where: { subject: subject as any, status: 'PUBLISHED' } }),
           prisma.problem.groupBy({
             by: ['difficulty'],
-            where: { subject },
+            where: { subject: subject as any },
             _count: { difficulty: true },
           }),
           prisma.problem.groupBy({
             by: ['type'],
-            where: { subject },
+            where: { subject: subject as any },
             _count: { type: true },
           }),
           prisma.problemProgress.aggregate({
-            where: { problem: { subject } },
+            where: { problem: { subject: subject as any } },
             _count: { id: true },
           }),
         ]);
@@ -232,7 +236,7 @@ export class ProblemStatsService {
         publishedProblems,
         byDifficulty: difficultyStats,
         byType: typeStats,
-        totalAttempts: averageAttempts._count.id,
+        totalAttempts: (averageAttempts as any)._count?.id ?? 0,
         // averageTimeSpent: averageAttempts._avg.timeSpent || 0, // ProblemProgress에는 timeSpent 필드가 없음
       };
     } catch (error) {
@@ -240,7 +244,7 @@ export class ProblemStatsService {
         subject,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 }

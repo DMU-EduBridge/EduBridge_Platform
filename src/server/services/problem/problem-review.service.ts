@@ -1,4 +1,5 @@
 import { Prisma, Problem } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { prisma } from '../../../lib/core/prisma';
 import { handlePrismaError } from '../../../lib/errors';
 import { logger } from '../../../lib/monitoring';
@@ -40,7 +41,7 @@ export class ProblemReviewService {
         reviewerId,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as PrismaClientKnownRequestError);
     }
   }
 
@@ -81,7 +82,7 @@ export class ProblemReviewService {
         reason,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as PrismaClientKnownRequestError);
     }
   }
 
@@ -140,7 +141,7 @@ export class ProblemReviewService {
       logger.error('검토 대기 문제 목록 조회 실패', undefined, {
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as PrismaClientKnownRequestError);
     }
   }
 
@@ -207,7 +208,7 @@ export class ProblemReviewService {
         reviewerId,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as PrismaClientKnownRequestError);
     }
   }
 
@@ -273,7 +274,7 @@ export class ProblemReviewService {
         reviewerId,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as PrismaClientKnownRequestError);
     }
   }
 
@@ -302,7 +303,7 @@ export class ProblemReviewService {
         requesterId,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as PrismaClientKnownRequestError);
     }
   }
 
@@ -329,7 +330,7 @@ export class ProblemReviewService {
         reviewerId,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as PrismaClientKnownRequestError);
     }
   }
 }

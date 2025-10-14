@@ -48,16 +48,12 @@ export class ProblemSearchService {
       // WHERE 조건 최적화
       const where = optimizeWhereClause({
         ...(search && {
-          OR: [
-            { title: { contains: search } },
-            { content: { contains: search } },
-            { subject: { contains: search } },
-          ],
+          OR: [{ title: { contains: search } }, { content: { contains: search } }],
         }),
         difficulty,
         type,
         status,
-        subject,
+        ...(subject ? { subject: subject as any } : {}),
         gradeLevel,
         createdBy,
       });
@@ -97,7 +93,7 @@ export class ProblemSearchService {
         query,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -122,11 +118,10 @@ export class ProblemSearchService {
         OR: [
           { title: { contains: searchTerm } },
           { content: { contains: searchTerm } },
-          { subject: { contains: searchTerm } },
           { tags: { string_contains: searchTerm } },
         ],
-        ...(filters?.subject && { subject: filters.subject }),
-        ...(filters?.gradeLevel && { gradeLevel: filters.gradeLevel }),
+        ...(filters?.subject && { subject: filters.subject as any }),
+        ...(filters?.gradeLevel && { gradeLevel: filters.gradeLevel as any }),
         ...(filters?.difficulty && { difficulty: filters.difficulty }),
         ...(filters?.type && { type: filters.type }),
       };
@@ -157,7 +152,7 @@ export class ProblemSearchService {
         filters,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -191,8 +186,8 @@ export class ProblemSearchService {
       const where: Prisma.ProblemWhereInput = {
         status: 'PUBLISHED',
         id: { notIn: attemptedIds },
-        ...(user.subject && { subject: user.subject }),
-        ...(user.gradeLevel && { gradeLevel: user.gradeLevel }),
+        ...(user.subject && { subject: user.subject as any }),
+        ...(user.gradeLevel && { gradeLevel: user.gradeLevel as any }),
       };
 
       const problems = await prisma.problem.findMany({
@@ -224,7 +219,7 @@ export class ProblemSearchService {
         userId,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -294,7 +289,7 @@ export class ProblemSearchService {
         period,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 
@@ -336,7 +331,7 @@ export class ProblemSearchService {
       logger.error('필터 옵션 조회 실패', undefined, {
         error: error instanceof Error ? error.message : String(error),
       });
-      throw handlePrismaError(error);
+      throw handlePrismaError(error as Prisma.PrismaClientKnownRequestError);
     }
   }
 }

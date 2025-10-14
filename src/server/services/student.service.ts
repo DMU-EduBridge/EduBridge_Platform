@@ -90,10 +90,10 @@ export class StudentService {
     return prisma.user.update({
       where: { id },
       data: {
-        name: input.name,
-        email: input.email,
-        gradeLevel: input.grade,
-        status: input.status as any,
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.email !== undefined ? { email: input.email } : {}),
+        ...(input.grade !== undefined ? { gradeLevel: input.grade } : {}),
+        ...(input.status !== undefined ? { status: input.status as any } : {}),
       },
     });
   }
