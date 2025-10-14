@@ -38,3 +38,4 @@ public/uploads/
 
 # Turbo/Cache
 .turbo/
+.env
