@@ -7,7 +7,7 @@ import { studentKeys } from '../keys/students';
  */
 export function useStudentStats() {
   return useQuery({
-    queryKey: studentKeys.stats,
+    queryKey: studentKeys.stats(),
     queryFn: () => studentsService.getStudentStats().then((r) => r.data),
   });
 }

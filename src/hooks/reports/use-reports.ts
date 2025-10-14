@@ -29,7 +29,7 @@ export function useReports(params?: {
     });
 
   const stats = useQuery({
-    queryKey: reportKeys.stats,
+    queryKey: reportKeys.stats(),
     queryFn: () => reportsService.getReportStats(),
   });
 

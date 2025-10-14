@@ -37,7 +37,7 @@ export function useStudents(params?: {
     });
 
   const statsQuery = useQuery({
-    queryKey: studentKeys.stats,
+    queryKey: studentKeys.stats(),
     queryFn: () => studentsService.getStudentStats(),
   });
 

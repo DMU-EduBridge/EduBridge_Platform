@@ -1,15 +1,14 @@
 import { classService } from '@/server/services/class';
-import {
+import type {
   ClassMemberQueryParams,
   ClassQueryParams,
   CreateClassMemberRequest,
-  CreateClassRequest,
   CreateProblemAssignmentRequest,
   ProblemAssignmentQueryParams,
   UpdateClassMemberRequest,
-  UpdateClassRequest,
   UpdateProblemAssignmentRequest,
-} from '@/types/domain/class';
+} from '@/types/domain/assignment';
+import type { CreateClassRequest, UpdateClassRequest } from '@/types/domain/class';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // ===== 쿼리 키 =====
@@ -87,8 +86,8 @@ export const useClassStats = (classId: string) => {
 export const useStudentClassPerformance = (studentId: string, classId: string) => {
   return useQuery({
     queryKey: classKeys.studentPerformance(studentId, classId),
-    queryFn: () => classService.getStudentClassPerformance(studentId, classId),
-    enabled: !!studentId && !!classId,
+    queryFn: () => classService.getStudentPerformanceInClass(classId),
+    enabled: !!classId,
     staleTime: 2 * 60 * 1000,
   });
 };
@@ -125,7 +124,7 @@ export const useProblemAssignments = (params: ProblemAssignmentQueryParams = {})
 export const useClassAssignments = (classId: string) => {
   return useQuery({
     queryKey: [...classKeys.assignments(), 'class', classId],
-    queryFn: () => classService.getClassAssignments(classId),
+    queryFn: () => classService.getProblemAssignments({ classId }),
     enabled: !!classId,
     staleTime: 5 * 60 * 1000,
   });
@@ -137,7 +136,7 @@ export const useClassAssignments = (classId: string) => {
 export const useStudentAssignments = (studentId: string) => {
   return useQuery({
     queryKey: [...classKeys.assignments(), 'student', studentId],
-    queryFn: () => classService.getStudentAssignments(studentId),
+    queryFn: () => classService.getProblemAssignments({ studentId }),
     enabled: !!studentId,
     staleTime: 5 * 60 * 1000,
   });
@@ -250,10 +249,14 @@ export const useAssignProblem = () => {
       assignedBy: string;
     }) => classService.assignProblem(data, assignedBy),
     onSuccess: (_, { data }) => {
-      queryClient.invalidateQueries({
-        queryKey: classKeys.assignmentList({ classId: data.classId }),
-      });
-      queryClient.invalidateQueries({ queryKey: classKeys.detail(data.classId) });
+      if (data.classId) {
+        queryClient.invalidateQueries({
+          queryKey: classKeys.assignmentList({ classId: data.classId }),
+        });
+        queryClient.invalidateQueries({ queryKey: classKeys.detail(data.classId) });
+      } else {
+        queryClient.invalidateQueries({ queryKey: classKeys.assignments() });
+      }
     },
   });
 };
@@ -281,7 +284,7 @@ export const useCancelProblemAssignment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => classService.cancelProblemAssignment(id),
+    mutationFn: (id: string) => classService.removeProblemAssignment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: classKeys.assignments() });
     },

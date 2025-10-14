@@ -19,7 +19,7 @@ export function useReport(id: string) {
  */
 export function useReportStats() {
   return useQuery({
-    queryKey: reportKeys.stats,
+    queryKey: reportKeys.stats(),
     queryFn: () => reportsService.getReportStats().then((r) => r.data),
   });
 }
