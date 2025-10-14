@@ -19,7 +19,7 @@ import {
   ProblemAssignment,
   UpdateAssignmentRequest,
 } from '@/types/domain/assignment';
-import { AssignmentType } from '@prisma/client';
+import { AssignmentType, Class } from '@prisma/client';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -44,9 +44,8 @@ export function AssignmentForm({ assignment, onSubmit, onCancel, isLoading }: As
 
   const [selectedProblems, setSelectedProblems] = useState<string[]>(formData.problemIds);
 
-  const { data: classes } = useClasses();
-  const { data: problems } = useProblems();
-
+  const { data: classesData } = useClasses();
+  const { problems } = useProblems();
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -73,7 +72,7 @@ export function AssignmentForm({ assignment, onSubmit, onCancel, isLoading }: As
       }
     });
 
-    await onSubmit(submitData);
+    await onSubmit(submitData as CreateAssignmentRequest | UpdateAssignmentRequest);
   };
 
   const getTypeText = (type: AssignmentType) => {
@@ -167,7 +166,14 @@ export function AssignmentForm({ assignment, onSubmit, onCancel, isLoading }: As
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">전체 클래스</SelectItem>
-                  {classes?.map((cls) => (
+                  {(Array.isArray((classesData as any)?.data?.items)
+                    ? (classesData as any).data.items
+                    : Array.isArray((classesData as any)?.classes)
+                      ? (classesData as any).classes
+                      : Array.isArray(classesData as any)
+                        ? (classesData as any)
+                        : []
+                  ).map((cls: Class) => (
                     <SelectItem key={cls.id} value={cls.id}>
                       {cls.name} ({cls.subject} {cls.gradeLevel})
                     </SelectItem>
@@ -196,7 +202,7 @@ export function AssignmentForm({ assignment, onSubmit, onCancel, isLoading }: As
           <div className="space-y-4">
             <h3 className="text-lg font-medium">문제 선택 *</h3>
             <div className="max-h-60 overflow-y-auto rounded-md border p-4">
-              {problems?.map((problem) => (
+              {(problems?.data?.problems ?? []).map((problem: any) => (
                 <div key={problem.id} className="flex items-center space-x-2 py-2">
                   <input
                     type="checkbox"

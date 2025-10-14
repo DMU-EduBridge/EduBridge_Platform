@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useReports } from '@/hooks/reports';
-import { ReportType } from '@/types/domain/report';
+import type { ReportType } from '@prisma/client';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -23,7 +23,7 @@ interface ReportCreateModalProps {
 
 export function ReportCreateModal({ open, onOpenChange }: ReportCreateModalProps) {
   const [title, setTitle] = useState('');
-  const [reportType, setReportType] = useState<ReportType>('INDIVIDUAL');
+  const [reportType, setReportType] = useState<ReportType>('CLASS_SUMMARY' as ReportType);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [studentIds, setStudentIds] = useState(''); // 쉼표로 구분된 ID
@@ -43,17 +43,30 @@ export function ReportCreateModal({ open, onOpenChange }: ReportCreateModalProps
         .map((id) => id.trim())
         .filter(Boolean);
 
-      await createReportMutation.mutateAsync({
+      const payload: {
+        title: string;
+        type: string;
+        period: string;
+        studentIds?: string[];
+        subjectIds?: string[];
+      } = {
         title,
-        type: reportType,
-        period: `${startDate} - ${endDate}`, // API에서 Date 객체로 변환
-        studentIds: parsedStudentIds.length > 0 ? parsedStudentIds : undefined,
-        subjectIds: parsedSubjectIds.length > 0 ? parsedSubjectIds : undefined,
-      });
+        type: String(reportType),
+        period: `${startDate} - ${endDate}`,
+      };
+
+      if (parsedStudentIds.length > 0) {
+        payload.studentIds = parsedStudentIds;
+      }
+      if (parsedSubjectIds.length > 0) {
+        payload.subjectIds = parsedSubjectIds;
+      }
+
+      await createReportMutation.mutateAsync(payload);
       toast.success('리포트 생성 요청이 성공적으로 전송되었습니다.');
       onOpenChange(false);
       setTitle('');
-      setReportType('INDIVIDUAL');
+      setReportType('INDIVIDUAL' as ReportType);
       setStartDate('');
       setEndDate('');
       setStudentIds('');

@@ -27,7 +27,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  override componentDidCatch(error: Error, errorInfo: any) {
     this.setState({ error, errorInfo });
 
     // 에러 로깅
@@ -44,10 +44,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    this.setState({
+      hasError: false,
+      error: undefined as unknown as Error,
+      errorInfo: undefined,
+    } as ErrorBoundaryState);
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // 커스텀 fallback이 있으면 사용
       if (this.props.fallback) {
