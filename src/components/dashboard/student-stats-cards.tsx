@@ -4,7 +4,7 @@ interface StatItem {
   name: string;
   value: string;
   change?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string | undefined }>;
 }
 
 const studentStats: StatItem[] = [

@@ -22,7 +22,7 @@ interface MessagesDetailClientProps {
   initialData: MessagesData | null;
 }
 
-export function MessagesDetailClient({ session, initialData }: MessagesDetailClientProps) {
+export function MessagesDetailClient({ initialData }: MessagesDetailClientProps) {
   const router = useRouter();
   const [messagesData, setMessagesData] = useState<MessagesData | null>(initialData);
   const [selectedCategory, setSelectedCategory] = useState<string>('전체');

@@ -51,13 +51,11 @@ interface ProblemStats {
 interface ProblemManageClientProps {
   problem: ProblemManageViewModel;
   stats: ProblemStats;
-  userRole: string;
 }
 
 const ProblemManageClient = memo(function ProblemManageClient({
   problem,
   stats,
-  userRole,
 }: ProblemManageClientProps) {
   const router = useRouter();
   const [showPreview, setShowPreview] = useState(false);

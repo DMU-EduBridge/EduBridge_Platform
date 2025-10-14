@@ -63,16 +63,17 @@ export default async function ProblemDetailPage({ params }: { params: { problemI
     const problemData = {
       id: problem.id,
       title: problem.title,
-      description: problem.description ?? undefined,
+      description: problem.description ?? null,
       content: problem.content,
       type: problem.type,
       options: problem.options, // 서버에서 이미 파싱된 배열
       correctAnswer: problem.correctAnswer,
-      explanation: problem.explanation ?? undefined,
+      explanation: problem.explanation ?? null,
       difficulty: problem.difficulty,
       subject: problem.subject,
       points: problem.points,
       hints: problem.hints, // 서버에서 이미 파싱된 배열
+      timeLimit: problem.timeLimit ?? null,
     };
 
     return (

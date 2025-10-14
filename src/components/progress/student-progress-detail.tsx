@@ -178,7 +178,7 @@ export function StudentProgressDetail({ progress }: StudentProgressDetailProps) 
                   </span>
                   {index > 0 && (
                     <div className="flex items-center">
-                      {trend.score > progress.performanceTrend[index - 1].score ? (
+                      {trend.score > (progress?.performanceTrend?.[index - 1]?.score ?? 0) ? (
                         <TrendingUp className="h-4 w-4 text-green-600" />
                       ) : (
                         <TrendingDown className="h-4 w-4 text-red-600" />

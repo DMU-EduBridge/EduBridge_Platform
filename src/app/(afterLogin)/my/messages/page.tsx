@@ -1,5 +1,6 @@
 import { authOptions } from '@/lib/core/auth';
-import type { Metadata } from 'next';
+import type { MessageCategory } from '@/types';
+import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { MessagesDetailClient } from './messages-detail-client';
@@ -23,10 +24,10 @@ async function getMessagesData() {
           hasNotification: true,
           notificationCount: 1,
           isRead: false,
-          messageType: 'question' as const,
+          messageType: 'notification' as const,
           createdAt: '2024-01-20T14:30:00Z',
           subject: '수학 문제 질문',
-          category: '학습 질문',
+          category: '학습 질문' as MessageCategory,
         },
         {
           id: '2',
@@ -35,10 +36,10 @@ async function getMessagesData() {
           message: '오늘 모의고사 점수 알려주세요~~',
           hasNotification: false,
           isRead: true,
-          messageType: 'reminder' as const,
+          messageType: 'notification' as const,
           createdAt: '2024-01-20T13:15:00Z',
           subject: '모의고사 점수 제출',
-          category: '과제',
+          category: '과제' as MessageCategory,
         },
         {
           id: '3',
@@ -47,10 +48,10 @@ async function getMessagesData() {
           message: '오답노트 고쳐주세요 !!!',
           hasNotification: false,
           isRead: true,
-          messageType: 'reminder' as const,
+          messageType: 'notification' as const,
           createdAt: '2024-01-20T12:00:00Z',
           subject: '오답노트 수정',
-          category: '과제',
+          category: '과제' as MessageCategory,
         },
         {
           id: '4',
@@ -59,10 +60,10 @@ async function getMessagesData() {
           message: '나 오늘 모의고사 점수 등록해야 하는데 하기 싫어 ㅜㅜ',
           hasNotification: false,
           isRead: true,
-          messageType: 'general' as const,
+          messageType: 'text' as const,
           createdAt: '2024-01-20T11:45:00Z',
           subject: '모의고사 점수 등록',
-          category: '일반',
+          category: '일반' as MessageCategory,
         },
         {
           id: '5',
@@ -72,10 +73,10 @@ async function getMessagesData() {
           hasNotification: true,
           notificationCount: 2,
           isRead: false,
-          messageType: 'general' as const,
+          messageType: 'text' as const,
           createdAt: '2024-01-20T10:30:00Z',
           subject: '스터디 그룹 모임',
-          category: '일반',
+          category: '일반' as MessageCategory,
         },
         {
           id: '6',
@@ -84,10 +85,10 @@ async function getMessagesData() {
           message: '실험 보고서 제출 기한이 연장되었습니다.',
           hasNotification: false,
           isRead: true,
-          messageType: 'reminder' as const,
+          messageType: 'notification' as const,
           createdAt: '2024-01-20T09:15:00Z',
           subject: '실험 보고서 제출',
-          category: '과제',
+          category: '과제' as MessageCategory,
         },
       ],
       categories: ['학습 질문', '과제', '일반', '공지사항'],
@@ -114,5 +115,5 @@ export default async function MessagesPage() {
 
   const messagesData = await getMessagesData();
 
-  return <MessagesDetailClient session={session} initialData={messagesData} />;
+  return <MessagesDetailClient initialData={messagesData} session={session} />;
 }

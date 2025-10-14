@@ -35,7 +35,7 @@ interface AIAssistantDetailClientProps {
   initialData: AIAssistantData | null;
 }
 
-export function AIAssistantDetailClient({ session, initialData }: AIAssistantDetailClientProps) {
+export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClientProps) {
   const router = useRouter();
   const [aiAssistantData, setAIAssistantData] = useState<AIAssistantData | null>(initialData);
   const [selectedSubject, setSelectedSubject] = useState<string>('전체');

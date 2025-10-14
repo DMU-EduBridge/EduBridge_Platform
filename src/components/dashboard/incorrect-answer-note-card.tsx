@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useIncorrectAnswers } from '@/hooks/incorrect-answers/use-incorrect-answers';
+import { IncorrectAnswerItem } from '@/types/domain/incorrect-answer';
 import { Download } from 'lucide-react';
 import { memo } from 'react';
 
@@ -78,7 +79,7 @@ const SubjectNoteItem = memo(function SubjectNoteItem({
 
 export const IncorrectAnswerNoteCard = memo(function IncorrectAnswerNoteCard() {
   const { data: incorrectAnswersData, isLoading, error } = useIncorrectAnswers();
-  const incorrectAnswers = incorrectAnswersData?.incorrectAnswers || [];
+  const incorrectAnswers = incorrectAnswersData?.incorrectAnswers || ([] as IncorrectAnswerItem[]);
 
   if (isLoading) {
     return (
@@ -118,9 +119,9 @@ export const IncorrectAnswerNoteCard = memo(function IncorrectAnswerNoteCard() {
               id={note.id}
               subject={note.subject}
               grade={note.grade}
-              gradeColor={note.gradeColor}
+              gradeColor={note.gradeColor as 'green' | 'red'}
               status={note.status}
-              statusColor={note.statusColor}
+              statusColor={note.statusColor as 'red' | 'yellow' | 'green'}
               incorrectCount={note.incorrectCount}
               retryCount={note.retryCount}
               completedCount={note.completedCount}

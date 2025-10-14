@@ -97,6 +97,9 @@ export function useProblemSubmission({
     isSubmitting,
     addCompletedProblem,
     onSubmissionComplete,
+    initialStartNewAttemptRef,
+    startTimeRef,
+    selectedIndex,
   ]);
 
   const resetSubmission = useCallback(() => {

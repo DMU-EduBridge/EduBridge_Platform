@@ -152,7 +152,7 @@ export function AssignmentCard({ assignment, onEdit, onDelete }: AssignmentCardP
           {/* 액션 버튼 */}
           <div className="flex items-center justify-between pt-2">
             <div className="text-xs text-gray-500">
-              생성일: {new Date(assignment.assignedAt).toLocaleDateString()}
+              생성일: {new Date(assignment.createdAt).toLocaleDateString()}
             </div>
             <div className="flex items-center gap-2">
               <Link href={`/assignments/${assignment.id}`}>

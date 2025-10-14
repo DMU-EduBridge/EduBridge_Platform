@@ -16,12 +16,7 @@ import type { ProblemNavigationProps } from '@/types/learning';
  * @param props 네비게이션 설정
  * @returns 네비게이션 관련 함수들과 파라미터들
  */
-export function useProblemNavigation({
-  studyId,
-  currentIndex,
-  totalCount,
-  nextProblem,
-}: ProblemNavigationProps) {
+export function useProblemNavigation({ studyId, nextProblem }: ProblemNavigationProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 

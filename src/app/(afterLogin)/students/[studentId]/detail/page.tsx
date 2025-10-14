@@ -15,12 +15,18 @@ export default function StudentDetailPage() {
   const searchParams = useSearchParams();
   const studentId = params.studentId as string;
 
-  const [filters, setFilters] = useState<ProgressFilters>({
-    classId: searchParams.get('classId') || undefined,
-    startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined,
-    endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined,
-    subject: searchParams.get('subject') || undefined,
-    difficulty: searchParams.get('difficulty') || undefined,
+  const [filters, _setFilters] = useState<ProgressFilters>({
+    ...(searchParams.get('classId') ? { classId: searchParams.get('classId') as string } : {}),
+    ...(searchParams.get('startDate')
+      ? { startDate: new Date(searchParams.get('startDate') as string) }
+      : {}),
+    ...(searchParams.get('endDate')
+      ? { endDate: new Date(searchParams.get('endDate') as string) }
+      : {}),
+    ...(searchParams.get('subject') ? { subject: searchParams.get('subject') as string } : {}),
+    ...(searchParams.get('difficulty')
+      ? { difficulty: searchParams.get('difficulty') as string }
+      : {}),
   });
 
   const { data: progressResponse, isLoading, error } = useStudentDetailProgress(studentId, filters);

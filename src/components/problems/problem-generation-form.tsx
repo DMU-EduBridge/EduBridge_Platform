@@ -35,9 +35,9 @@ export default function ProblemGenerationForm({
   isLoading = false,
 }: ProblemGenerationFormProps) {
   const [formData, setFormData] = useState<LLMProblemGenerationRequest>({
-    subject: '수학',
+    subject: 'MATH',
     unit: '',
-    difficulty: 'medium',
+    difficulty: 'MEDIUM' as LLMProblemDifficulty,
     count: 5,
     question_type: 'MULTIPLE_CHOICE',
   });
@@ -76,17 +76,17 @@ export default function ProblemGenerationForm({
   };
 
   const subjects: LLMProblemSubject[] = [
-    '수학',
-    '과학',
-    '국어',
-    '영어',
-    '사회',
-    '역사',
-    '지리',
-    '물리',
-    '화학',
-    '생물',
-    '지구과학',
+    'MATH',
+    'SCIENCE',
+    'KOREAN',
+    'ENGLISH',
+    'SOCIAL_STUDIES',
+    'HISTORY',
+    'GEOGRAPHY',
+    'PHYSICS',
+    'CHEMISTRY',
+    'BIOLOGY',
+    'EARTH_SCIENCE',
   ];
 
   const difficulties: LLMProblemDifficulty[] = ['easy', 'medium', 'hard', 'expert'];

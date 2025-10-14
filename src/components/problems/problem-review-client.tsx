@@ -21,6 +21,7 @@ export interface ProblemReviewViewModel {
   difficulty: string;
   userAnswer: string | null;
   isCorrect: boolean;
+  tags: string[];
   attemptedAt: Date | null;
 }
 

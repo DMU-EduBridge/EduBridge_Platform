@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClassMember } from '@/types/domain/class';
 import { Crown, Mail, Shield, User, UserX } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 
 interface MemberListProps {
@@ -90,10 +91,12 @@ export function MemberList({ members, onRemoveMember, canManage = false }: Membe
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
                   {member.user?.avatar ? (
-                    <img
+                    <Image
                       src={member.user.avatar}
                       alt={member.user.name}
                       className="h-10 w-10 rounded-full object-cover"
+                      loading="lazy"
+                      aria-label={member.user.name}
                     />
                   ) : (
                     <User className="h-5 w-5 text-gray-600" />

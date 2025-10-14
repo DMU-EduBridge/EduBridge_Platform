@@ -71,7 +71,7 @@ export default function MyLearningClient() {
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         item.summary.toLowerCase().includes(query.toLowerCase());
       // API는 난이도를 한국어 문자열(level: '보통' | '어려움' ...)로 내려줌
-      const itemLevel = (item as any).level || item.difficulty;
+      const itemLevel = (item as any).level;
       const matchesDifficulty = !difficulty || itemLevel === difficulty;
 
       return matchesQuery && matchesDifficulty;
