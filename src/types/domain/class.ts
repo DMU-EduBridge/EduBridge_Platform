@@ -3,7 +3,7 @@ import { User } from './user';
 export interface Class {
   id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   subject: string;
   gradeLevel: string;
   schoolYear: string;
@@ -11,7 +11,7 @@ export interface Class {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt?: Date;
+  deletedAt?: Date | null;
   createdBy: string;
   creator?: User;
   members?: ClassMember[];
@@ -24,9 +24,9 @@ export interface ClassMember {
   userId: string;
   role: 'STUDENT' | 'ASSISTANT' | 'TEACHER';
   joinedAt: Date;
-  leftAt?: Date;
+  leftAt?: Date | null;
   isActive: boolean;
-  user?: User;
+  user?: User | null;
   class?: Class;
 }
 

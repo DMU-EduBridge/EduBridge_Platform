@@ -1,6 +1,34 @@
 // Assignment domain types
 import { AssignmentStatus, AssignmentType } from '@prisma/client';
 
+// Query parameter types used across hooks/services
+export interface ClassQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  subject?: string;
+  gradeLevel?: string;
+  isActive?: boolean;
+}
+
+export interface ClassMemberQueryParams {
+  classId?: string;
+  userId?: string;
+  role?: 'STUDENT' | 'ASSISTANT' | 'TEACHER';
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface ProblemAssignmentQueryParams {
+  classId?: string;
+  studentId?: string;
+  assignmentType?: AssignmentType;
+  status?: AssignmentStatus;
+  page?: number;
+  limit?: number;
+}
+
 export interface ProblemAssignment {
   id: string;
   title: string;
@@ -72,3 +100,21 @@ export interface AssignmentStats {
   assignmentsByType: Record<string, number>;
   assignmentsByClass: { classId: string; className: string; count: number }[];
 }
+
+// ===== Class member request types (used by class hooks/services) =====
+export interface CreateClassMemberRequest {
+  classId: string;
+  userId: string;
+  role?: 'STUDENT' | 'ASSISTANT' | 'TEACHER';
+}
+
+export interface UpdateClassMemberRequest {
+  id: string;
+  role?: 'STUDENT' | 'ASSISTANT' | 'TEACHER';
+  isActive?: boolean;
+  leftAt?: Date | null;
+}
+
+// ===== Aliases for backward compatibility in hooks =====
+export type CreateProblemAssignmentRequest = CreateAssignmentRequest;
+export type UpdateProblemAssignmentRequest = UpdateAssignmentRequest;

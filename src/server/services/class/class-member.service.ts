@@ -1,14 +1,12 @@
 import { prisma } from '../../../lib/core/prisma';
 import { logger } from '../../../lib/monitoring';
+import { PaginatedResponse } from '../../../types/common';
 import {
-  ClassMember,
   ClassMemberQueryParams,
-  ClassMemberRole,
-  ClassMemberWithDetails,
   CreateClassMemberRequest,
-  PaginatedResponse,
   UpdateClassMemberRequest,
-} from '../../../types/domain/class';
+} from '../../../types/domain/assignment';
+import { ClassMember } from '../../../types/domain/class';
 
 export class ClassMemberService {
   /**
@@ -16,7 +14,7 @@ export class ClassMemberService {
    */
   async getClassMembers(
     params: ClassMemberQueryParams = {},
-  ): Promise<PaginatedResponse<ClassMemberWithDetails>> {
+  ): Promise<PaginatedResponse<ClassMember>> {
     try {
       const { page = 1, limit = 10, classId, userId, role, isActive } = params;
 
@@ -44,9 +42,25 @@ export class ClassMemberService {
         prisma.classMember.count({ where }),
       ]);
 
-      const membersWithDetails: ClassMemberWithDetails[] = members.map((member) => ({
+      const membersWithDetails: ClassMember[] = members.map((member) => ({
         ...member,
-        role: member.role as ClassMemberRole,
+        role: member.role as 'STUDENT' | 'TEACHER' | 'ASSISTANT',
+        ...(member.leftAt ? { leftAt: member.leftAt } : {}),
+        ...(member.user
+          ? {
+              user: {
+                ...member.user,
+                role: member.user.role as any,
+                status: member.user.status === 'DELETED' ? 'INACTIVE' : (member.user.status as any),
+                avatar: member.user.avatar ?? null,
+                bio: member.user.bio ?? null,
+                gradeLevel: member.user.gradeLevel ?? null,
+                school: member.user.school ?? null,
+                subject: member.user.subject ?? null,
+                deletedAt: member.user.deletedAt ?? null,
+              },
+            }
+          : {}),
       }));
 
       return {
@@ -58,6 +72,7 @@ export class ClassMemberService {
           total,
           totalPages: Math.ceil(total / limit),
         },
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       logger.error('클래스 멤버 목록 조회 실패', undefined, {
@@ -71,7 +86,7 @@ export class ClassMemberService {
   /**
    * 클래스 멤버 상세 조회
    */
-  async getClassMemberById(id: string): Promise<ClassMemberWithDetails | null> {
+  async getClassMemberById(id: string): Promise<ClassMember | null> {
     try {
       const member = await prisma.classMember.findUnique({
         where: { id },
@@ -85,7 +100,23 @@ export class ClassMemberService {
 
       return {
         ...member,
-        role: member.role as ClassMemberRole,
+        role: member.role as 'STUDENT' | 'TEACHER' | 'ASSISTANT',
+        ...(member.leftAt ? { leftAt: member.leftAt } : {}),
+        ...(member.user
+          ? {
+              user: {
+                ...member.user,
+                role: member.user.role as any,
+                status: member.user.status === 'DELETED' ? 'INACTIVE' : (member.user.status as any),
+                avatar: member.user.avatar ?? null,
+                bio: member.user.bio ?? null,
+                gradeLevel: member.user.gradeLevel ?? null,
+                school: member.user.school ?? null,
+                subject: member.user.subject ?? null,
+                deletedAt: member.user.deletedAt ?? null,
+              },
+            }
+          : {}),
       };
     } catch (error) {
       logger.error('클래스 멤버 조회 실패', undefined, {
@@ -118,7 +149,7 @@ export class ClassMemberService {
         data: {
           classId: data.classId,
           userId: data.userId,
-          role: (data.role || 'STUDENT') as ClassMemberRole,
+          role: (data.role || 'STUDENT') as any,
           joinedAt: new Date(),
           isActive: true,
         },
@@ -131,7 +162,8 @@ export class ClassMemberService {
       });
       return {
         ...newMember,
-        role: newMember.role as ClassMemberRole,
+        role: newMember.role as 'STUDENT' | 'TEACHER' | 'ASSISTANT',
+        ...(newMember.leftAt ? { leftAt: newMember.leftAt } : {}),
       };
     } catch (error) {
       logger.error('클래스 멤버 추가 실패', undefined, {
@@ -155,7 +187,7 @@ export class ClassMemberService {
       const updatedMember = await prisma.classMember.update({
         where: { id },
         data: {
-          ...(data.role && { role: data.role }),
+          ...(data.role && { role: data.role as any }),
           ...(data.isActive !== undefined && { isActive: data.isActive }),
         },
       });
@@ -163,7 +195,8 @@ export class ClassMemberService {
       logger.info('클래스 멤버 수정 성공', { memberId: id });
       return {
         ...updatedMember,
-        role: updatedMember.role as ClassMemberRole,
+        role: updatedMember.role as 'STUDENT' | 'TEACHER' | 'ASSISTANT',
+        ...(updatedMember.leftAt ? { leftAt: updatedMember.leftAt } : {}),
       };
     } catch (error) {
       logger.error('클래스 멤버 수정 실패', undefined, {
@@ -196,7 +229,8 @@ export class ClassMemberService {
       logger.info('클래스 멤버 제거 성공', { memberId: id });
       return {
         ...removedMember,
-        role: removedMember.role as ClassMemberRole,
+        role: removedMember.role as 'STUDENT' | 'TEACHER' | 'ASSISTANT',
+        ...(removedMember.leftAt ? { leftAt: removedMember.leftAt } : {}),
       };
     } catch (error) {
       logger.error('클래스 멤버 제거 실패', undefined, {
