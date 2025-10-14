@@ -143,4 +143,5 @@ export const config = {
     // protect all but public assets and api route; keep _next and favicon free
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
+  runtime: 'nodejs',
 };
