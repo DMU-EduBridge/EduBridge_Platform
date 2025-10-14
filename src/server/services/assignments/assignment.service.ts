@@ -71,9 +71,12 @@ export class AssignmentService {
         },
       });
 
+      // Add createdAt to assignments (Prisma automatically includes createdAt)
+      const assignmentsWithCreatedAt = assignments;
+
       // Fetch problems for each assignment
       const assignmentsWithProblems = await Promise.all(
-        assignments.map(async (assignment) => {
+        assignmentsWithCreatedAt.map(async (assignment) => {
           const problemIds = assignment.problemIds as string[];
           const problems = await prisma.problem.findMany({
             where: {
@@ -92,6 +95,7 @@ export class AssignmentService {
           return {
             ...assignment,
             problems,
+            createdAt: (assignment as any).createdAt,
           } as ProblemAssignment;
         }),
       );
@@ -146,6 +150,9 @@ export class AssignmentService {
         return null;
       }
 
+      // Prisma automatically includes createdAt
+      const assignmentWithCreatedAt = assignment;
+
       // Fetch problems
       const problemIds = assignment.problemIds as string[];
       const problems = await prisma.problem.findMany({
@@ -163,8 +170,9 @@ export class AssignmentService {
       });
 
       return {
-        ...assignment,
+        ...assignmentWithCreatedAt,
         problems,
+        createdAt: (assignmentWithCreatedAt as any).createdAt,
       } as ProblemAssignment;
     } catch (error) {
       logger.error('Failed to get assignment by id', { assignmentId, teacherId, error });
@@ -235,14 +243,14 @@ export class AssignmentService {
       const assignment = await prisma.problemAssignment.create({
         data: {
           title: data.title,
-          description: data.description,
+          description: data.description ?? null,
           assignmentType: data.assignmentType,
           status: AssignmentStatus.DRAFT,
-          classId: data.classId,
-          studentId: data.studentId,
+          classId: data.classId ?? null,
+          studentId: data.studentId ?? null,
           problemIds: data.problemIds,
-          dueDate: data.dueDate,
-          instructions: data.instructions,
+          dueDate: data.dueDate ?? null,
+          instructions: data.instructions ?? null,
           metadata: data.metadata,
           assignedBy: teacherId,
         },
@@ -290,6 +298,7 @@ export class AssignmentService {
       return {
         ...assignment,
         problems: problemsForAssignment,
+        createdAt: (assignment as any).createdAt,
       } as ProblemAssignment;
     } catch (error) {
       logger.error('Failed to create assignment', { data, teacherId, error });
@@ -366,6 +375,7 @@ export class AssignmentService {
       return {
         ...assignment,
         problems,
+        createdAt: (assignment as any).createdAt,
       } as ProblemAssignment;
     } catch (error) {
       logger.error('Failed to update assignment', { assignmentId, data, teacherId, error });
@@ -509,10 +519,7 @@ export class AssignmentService {
         activeAssignments,
         completedAssignments,
         overdueAssignments,
-        assignmentsByType: Object.entries(assignmentsByType).map(([type, count]) => ({
-          type,
-          count,
-        })),
+        assignmentsByType: Object.fromEntries(Object.entries(assignmentsByType)),
         assignmentsByClass: Object.values(assignmentsByClass),
       };
     } catch (error) {
