@@ -6,20 +6,48 @@ import {
   optimizePagination,
   optimizeWhereClause,
 } from '../../../lib/performance/query-optimizer';
-import {
-  Class,
-  ClassQueryParams,
-  ClassWithDetails,
-  CreateClassRequest,
-  PaginatedResponse,
-  UpdateClassRequest,
-} from '../../../types/domain/class';
+import { Class, ClassWithStats } from '../../../types/domain/class';
+
+type ClassQueryParams = {
+  page?: number;
+  limit?: number;
+  subject?: string;
+  gradeLevel?: string;
+  schoolYear?: string;
+  semester?: string;
+  isActive?: boolean;
+  createdBy?: string;
+};
+
+type CreateClassRequest = {
+  name: string;
+  description?: string;
+  subject: string;
+  gradeLevel: string;
+  schoolYear: string;
+  semester: string;
+  isActive?: boolean;
+};
+
+type UpdateClassRequest = {
+  name?: string;
+  description?: string;
+  subject?: string;
+  gradeLevel?: string;
+  schoolYear?: string;
+  semester?: string;
+  isActive?: boolean;
+};
 
 export class ClassCrudService {
   /**
    * 클래스 목록 조회 (페이지네이션)
    */
-  async getClasses(params: ClassQueryParams = {}): Promise<PaginatedResponse<ClassWithDetails>> {
+  async getClasses(params: ClassQueryParams = {}): Promise<{
+    success: true;
+    data: ClassWithStats[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     try {
       const {
         page = 1,
@@ -53,10 +81,8 @@ export class ClassCrudService {
       // 관계 데이터 로딩 최적화 (필요한 것만)
       const include = getOptimizedInclude({
         includeCreator: true,
-        includeMembers: true,
         includeAssignments: true,
         includeStats: true,
-        memberLimit: 10, // 멤버는 최대 10명만
         assignmentLimit: 5, // 과제는 최대 5개만
       });
 
@@ -75,8 +101,9 @@ export class ClassCrudService {
         ]),
       );
 
-      const classesWithDetails: ClassWithDetails[] = classes.map((cls: any) => ({
+      const classesWithDetails: ClassWithStats[] = classes.map((cls: any) => ({
         ...cls,
+        description: cls.description ?? '',
         memberCount: cls._count?.members || cls.members?.length || 0,
         assignmentCount: cls._count?.assignments || cls.assignments?.length || 0,
         members:
@@ -108,17 +135,15 @@ export class ClassCrudService {
   /**
    * 클래스 상세 조회
    */
-  async getClassById(id: string): Promise<ClassWithDetails | null> {
+  async getClassById(id: string): Promise<ClassWithStats | null> {
     try {
       const cls: any = await measureQueryTime('getClassById', () =>
         prisma.class.findUnique({
           where: { id },
           include: getOptimizedInclude({
             includeCreator: true,
-            includeMembers: true,
             includeAssignments: true,
             includeStats: true,
-            memberLimit: 100, // 상세 조회에서는 더 많이
             assignmentLimit: 20,
           }),
         }),
@@ -128,13 +153,14 @@ export class ClassCrudService {
 
       return {
         ...cls,
+        description: cls.description ?? '',
         memberCount: cls._count?.members || cls.members?.length || 0,
         assignmentCount: cls._count?.assignments || cls.assignments?.length || 0,
         members:
           cls.members?.map((member: any) => ({
             ...member,
           })) || [],
-      } as ClassWithDetails;
+      } as ClassWithStats;
     } catch (error) {
       logger.error('클래스 조회 실패', undefined, {
         classId: id,
@@ -152,7 +178,7 @@ export class ClassCrudService {
       const newClass = await prisma.class.create({
         data: {
           name: data.name,
-          description: data.description || null,
+          description: data.description || '',
           subject: data.subject,
           gradeLevel: data.gradeLevel,
           schoolYear: data.schoolYear,
@@ -163,7 +189,7 @@ export class ClassCrudService {
       });
 
       logger.info('클래스 생성 성공', { classId: newClass.id, createdBy });
-      return newClass;
+      return { ...newClass, description: newClass.description ?? '' } as Class;
     } catch (error) {
       logger.error('클래스 생성 실패', undefined, {
         data,
@@ -188,7 +214,7 @@ export class ClassCrudService {
         where: { id },
         data: {
           ...(data.name && { name: data.name }),
-          ...(data.description !== undefined && { description: data.description || null }),
+          ...(data.description !== undefined && { description: data.description || '' }),
           ...(data.subject && { subject: data.subject }),
           ...(data.gradeLevel && { gradeLevel: data.gradeLevel }),
           ...(data.schoolYear && { schoolYear: data.schoolYear }),
@@ -198,7 +224,7 @@ export class ClassCrudService {
       });
 
       logger.info('클래스 수정 성공', { classId: id });
-      return updatedClass;
+      return { ...updatedClass, description: updatedClass.description ?? '' } as Class;
     } catch (error) {
       logger.error('클래스 수정 실패', undefined, {
         classId: id,
@@ -225,7 +251,7 @@ export class ClassCrudService {
       });
 
       logger.info('클래스 삭제 성공', { classId: id });
-      return deletedClass;
+      return { ...deletedClass, description: deletedClass.description ?? '' } as Class;
     } catch (error) {
       logger.error('클래스 삭제 실패', undefined, {
         classId: id,

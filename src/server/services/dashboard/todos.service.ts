@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/core/prisma';
 import { TodoCreateSchema, TodoUpdateSchema } from '@/lib/validation/schemas';
-import { Prisma } from '@prisma/client';
+import { Prisma, TodoCategory, TodoPriority } from '@prisma/client';
 import { z } from 'zod';
 
 export class TodosService {
@@ -15,7 +15,7 @@ export class TodosService {
         id: t.id,
         text: t.text,
         completed: t.completed,
-        priority: (t.priority as 'high' | 'medium' | 'low') ?? 'medium',
+        priority: (String(t.priority).toLowerCase() as 'high' | 'medium' | 'low') ?? 'medium',
         category: t.category ?? undefined,
         description: t.description ?? undefined,
         dueDate: t.dueDate ? t.dueDate.toISOString() : undefined,
@@ -45,8 +45,8 @@ export class TodosService {
         userId,
         text,
         completed: false,
-        priority,
-        category: category ?? null,
+        priority: priority as unknown as TodoPriority,
+        category: (category as unknown as TodoCategory) ?? null,
         description: description ?? null,
         dueDate: dueDate ? new Date(dueDate) : null,
       },
@@ -56,7 +56,7 @@ export class TodosService {
       id: created.id,
       text: created.text,
       completed: created.completed,
-      priority: (created.priority as 'high' | 'medium' | 'low') ?? 'medium',
+      priority: (String(created.priority).toLowerCase() as 'high' | 'medium' | 'low') ?? 'medium',
       category: created.category ?? undefined,
       description: created.description ?? undefined,
       dueDate: created.dueDate ? created.dueDate.toISOString() : undefined,
@@ -73,8 +73,12 @@ export class TodosService {
       data: {
         ...(fields.completed !== undefined ? { completed: fields.completed } : {}),
         ...(fields.text !== undefined ? { text: fields.text } : {}),
-        ...(fields.priority !== undefined ? { priority: fields.priority } : {}),
-        ...(fields.category !== undefined ? { category: fields.category } : {}),
+        ...(fields.priority !== undefined
+          ? { priority: fields.priority as unknown as TodoPriority }
+          : {}),
+        ...(fields.category !== undefined
+          ? { category: (fields.category as unknown as TodoCategory) ?? null }
+          : {}),
         ...(fields.description !== undefined ? { description: fields.description } : {}),
         ...(fields.dueDate !== undefined
           ? { dueDate: fields.dueDate ? new Date(fields.dueDate) : null }
@@ -86,7 +90,7 @@ export class TodosService {
       id: updated.id,
       text: updated.text,
       completed: updated.completed,
-      priority: (updated.priority as 'high' | 'medium' | 'low') ?? 'medium',
+      priority: (String(updated.priority).toLowerCase() as 'high' | 'medium' | 'low') ?? 'medium',
       category: updated.category ?? undefined,
       description: updated.description ?? undefined,
       dueDate: updated.dueDate ? updated.dueDate.toISOString() : undefined,

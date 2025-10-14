@@ -2,7 +2,7 @@ import { ChatRequestSchema } from '@/lib/validation/schemas';
 import { z } from 'zod';
 
 export class AiAssistantService {
-  async getChatExamples(userId: string) {
+  async getChatExamples(_userId: string) {
     // 실제 데이터베이스에서 가져올 최근 대화 예시 (현재는 시뮬레이션)
     const chatExamples = [
       {
@@ -26,7 +26,7 @@ export class AiAssistantService {
     return chatExamples;
   }
 
-  async processChatRequest(userId: string, data: z.infer<typeof ChatRequestSchema>) {
+  async processChatRequest(_userId: string, data: z.infer<typeof ChatRequestSchema>) {
     const { question, messageType, subject } = data;
 
     // 실제 AI 서비스와 연동할 부분 (현재는 시뮬레이션)

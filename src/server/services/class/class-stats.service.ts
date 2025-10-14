@@ -1,6 +1,6 @@
 import { prisma } from '../../../lib/core/prisma';
 import { logger } from '../../../lib/monitoring';
-import { ClassMemberRole, ClassWithDetails } from '../../../types/domain/class';
+import { ClassWithStats } from '../../../types/domain/class';
 
 export class ClassStatsService {
   /**
@@ -24,7 +24,7 @@ export class ClassStatsService {
             where: { classId, isActive: true },
           }),
           prisma.problemAssignment.count({
-            where: { classId, isActive: true },
+            where: { classId },
           }),
           Promise.resolve(0), // 임시로 0 반환
           Promise.resolve({ _avg: { timeSpent: 0 } }), // 임시로 0 반환
@@ -60,7 +60,7 @@ export class ClassStatsService {
   /**
    * 사용자의 클래스 목록 조회
    */
-  async getUserClasses(userId: string, role?: string): Promise<ClassWithDetails[]> {
+  async getUserClasses(userId: string, role?: string): Promise<ClassWithStats[]> {
     try {
       const where: any = {
         members: {
@@ -84,27 +84,27 @@ export class ClassStatsService {
               user: true,
             },
           },
-          assignments: {
-            include: {
-              problem: true,
-              assigner: true,
-            },
-          },
         },
         orderBy: {
           createdAt: 'desc',
         },
       });
 
-      return classes.map((cls) => ({
-        ...cls,
-        memberCount: cls.members.length,
-        assignmentCount: cls.assignments.length,
-        members: cls.members.map((member) => ({
-          ...member,
-          role: member.role as ClassMemberRole,
-        })),
-      }));
+      return classes.map(
+        (cls) =>
+          ({
+            ...cls,
+            description: cls.description ?? '',
+            memberCount: cls.members.length,
+            stats: {
+              totalMembers: cls.members.length,
+              activeMembers: cls.members.filter((m) => m.isActive).length,
+              totalAssignments: 0,
+              completedAssignments: 0,
+              averageProgress: 0,
+            },
+          }) as unknown as ClassWithStats,
+      );
     } catch (error) {
       logger.error('사용자 클래스 목록 조회 실패', undefined, {
         userId,
@@ -180,22 +180,16 @@ export class ClassStatsService {
       const assignments = await prisma.problemAssignment.findMany({
         where: {
           classId,
-          isActive: true,
         },
-        include: {
-          problem: {
-            select: {
-              id: true,
-              title: true,
-              difficulty: true,
-            },
-          },
-          class: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+        select: {
+          id: true,
+          title: true,
+          assignmentType: true,
+          status: true,
+          classId: true,
+          problemIds: true,
+          dueDate: true,
+          instructions: true,
         },
       });
 
@@ -203,7 +197,7 @@ export class ClassStatsService {
         assignments.map(async (assignment) => {
           const totalStudents = await prisma.classMember.count({
             where: {
-              classId: assignment.classId,
+              classId: assignment.classId!,
               role: 'STUDENT',
               isActive: true,
             },
@@ -216,15 +210,13 @@ export class ClassStatsService {
           return {
             assignment: {
               id: assignment.id,
-              problemId: assignment.problemId,
-              problemTitle: assignment.problem.title,
-              difficulty: assignment.problem.difficulty,
+              problemIds: assignment.problemIds as string[],
               dueDate: assignment.dueDate,
               instructions: assignment.instructions,
             },
             class: {
-              id: assignment.class.id,
-              name: assignment.class.name,
+              id: assignment.classId!,
+              name: '',
             },
             completion: {
               totalStudents,
