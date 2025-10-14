@@ -11,7 +11,7 @@ interface LogEntry {
   message: string;
   data?: any;
   timestamp: string;
-  service?: string;
+  service?: string | undefined;
 }
 
 class Logger {

@@ -41,7 +41,7 @@ export class VectorEmbeddingService {
         input: text,
       });
 
-      return response.data[0].embedding;
+      return response.data[0]?.embedding ?? [];
     } catch (error) {
       logger.error('벡터 임베딩 생성 실패', undefined, {
         error: error instanceof Error ? error.message : String(error),
@@ -185,17 +185,26 @@ export class VectorEmbeddingService {
           const problemResults = await problemCollection.query({
             queryEmbeddings: [queryEmbedding],
             nResults: limit,
-            where: type === 'problem' ? { type: 'problem' } : undefined,
+            where: (type === 'problem'
+              ? ({ type: 'problem' } as Record<string, any>)
+              : undefined) as any,
           });
 
+          const docs = problemResults.documents?.[0] ?? [];
+          const ids = problemResults.ids?.[0] ?? [];
+          const metas = problemResults.metadatas?.[0] ?? [];
+          const dists = problemResults.distances?.[0] ?? [];
+
           results.push(
-            ...problemResults.documents![0].map((doc: string | null, index: number) => ({
-              id: problemResults.ids![0][index],
-              content: doc || '',
-              metadata: problemResults.metadatas![0][index] || {},
-              distance: problemResults.distances![0][index] || 0,
-              score: 1 - (problemResults.distances![0][index] || 0), // 거리를 점수로 변환
-            })),
+            ...docs
+              .map((doc: string | null, index: number) => ({
+                id: ids[index] ?? '',
+                content: doc || '',
+                metadata: metas[index] || {},
+                distance: dists[index] ?? 0,
+                score: 1 - ((dists[index] ?? 0) as number), // 거리를 점수로 변환
+              }))
+              .filter((r) => r.id),
           );
         }
       }
@@ -207,17 +216,27 @@ export class VectorEmbeddingService {
           const materialResults = await materialCollection.query({
             queryEmbeddings: [queryEmbedding],
             nResults: limit,
-            where: type === 'learning_material' ? { type: 'learning_material' } : undefined,
+            where: (type === 'learning_material'
+              ? ({ type: 'learning_material' } as Record<string, any>)
+              : undefined) as any,
           });
 
+          const docs = materialResults.documents?.[0] ?? [];
+          const ids = materialResults.ids?.[0] ?? [];
+          const metas = materialResults.metadatas?.[0] ?? [];
+          const dists = materialResults.distances?.[0] ?? [];
+
           results.push(
-            ...materialResults.documents![0].map((doc: string | null, index: number) => ({
-              id: materialResults.ids![0][index],
-              content: doc || '',
-              metadata: materialResults.metadatas![0][index] || {},
-              distance: materialResults.distances![0][index] || 0,
-              score: 1 - (materialResults.distances![0][index] || 0),
-            })),
+            ...docs
+              .map((doc: string | null, index: number) => ({
+                id: ids[index] ?? '',
+                content: doc || '',
+                metadata: metas[index] || {},
+                distance: dists[index] ?? 0,
+                score: 1 - ((dists[index] ?? 0) as number),
+                type: (metas[index] as any)?.type || '',
+              }))
+              .filter((r) => r.id),
           );
         }
       }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { getCLS, getFCP, getFID, getLCP, getTTFB, Metric } from 'web-vitals';
+import type { Metric } from 'web-vitals';
 
 // Web Vitals 메트릭 타입 정의
 export type WebVitalsMetric = Metric;
@@ -56,24 +56,22 @@ const sendToAnalytics = (metric: Metric) => {
 // 성능 메트릭 수집 및 보고
 export const reportWebVitals = () => {
   try {
-    // Core Web Vitals - 함수 존재 여부 확인
-    if (typeof getCLS === 'function') {
-      getCLS(sendToAnalytics); // Cumulative Layout Shift
-    }
-    if (typeof getFID === 'function') {
-      getFID(sendToAnalytics); // First Input Delay
-    }
-    if (typeof getLCP === 'function') {
-      getLCP(sendToAnalytics); // Largest Contentful Paint
-    }
+    // 동적 임포트로 web-vitals 버전 차이를 흡수
+    import('web-vitals')
+      .then((mod: any) => {
+        const onCLS = mod.onCLS || mod.getCLS;
+        const onFID = mod.onFID || mod.getFID;
+        const onLCP = mod.onLCP || mod.getLCP;
+        const onFCP = mod.onFCP || mod.getFCP;
+        const onTTFB = mod.onTTFB || mod.getTTFB;
 
-    // Other Important Metrics
-    if (typeof getFCP === 'function') {
-      getFCP(sendToAnalytics); // First Contentful Paint
-    }
-    if (typeof getTTFB === 'function') {
-      getTTFB(sendToAnalytics); // Time to First Byte
-    }
+        if (typeof onCLS === 'function') onCLS(sendToAnalytics);
+        if (typeof onFID === 'function') onFID(sendToAnalytics);
+        if (typeof onLCP === 'function') onLCP(sendToAnalytics);
+        if (typeof onFCP === 'function') onFCP(sendToAnalytics);
+        if (typeof onTTFB === 'function') onTTFB(sendToAnalytics);
+      })
+      .catch((e) => console.error('web-vitals import failed:', e));
   } catch (error) {
     console.error('Error collecting web vitals:', error);
   }
@@ -141,7 +139,7 @@ export const generatePerformanceReport = (
   recommendations: string[];
 } => {
   const metricMap: Record<string, number> = {};
-  const ratingMap: Record<string, string> = {};
+  const ratingMap: Record<string, 'good' | 'needs-improvement' | 'poor'> = {};
 
   metrics.forEach((metric) => {
     metricMap[metric.name] = metric.value;
@@ -171,7 +169,7 @@ export const generatePerformanceReport = (
     score,
     metrics: Object.entries(metricMap).reduce(
       (acc, [key, value]) => {
-        acc[key] = { value, rating: ratingMap[key] };
+        acc[key] = { value, rating: ratingMap[key] ?? 'good' };
         return acc;
       },
       {} as Record<string, { value: number; rating: string }>,

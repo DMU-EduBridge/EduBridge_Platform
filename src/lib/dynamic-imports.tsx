@@ -51,17 +51,17 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
       return (
         <FallbackComponent
           error={this.state.error!}
-          resetError={() => this.setState({ hasError: false, error: undefined })}
+          resetError={() => this.setState({ hasError: false, error: undefined as any })}
         />
       );
     }
@@ -106,7 +106,9 @@ export function DynamicImport({
 // 페이지별 동적 임포트
 export const DynamicDashboard = lazy(() => import('@/app/(afterLogin)/dashboard/page'));
 export const DynamicProblems = lazy(() => import('@/app/(afterLogin)/problems/page'));
-export const DynamicProblemDetail = lazy(() => import('@/app/(afterLogin)/problems/[id]/page'));
+export const DynamicProblemDetail = lazy(
+  () => import('@/app/(afterLogin)/problems/[problemId]/page'),
+);
 export const DynamicStudents = lazy(() => import('@/app/(afterLogin)/students/page'));
 export const DynamicReports = lazy(() => import('@/app/(afterLogin)/reports/page'));
 export const DynamicSettings = lazy(() => import('@/app/(afterLogin)/settings/page'));
@@ -140,7 +142,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
 
   return function WrappedLazyComponent(props: React.ComponentProps<T>) {
     return (
-      <DynamicImport fallback={fallback}>
+      <DynamicImport fallback={fallback || DefaultLoading}>
         <LazyComponent {...props} />
       </DynamicImport>
     );

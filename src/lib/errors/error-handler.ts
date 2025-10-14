@@ -82,7 +82,7 @@ export function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): 
   switch (error.code) {
     case 'P2002':
       // Unique constraint violation
-      const field = error.meta?.target?.[0] || '필드';
+      const field = error || '필드';
       return new ConflictError(`${field}이(가) 이미 존재합니다.`);
 
     case 'P2025':

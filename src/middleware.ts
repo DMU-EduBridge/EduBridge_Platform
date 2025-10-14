@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
   const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
   const isTeacherOnlyPath = teacherOnlyPaths.some((path) => pathname.startsWith(path));
   const isStudentOnlyPath = studentOnlyPaths.some((path) => pathname.startsWith(path));
-  const isReviewPath = reviewPaths.some((path) => pathname.includes('/review'));
+  const isReviewPath = reviewPaths.some((_path) => pathname.includes('/review'));
 
   // 공통 보안 헤더 적용
   const applySecurityHeaders = (res: NextResponse) => {
@@ -66,7 +66,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Read JWT from cookies
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({
+    req: request,
+    ...(process.env.NEXTAUTH_SECRET ? { secret: process.env.NEXTAUTH_SECRET } : {}),
+  });
 
   if (!token) {
     const loginUrl = new URL('/login', request.url);
