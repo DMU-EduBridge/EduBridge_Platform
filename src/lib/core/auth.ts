@@ -5,6 +5,7 @@ import GoogleProvider from 'next-auth/providers/google';
 
 // NextAuth 전역 설정 객체
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET!,
   //인증 공급자 설정
   providers: [
     // Google OAuth 공급자 설정(환경변수 필수)

@@ -47,7 +47,7 @@ export async function middleware(request: NextRequest) {
     isAdminPath,
     isTeacherOnlyPath,
     isStudentOnlyPath,
-    isReviewPath
+    isReviewPath,
   });
 
   // 공통 보안 헤더 적용
@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
     hasToken: !!token,
     tokenEmail: token?.email,
     tokenRole: token?.role,
-    tokenSub: token?.sub
+    tokenSub: token?.sub,
   });
 
   if (!token) {
