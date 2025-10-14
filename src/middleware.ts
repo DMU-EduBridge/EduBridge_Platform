@@ -43,20 +43,6 @@ export async function middleware(request: NextRequest) {
     res.headers.set('X-Content-Type-Options', 'nosniff');
     res.headers.set('X-Frame-Options', 'SAMEORIGIN');
     res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    // 간단 CSP (필요 시 강화)
-    res.headers.set(
-      'Content-Security-Policy',
-      [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-        "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: blob:",
-        "connect-src 'self'",
-        "frame-ancestors 'self'",
-        "base-uri 'self'",
-        "form-action 'self'",
-      ].join('; '),
-    );
     return res;
   };
 
@@ -79,7 +65,6 @@ export async function middleware(request: NextRequest) {
   // JWT 토큰에서 역할 정보 가져오기
   const userRole = token.role;
 
-  // 역할이 없는 사용자는 기본적으로 허용 (데모 계정 등)
   // setup 페이지에 접근하는 경우 역할이 있으면 적절한 페이지로 리다이렉트
   if (isSetupPath && userRole) {
     const redirectUrl = userRole === 'STUDENT' ? '/my/learning' : '/dashboard';
@@ -115,6 +100,9 @@ export async function middleware(request: NextRequest) {
       return applySecurityHeaders(NextResponse.redirect(redirectUrl));
     }
   }
+
+  // 역할이 없는 사용자도 기본적으로 허용 (JWT 토큰이 있으면 인증된 사용자로 간주)
+  // 이는 데모 계정이나 역할 정보가 제대로 설정되지 않은 경우를 대비한 안전장치
 
   return applySecurityHeaders(NextResponse.next());
 }
