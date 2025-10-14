@@ -69,7 +69,8 @@ export async function middleware(request: NextRequest) {
   // Read JWT from cookies
   const token = await getToken({
     req: request,
-    ...(process.env.NEXTAUTH_SECRET ? { secret: process.env.NEXTAUTH_SECRET } : {}),
+    secret: process.env.NEXTAUTH_SECRET!,
+    secureCookie: process.env.NODE_ENV === 'production',
   });
 
   console.log(`[Middleware] Token check:`, {
