@@ -1,5 +1,6 @@
+import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
-import { getToken } from 'next-auth/jwt';
+import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // 보호 경로(로그인 필요). 파일시스템 세그먼트인 /(afterLogin) 은 URL 경로가 아니므로 제외
@@ -65,27 +66,27 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next());
   }
 
-  // Read JWT from cookies
-  const token = await getToken({
-    req: request,
-    ...(process.env.NEXTAUTH_SECRET ? { secret: process.env.NEXTAUTH_SECRET } : {}),
-  });
+  // Read session from cookies (JWT 대신 세션 사용)
+  const session = await getServerSession(authOptions);
 
-  if (!token) {
+  if (!session?.user) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search);
     return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
+  // 세션에서 역할 정보 가져오기
+  const userRole = (session.user as any).role;
+
   // 역할이 없는 사용자는 setup 페이지로 리다이렉트
-  if (!token.role && !isSetupPath) {
+  if (!userRole && !isSetupPath) {
     const setupUrl = new URL('/setup', request.url);
     return applySecurityHeaders(NextResponse.redirect(setupUrl));
   }
 
   // setup 페이지에 접근하는 경우 역할이 있으면 적절한 페이지로 리다이렉트
-  if (isSetupPath && token.role) {
-    const redirectUrl = token.role === 'STUDENT' ? '/my/learning' : '/dashboard';
+  if (isSetupPath && userRole) {
+    const redirectUrl = userRole === 'STUDENT' ? '/my/learning' : '/dashboard';
     return applySecurityHeaders(NextResponse.redirect(new URL(redirectUrl, request.url)));
   }
 
@@ -93,7 +94,7 @@ export async function middleware(request: NextRequest) {
   if (isSetupPath && request.headers.get('X-Session-Refresh')) {
     try {
       const dbUser = await prisma.user.findUnique({
-        where: { email: token.email! },
+        where: { email: session.user.email! },
         select: { role: true },
       });
 
@@ -106,28 +107,28 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (isAdminPath && token.role !== 'ADMIN') {
+  if (isAdminPath && userRole !== 'ADMIN') {
     const dashboardUrl = new URL('/dashboard', request.url);
     dashboardUrl.searchParams.set('error', 'forbidden');
     return applySecurityHeaders(NextResponse.redirect(dashboardUrl));
   }
 
   // 학생 역할은 교사용 경로 접근 제한
-  if (isTeacherOnlyPath && token.role === 'STUDENT') {
+  if (isTeacherOnlyPath && userRole === 'STUDENT') {
     const redirectUrl = new URL('/problems', request.url);
     redirectUrl.searchParams.set('error', 'forbidden');
     return applySecurityHeaders(NextResponse.redirect(redirectUrl));
   }
 
   // 교사/관리자 역할은 학생 전용 경로 접근 제한
-  if (isStudentOnlyPath && (token.role === 'TEACHER' || token.role === 'ADMIN')) {
+  if (isStudentOnlyPath && (userRole === 'TEACHER' || userRole === 'ADMIN')) {
     const redirectUrl = new URL('/dashboard', request.url);
     redirectUrl.searchParams.set('error', 'forbidden');
     return applySecurityHeaders(NextResponse.redirect(redirectUrl));
   }
 
   // 오답체크 페이지는 학생 전용 (독립적 오답체크와 학습 내 오답체크 모두 포함)
-  if (isReviewPath && token.role !== 'STUDENT') {
+  if (isReviewPath && userRole !== 'STUDENT') {
     const redirectUrl = new URL('/problems', request.url);
     redirectUrl.searchParams.set('error', 'forbidden');
     return applySecurityHeaders(NextResponse.redirect(redirectUrl));
