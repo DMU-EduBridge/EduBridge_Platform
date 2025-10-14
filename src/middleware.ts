@@ -17,15 +17,15 @@ const protectedPaths = [
 ];
 const setupPaths = ['/setup'];
 const adminPaths = ['/admin'];
-const teacherOnlyPaths = [
-  '/students',
-  '/learning-materials',
-  '/reports',
-  '/teacher-reports',
-  '/vector-search',
-];
-const studentOnlyPaths = ['/my'];
-const reviewPaths = ['/problems']; // 오답체크 페이지들 (/problems/*/review, /my/learning/*/problems/*/review)
+// const teacherOnlyPaths = [
+//   '/students',
+//   '/learning-materials',
+//   '/reports',
+//   '/teacher-reports',
+//   '/vector-search',
+// ];
+// const studentOnlyPaths = ['/my'];
+// const reviewPaths = ['/problems']; // 오답체크 페이지들 (/problems/*/review, /my/learning/*/problems/*/review)
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
