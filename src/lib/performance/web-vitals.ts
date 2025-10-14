@@ -31,7 +31,9 @@ const sendToAnalytics = (metric: Metric) => {
       });
     }
 
-    // 자체 분석 API로 전송
+    // 자체 분석 API로 전송 (임시로 비활성화)
+    // TODO: Web Vitals API 엔드포인트 구현 필요
+    /*
     fetch('/api/analytics/web-vitals', {
       method: 'POST',
       headers: {
@@ -50,6 +52,7 @@ const sendToAnalytics = (metric: Metric) => {
     }).catch((error) => {
       console.error('Failed to send web vitals:', error);
     });
+    */
   }
 };
 
