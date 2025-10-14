@@ -69,27 +69,18 @@ export default async function ProblemReviewPage({ params }: { params: { problemI
     const vm: ProblemReviewViewModel = {
       id: problem.id,
       title: problem.title,
-      description: problem.description,
-      content: problem.content,
+      description: problem.description ?? null,
       type: problem.type,
       difficulty: problem.difficulty,
       subject: problem.subject,
-      options: problem.options, // 서버에서 이미 파싱된 배열
+      options: problem.options ?? [],
       correctAnswer: problem.correctAnswer,
-      explanation: problem.explanation,
-      hints: problem.hints, // 서버에서 이미 파싱된 배열
-      tags: problem.tags, // 서버에서 이미 파싱된 배열
-      points: problem.points,
-      timeLimit: problem.timeLimit,
-      createdAt: problem.createdAt,
-      updatedAt: problem.updatedAt,
-      attempts: attempts.map((attempt) => ({
-        id: attempt.id,
-        answer: attempt.answer,
-        isCorrect: attempt.isCorrect,
-        timeSpent: attempt.timeSpent,
-        createdAt: attempt.createdAt,
-      })),
+      explanation: problem.explanation ?? null,
+      hints: problem.hints ?? [],
+      tags: problem.tags ?? [],
+      userAnswer: attempts[0]?.selected ?? null,
+      isCorrect: attempts[0]?.isCorrect ?? false,
+      attemptedAt: attempts[0]?.createdAt ?? null,
     };
 
     return <ProblemReviewClient problem={vm} />;

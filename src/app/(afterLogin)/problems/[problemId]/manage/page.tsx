@@ -2,6 +2,7 @@ import ProblemManageClient from '@/components/problems/problem-manage-client';
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
 import { problemService } from '@/server/services/problem/problem-crud.service';
+import { ReviewStatus } from '@prisma/client';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { notFound, redirect } from 'next/navigation';
@@ -81,9 +82,19 @@ export default async function ProblemManagePage({ params }: { params: { problemI
       <ProblemManageClient
         problem={{
           ...problem,
-          options: problem.options, // 서버에서 이미 파싱된 배열
-          hints: problem.hints, // 서버에서 이미 파싱된 배열
-          tags: problem.tags, // 서버에서 이미 파싱된 배열
+          timeLimit: problem.timeLimit ?? null,
+          description: problem.description ?? null,
+          options: problem.options ?? [], // nullable → 배열 기본값
+          hints: problem.hints ?? [], // nullable → 배열 기본값
+          tags: problem.tags ?? [], // nullable → 배열 기본값
+          isActive: Boolean(problem.status === 'ACTIVE'),
+          isAIGenerated: problem.isAIGenerated ?? false,
+          reviewStatus: problem.reviewStatus ?? ('PENDING' as ReviewStatus),
+          gradeLevel: problem.gradeLevel ?? null,
+          unit: problem.unit ?? null,
+          explanation: problem.explanation ?? null,
+          createdAt: problem.createdAt ?? new Date(),
+          updatedAt: problem.updatedAt ?? new Date(),
         }}
         stats={{
           totalAttempts,
@@ -95,7 +106,6 @@ export default async function ProblemManagePage({ params }: { params: { problemI
           systemTotalAttempts,
           systemCorrectRate,
         }}
-        userRole={session.user.role}
       />
     );
   } catch (error) {

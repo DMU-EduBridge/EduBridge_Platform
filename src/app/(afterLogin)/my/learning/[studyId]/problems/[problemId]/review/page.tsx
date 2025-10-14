@@ -59,7 +59,7 @@ export default async function StudyProblemReviewPage({
     // 문제가 해당 단원에 속하는지 확인
     const problem = await problemService.getProblemById(problemId);
 
-    if (!problem || problem.unit !== studyId || !problem.isActive) {
+    if (!problem || problem.unit !== studyId || problem.status === 'ACTIVE') {
       notFound();
     }
 
@@ -85,7 +85,7 @@ export default async function StudyProblemReviewPage({
         problem={{
           id: problem.id,
           title: problem.title,
-          description: problem.description,
+          description: problem.description ?? null,
           type: problem.type,
           options: problem.options, // 서버에서 이미 파싱된 배열
           correctAnswer: problem.correctAnswer,

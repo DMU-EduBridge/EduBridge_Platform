@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTeacherReportDetail } from '@/hooks/teacher-reports/use-teacher-report-detail';
 import { useTeacherReportMutations } from '@/hooks/teacher-reports/use-teacher-report-mutations';
-import { ArrowLeft, Download, Play, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Download, FileText, Play, RefreshCw } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
