@@ -1,5 +1,6 @@
 import { authService } from '@/services/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { authKeys } from '../keys/auth';
 
 /**
@@ -67,3 +68,29 @@ export const useAuth = () => {
     updateProfile: updateProfileMutation,
   };
 };
+
+/**
+ * 세션 keep-alive 훅: 주기적으로 /api/auth/session을 조회하여 세션 만료를 늦추고,
+ * 401 발생 시 재로그인을 유도할 수 있도록 신호를 제공한다.
+ */
+export function useSessionKeepAlive(options?: { intervalMs?: number; onExpired?: () => void }) {
+  useEffect(() => {
+    let timer: any;
+    const interval = options?.intervalMs ?? 12 * 60 * 60 * 1000; // 12h
+    const ping = async () => {
+      try {
+        const res = await fetch('/api/auth/session', { cache: 'no-store' });
+        if (res.status === 401) {
+          options?.onExpired?.();
+        }
+      } catch {
+        // 네트워크 오류는 무시
+      }
+      timer = setTimeout(ping, interval);
+    };
+    timer = setTimeout(ping, interval);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [options]);
+}

@@ -4,9 +4,9 @@ import bcrypt from 'bcryptjs';
 // 비밀번호 해시 강도(Salt 라운드). 환경변수 없으면 기본 10 사용.
 const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS ?? 10);
 
-// 개발 환경에서 소셜 전용 계정(비밀번호 없음) 로그인 테스트를 위해 허용할 고정 비밀번호.
-// 프로덕션에서는 사용하지 않도록 주의하세요.
+// 개발 환경에서 소셜 전용 계정(비밀번호 없음) 테스트용 비밀번호. 프로덕션에서는 사용 금지
 const DEV_TEST_PASSWORD = process.env.DEV_TEST_PASSWORD || 'password123';
+const ALLOW_DEV_PASSWORD = process.env.NODE_ENV !== 'production';
 
 // 이메일 표준화: 대소문자/공백 차이로 인한 중복이나 매칭 실패 방지
 function normalizeEmail(email: string) {
@@ -48,7 +48,10 @@ export const authService = {
     const password = String(input.password);
 
     //데모 계정: 별도의 DB 없이 바로 허용(데모/시연용)
-    if (email === 'demo@example.com' && password === 'demo123') {
+    if (
+      email === 'demo@example.com' &&
+      (password === 'demo123' || (ALLOW_DEV_PASSWORD && password === DEV_TEST_PASSWORD))
+    ) {
       return {
         id: '1',
         email,
@@ -78,8 +81,14 @@ export const authService = {
 
     // 로컬(비밀번호 있는) 계정이면 bcrypt 비교
     if (user.password) {
+      // 실제 해시 검증은 항상 엄격하게
       const ok = await verifyPassword(password, user.password);
       if (!ok) return null;
+
+      // 성공: 마지막 로그인 시간 업데이트(에러는 무시)
+      try {
+        await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+      } catch {}
 
       // 성공 시 공개 사용자 형태로 반환
       return {
@@ -92,9 +101,11 @@ export const authService = {
       };
     }
 
-    // 소셜 전용 계정(비밀번호 없음)인 경우: 개발 고정 비밀번호로만 통과 허용
-    // 프로덕션에서는 이 로직을 비활성화하거나 제한해야 합니다.
-    if (password === DEV_TEST_PASSWORD) {
+    // 소셜 전용 계정(비밀번호 없음): 개발 환경에서만 테스트 비밀번호 허용
+    if (ALLOW_DEV_PASSWORD && password === DEV_TEST_PASSWORD) {
+      try {
+        await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+      } catch {}
       return {
         id: user.id,
         email: user.email,

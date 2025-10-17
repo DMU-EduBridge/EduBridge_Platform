@@ -11,19 +11,13 @@ const protectedPaths = [
   '/students',
   '/learning-materials',
   '/teacher-reports',
-  '/vector-search',
+
   '/my',
   '/admin',
 ];
 const setupPaths = ['/setup'];
 const adminPaths = ['/admin'];
-const teacherOnlyPaths = [
-  '/students',
-  '/learning-materials',
-  '/reports',
-  '/teacher-reports',
-  '/vector-search',
-];
+const teacherOnlyPaths = ['/students', '/learning-materials', '/reports', '/teacher-reports'];
 const studentOnlyPaths = ['/my'];
 
 export async function middleware(request: NextRequest) {
@@ -37,8 +31,26 @@ export async function middleware(request: NextRequest) {
     res.headers.set('X-Content-Type-Options', 'nosniff');
     res.headers.set('X-Frame-Options', 'SAMEORIGIN');
     res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    // HSTS는 HTTPS 환경에서만 적용
+    if (process.env.NODE_ENV === 'production') {
+      res.headers.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    }
     return res;
   };
+
+  // 이미 로그인된 사용자가 /login 으로 이동한 경우 대시보드로 우회
+  if (pathname === '/login') {
+    const tokenAtLogin = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET!,
+      secureCookie: process.env.NODE_ENV === 'production',
+    });
+    if (tokenAtLogin) {
+      const url = new URL('/dashboard', request.url);
+      return applySecurityHeaders(NextResponse.redirect(url));
+    }
+    return applySecurityHeaders(NextResponse.next());
+  }
 
   // 대시보드는 모든 역할 접근 허용(권한별 UI는 페이지에서 제어)
   if (pathname === '/dashboard') return applySecurityHeaders(NextResponse.next());

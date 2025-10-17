@@ -55,9 +55,24 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30일
+    updateAge: 24 * 60 * 60, // 최근 활동 시 하루마다 토큰 갱신
   },
 
   // 쿠키 설정은 기본값 사용(프로덕션에서 __Secure- 접두사 포함 자동 처리)
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === 'production'
+          ? '__Secure-next-auth.session-token'
+          : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
 
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30일
