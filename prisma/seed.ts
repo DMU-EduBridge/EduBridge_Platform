@@ -1302,6 +1302,7 @@ async function main() {
     logger.info('✅ 시드 데이터 생성 완료', {
       service: 'edubridge-api',
       users: users.length,
+      teacherStudentRelations: teacherStudentRelations.length,
       textbooks: textbooks.length,
       documentChunks: documentChunks.length,
       problems: problems.length,
