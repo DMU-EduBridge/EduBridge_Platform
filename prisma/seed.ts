@@ -164,6 +164,75 @@ async function main() {
     const student2 = users[6]; // 이지영
     const student3 = users[7]; // 박준호
 
+    //교사-학생 연결
+    const teacherStudentRelations = await Promise.all([
+      prisma.teacherStudent.upsert({
+        where: {
+          teacherId_studentId: {
+            teacherId: mathTeacher1.id,
+            studentId: student1.id,
+          },
+        },
+        update: {},
+        create: {
+          teacherId: mathTeacher1.id,
+          studentId: student1.id,
+        },
+      }),
+      prisma.teacherStudent.upsert({
+        where: {
+          teacherId_studentId: {
+            teacherId: mathTeacher1.id,
+            studentId: student2.id,
+          },
+        },
+        update: {},
+        create: {
+          teacherId: mathTeacher1.id,
+          studentId: student2.id,
+        },
+      }),
+      prisma.teacherStudent.upsert({
+        where: {
+          teacherId_studentId: {
+            teacherId: mathTeacher2.id,
+            studentId: student3.id,
+          },
+        },
+        update: {},
+        create: {
+          teacherId: mathTeacher2.id,
+          studentId: student3.id,
+        },
+      }),
+      prisma.teacherStudent.upsert({
+        where: {
+          teacherId_studentId: {
+            teacherId: scienceTeacher.id,
+            studentId: student2.id,
+          },
+        },
+        update: {},
+        create: {
+          teacherId: scienceTeacher.id,
+          studentId: student2.id,
+        },
+      }),
+      prisma.teacherStudent.upsert({
+        where: {
+          teacherId_studentId: {
+            teacherId: englishTeacher.id,
+            studentId: student1.id,
+          },
+        },
+        update: {},
+        create: {
+          teacherId: englishTeacher.id,
+          studentId: student1.id,
+        },
+      }),
+    ]);
+
     // 2. 교과서 데이터 생성
     const textbooks = await Promise.all([
       prisma.textbook.create({
