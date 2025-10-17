@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { logger } from '@/lib/monitoring';
-import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   Eye,
@@ -19,6 +18,7 @@ import {
   User,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function SignupPage() {
@@ -40,6 +40,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -106,6 +107,7 @@ export default function SignupPage() {
     }
 
     setIsLoading(true);
+    setServerError('');
 
     try {
       const response = await fetch('/api/signup', {
@@ -124,7 +126,22 @@ export default function SignupPage() {
       });
 
       if (!response.ok) {
-        throw new Error('회원가입 실패');
+        // 서버 표준 에러 { error: { code, message } }
+        try {
+          const data = await response.json();
+          const code = data?.error?.code as string | undefined;
+          const msg = data?.error?.message as string | undefined;
+          let friendly = msg ?? '회원가입 중 오류가 발생했습니다.';
+          if (code === 'EMAIL_EXISTS') friendly = '이미 가입된 이메일입니다.';
+          if (code === 'OAUTH_CONFLICT') friendly = '소셜 로그인으로 진행해 주세요.';
+          if (code === 'RATE_LIMITED') friendly = '요청이 많습니다. 잠시 후 다시 시도해 주세요.';
+          if (code === 'VALIDATION_ERROR' && msg) friendly = msg;
+          setServerError(friendly);
+          return;
+        } catch {
+          setServerError('회원가입 중 오류가 발생했습니다.');
+          return;
+        }
       }
       const result = await response.json();
       console.log(result);
@@ -133,6 +150,7 @@ export default function SignupPage() {
       router.push('/login');
     } catch (error) {
       console.error('회원가입 실패:', error);
+      setServerError('회원가입 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -160,6 +178,13 @@ export default function SignupPage() {
             <CardDescription>기본 정보를 입력하여 계정을 생성하세요</CardDescription>
           </CardHeader>
           <CardContent>
+            {serverError && (
+              <div className="mb-4">
+                <Alert variant="destructive">
+                  <AlertDescription>{serverError}</AlertDescription>
+                </Alert>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* 역할 선택 */}
               <div>
