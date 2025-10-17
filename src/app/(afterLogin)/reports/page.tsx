@@ -1,332 +1,258 @@
 'use client';
 
-import { ReportCreateModal } from '@/components/reports/report-create-modal';
-import { Badge } from '@/components/ui/badge';
+import { GenerateReportModal } from '@/components/reports/generate-report-modal';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useReports } from '@/hooks/reports';
-import { Report } from '@/types/domain/report';
-import {
-  AlertTriangle,
-  BookOpen,
-  Calendar,
-  CheckCircle,
-  Clock,
-  Download,
-  Target,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useRefineReport } from '@/hooks/reports/use-refine-report';
+import { useStudentReport } from '@/hooks/reports/use-student-report';
+import { useTeacherOverview } from '@/hooks/reports/use-teacher-overview';
+import { AlertTriangle, BookOpen, Download } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-// 하드코딩된 데이터는 이제 API에서 가져옵니다
-
-const typeLabels = {
-  MONTHLY: '월간 리포트',
-  INDIVIDUAL: '개별 리포트',
-  SUBJECT: '과목별 리포트',
-  WEEKLY: '주간 리포트',
-};
-
-const statusColors = {
-  COMPLETED: 'bg-green-100 text-green-800',
-  IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
-  PENDING: 'bg-gray-100 text-gray-800',
-};
-
-const statusLabels = {
-  COMPLETED: '완료',
-  IN_PROGRESS: '진행 중',
-  PENDING: '대기 중',
-};
+import { useEffect, useMemo, useState } from 'react';
 
 export default function ReportsPage() {
-  const [selectedType, setSelectedType] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [studentId, setStudentId] = useState<string | undefined>(undefined);
-  const [createModalOpen, setCreateModalOpen] = useState(false);
   const searchParams = useSearchParams();
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
+  const [from, setFrom] = useState<string | undefined>(undefined);
+  const [to, setTo] = useState<string | undefined>(undefined);
+  const [flaggedOnly, setFlaggedOnly] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   useEffect(() => {
     const s = searchParams.get('studentId') || undefined;
-    setStudentId(s || undefined);
+    setSelectedStudentId(s || undefined);
   }, [searchParams]);
 
-  // TanStack Query 훅 사용
+  const overviewParams: {
+    from?: string;
+    to?: string;
+    flaggedOnly?: boolean;
+  } = {};
+  if (from) overviewParams.from = from;
+  if (to) overviewParams.to = to;
+  if (flaggedOnly) overviewParams.flaggedOnly = true;
+
   const {
-    reports: reportsQuery,
-    stats: statsQuery,
-    download: downloadMutation,
-  } = useReports({
-    type: selectedType !== 'all' ? selectedType : undefined,
-    status: selectedStatus !== 'all' ? selectedStatus : undefined,
-    studentId: studentId || undefined,
-  });
+    data: overview,
+    isLoading: overviewLoading,
+    error: overviewError,
+  } = useTeacherOverview(overviewParams);
 
-  const reports = reportsQuery.data?.data?.reports || [];
-  // @ts-ignore - TypeScript strict mode issue
-  const stats = statsQuery.data?.data ?? {
-    totalReports: 0,
-    completedReports: 0,
-    weeklyChange: 0,
-    averageAnalysisTime: 0,
-    totalSuggestions: 0,
-  };
+  const { data: studentDetail, isLoading: studentLoading } = useStudentReport(selectedStudentId);
+  const { refine, loading: refineLoading } = useRefineReport();
 
-  const handleDownload = (reportId: string) => {
-    downloadMutation.mutate(reportId as string);
-  };
+  const classSummary = overview?.classSummary;
+  const students = useMemo(() => {
+    const list = overview?.students ?? [];
+    return flaggedOnly ? list.filter((s) => s.flagged) : list;
+  }, [overview?.students, flaggedOnly]);
+
+  function riskColor(level?: 'LOW' | 'MEDIUM' | 'HIGH') {
+    if (level === 'HIGH') return 'bg-red-50 text-red-700 border-red-200';
+    if (level === 'MEDIUM') return 'bg-yellow-50 text-yellow-800 border-yellow-200';
+    return 'bg-gray-50 text-gray-700 border-gray-200';
+  }
 
   return (
     <div className="space-y-6 p-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">분석 리포트</h1>
-          <p className="mt-2 text-gray-600">
-            AI가 분석한 학습 데이터를 통해 학생들의 성과를 파악하고 개선 방안을 제시합니다.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            리포트 다운로드
-          </Button>
-          <Button onClick={() => setCreateModalOpen(true)}>
-            <TrendingUp className="mr-2 h-4 w-4" />새 리포트 생성
-          </Button>
-        </div>
-      </div>
-
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">총 리포트</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : stats?.totalReports || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.weeklyChange ? `+${stats.weeklyChange} 이번 주` : '로딩 중...'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">완료된 리포트</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : stats?.completedReports || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.completedReports && stats?.totalReports
-                ? `${Math.round((stats.completedReports / stats.totalReports) * 100)}% 완료율`
-                : '로딩 중...'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">평균 분석 시간</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : `${stats?.averageAnalysisTime || 0}분`}
-            </div>
-            <p className="text-xs text-muted-foreground">AI 분석 속도</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">개선 제안</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : stats?.totalRecommendations || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">총 제안 수</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 필터 */}
+      {/* 상단: 필터/요약 */}
       <Card>
         <CardHeader>
           <CardTitle>리포트 필터</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              type="date"
+              value={from || ''}
+              onChange={(e) => setFrom(e.target.value || undefined)}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="all">모든 유형</option>
-              <option value="MONTHLY">월간 리포트</option>
-              <option value="INDIVIDUAL">개별 리포트</option>
-              <option value="SUBJECT">과목별 리포트</option>
-              <option value="WEEKLY">주간 리포트</option>
-            </select>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+            />
+            <span className="text-sm text-gray-500">~</span>
+            <input
+              type="date"
+              value={to || ''}
+              onChange={(e) => setTo(e.target.value || undefined)}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="all">모든 상태</option>
-              <option value="COMPLETED">완료</option>
-              <option value="IN_PROGRESS">진행 중</option>
-              <option value="PENDING">대기 중</option>
-            </select>
+            />
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={flaggedOnly}
+                onChange={(e) => setFlaggedOnly(e.target.checked)}
+              />
+              주의 학생만 보기
+            </label>
           </div>
         </CardContent>
       </Card>
 
-      {/* 리포트 목록 */}
-      <div className="space-y-6">
-        {reportsQuery.isLoading ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-              <p className="text-gray-600">리포트 목록을 불러오는 중...</p>
-            </CardContent>
-          </Card>
-        ) : reportsQuery.error ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <p className="text-red-600">리포트 목록을 불러오는데 실패했습니다.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          reports.map((report: Report) => (
-            <Card key={report.id} className="transition-shadow hover:shadow-md">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-xl">{report.title}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {typeLabels[report.type as keyof typeof typeLabels]} • {report.period}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={statusColors[report.status as keyof typeof statusColors]}>
-                      {statusLabels[report.status as keyof typeof statusLabels]}
-                    </Badge>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* 기본 통계 */}
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="rounded bg-gray-50 p-3 text-center">
-                    <div className="text-lg font-semibold text-gray-900">{report.students}</div>
-                    <div className="text-sm text-gray-600">분석 학생 수</div>
-                  </div>
-                  <div className="rounded bg-gray-50 p-3 text-center">
-                    <div className="text-lg font-semibold text-gray-900">
-                      {report.totalProblems}
-                    </div>
-                    <div className="text-sm text-gray-600">총 문제 수</div>
-                  </div>
-                  <div className="rounded bg-gray-50 p-3 text-center">
-                    <div className="text-lg font-semibold text-gray-900">
-                      {report.averageScore}점
-                    </div>
-                    <div className="text-sm text-gray-600">평균 점수</div>
-                  </div>
-                  <div className="rounded bg-gray-50 p-3 text-center">
-                    <div className="text-lg font-semibold text-gray-900">
-                      {report.completionRate}%
-                    </div>
-                    <div className="text-sm text-gray-600">완료율</div>
-                  </div>
-                </div>
-
-                {/* 인사이트 */}
-                <div>
-                  <h4 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                    주요 인사이트
-                  </h4>
-                  <div className="space-y-2">
-                    {report.insights?.map((insight: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2 rounded bg-blue-50 p-2">
-                        <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
-                        <span className="text-sm text-gray-700">{insight}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 개선 제안 */}
-                <div>
-                  <h4 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
-                    <Target className="h-4 w-4 text-green-600" />
-                    개선 제안
-                  </h4>
-                  <div className="space-y-2">
-                    {report.recommendations?.map((recommendation: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2 rounded bg-green-50 p-2">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-                        <span className="text-sm text-gray-700">{recommendation}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 액션 버튼 */}
-                <div className="flex gap-2 border-t pt-4">
-                  <Button asChild variant="outline" size="sm">
-                    <a href={`/reports/${report.id}`}>
-                      <Calendar className="mr-1 h-4 w-4" />
-                      상세 보기
-                    </a>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownload(report.id)}
-                    disabled={downloadMutation.isPending}
-                  >
-                    <Download className="mr-1 h-4 w-4" />
-                    {downloadMutation.isPending ? '다운로드 중...' : 'PDF 다운로드'}
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Users className="mr-1 h-4 w-4" />
-                    학생 공유
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {!reportsQuery.isLoading && !reportsQuery.error && reports.length === 0 && (
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card>
-          <CardContent className="p-12 text-center">
-            <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">리포트를 찾을 수 없습니다</h3>
-            <p className="mb-4 text-gray-600">필터 조건에 맞는 리포트가 없습니다.</p>
-            <Button onClick={() => setCreateModalOpen(true)}>
-              <TrendingUp className="mr-2 h-4 w-4" />새 리포트 생성하기
-            </Button>
+          <CardHeader>
+            <CardTitle className="text-sm">평균 점수</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {overviewLoading ? '...' : (classSummary?.avgScore ?? 0)}
+            </div>
           </CardContent>
         </Card>
-      )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">하위 10% 평균</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {overviewLoading ? '...' : (classSummary?.bottom10pctAvg ?? 0)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">주의 학생 수</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {overviewLoading ? '...' : (classSummary?.flaggedCount ?? 0)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Top 취약 개념</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-gray-700">
+              {overviewLoading ? '...' : classSummary?.topWeakConcepts?.join(', ') || '-'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* 리포트 생성 모달 */}
-      <ReportCreateModal open={createModalOpen} onOpenChange={setCreateModalOpen} />
+      {/* 본문: 좌/우 패널 */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+        {/* 좌: 학생 리스트 */}
+        <Card className="md:col-span-5">
+          <CardHeader>
+            <CardTitle>학생 목록</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {overviewLoading ? (
+              <div className="p-4 text-center text-sm text-gray-600">불러오는 중...</div>
+            ) : overviewError ? (
+              <div className="p-4 text-center text-sm text-red-600">
+                개요 데이터를 불러올 수 없습니다.
+              </div>
+            ) : students.length === 0 ? (
+              <div className="p-8 text-center">
+                <BookOpen className="mx-auto mb-3 h-10 w-10 text-gray-400" />
+                <div className="text-sm text-gray-600">학생이 없습니다</div>
+              </div>
+            ) : (
+              <ul className="divide-y">
+                {students.map((s) => (
+                  <li key={s.studentId} className="flex items-center justify-between py-3">
+                    <button
+                      className={`text-left text-sm ${
+                        selectedStudentId === s.studentId
+                          ? 'font-semibold text-blue-700'
+                          : 'text-gray-800'
+                      }`}
+                      onClick={() => setSelectedStudentId(s.studentId)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{s.name}</span>
+                        {s.flagged && (
+                          <span className="inline-flex items-center gap-1 rounded bg-red-50 px-2 py-0.5 text-xs text-red-700">
+                            <AlertTriangle className="h-3 w-3" /> 주의
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 text-xs text-gray-500">
+                        숙련 {s.mastery}% · Δ {s.scoreDelta}
+                      </div>
+                      {s.risk && (
+                        <div
+                          className={`mt-1 inline-flex items-center gap-2 rounded border px-2 py-1 text-xs ${riskColor(
+                            s.risk.level,
+                          )}`}
+                          title={s.risk.reasons?.join(', ')}
+                        >
+                          위험 {s.risk.level} · 점수 {s.risk.score}
+                        </div>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 우: 학생 상세 */}
+        <Card className="md:col-span-7">
+          <CardHeader className="flex items-center justify-between md:flex-row">
+            <CardTitle>
+              {selectedStudentId ? `학생 상세 · ${selectedStudentId}` : '학생 상세'}
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                disabled={!selectedStudentId || refineLoading}
+                onClick={async () => {
+                  try {
+                    await refine('rep_dummy', 'recommendations');
+                  } catch {}
+                }}
+              >
+                추천 보강
+              </Button>
+              <Button onClick={() => setGenerateOpen(true)}>생성</Button>
+              <Button variant="outline" disabled={!selectedStudentId}>
+                <Download className="mr-2 h-4 w-4" /> PDF
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {!selectedStudentId ? (
+              <div className="p-6 text-center text-sm text-gray-600">
+                좌측에서 학생을 선택하세요.
+              </div>
+            ) : studentLoading ? (
+              <div className="p-6 text-center text-sm text-gray-600">불러오는 중...</div>
+            ) : studentDetail ? (
+              <div className="space-y-6">
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold">요약</h4>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    {studentDetail.summaryInsights.map((it, idx) => (
+                      <li key={idx}>{it}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold">취약 개념</h4>
+                  <div className="text-sm text-gray-700">
+                    {studentDetail.weakConcepts.join(', ') || '-'}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold">추천</h4>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-gray-700">
+                    {studentDetail.recommendations.map((it, idx) => (
+                      <li key={idx}>{it}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-sm text-gray-600">데이터가 없습니다.</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      <GenerateReportModal open={generateOpen} onOpenChange={setGenerateOpen} />
     </div>
   );
 }
