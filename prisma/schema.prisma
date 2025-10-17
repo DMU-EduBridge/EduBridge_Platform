@@ -39,6 +39,7 @@ model User {
   textbooks            Textbook[]
   todos                Todo[]
   preferences          UserPreferences?
+  chatSessions        ChatSession[]
 
   // TeacherToStudent 관계
   students        TeacherStudent[]  @relation("TeacherToStudent")
@@ -648,6 +649,57 @@ enum TodoCategory {
   FINANCE
   FAMILY
   OTHER
+}
+
+// --- AI Chat (Sessions/Messages) ---
+enum ChatRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model ChatSession {
+  id            String       @id @default(cuid())
+  userId        String
+  title         String       @default("새 대화")
+  lastMessageAt DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+  messages      ChatMessage[]
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deletedAt])
+  @@index([lastMessageAt])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id                   String      @id @default(cuid())
+  sessionId            String
+  role                 ChatRole
+  content              String
+  usageTokensPrompt    Int?
+  usageTokensCompletion Int?
+  usageTokensTotal     Int?
+  createdAt            DateTime    @default(now())
+  session              ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  citations            ChatCitation[]
+
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
+}
+
+model ChatCitation {
+  id        String      @id @default(cuid())
+  messageId String
+  title     String
+  url       String?
+  page      Int?
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("chat_citations")
 }
 
 enum TextbookStatus {
