@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   Mail,
   MessageSquare,
-  Search,
   Settings,
   Shield,
   User,
@@ -40,7 +39,6 @@ export function getTeacherNav(): NavItem[] {
     { name: '학습 관리', href: '/learning-materials', icon: FolderOpen },
     { name: '분석 리포트', href: '/reports', icon: Calendar },
     { name: 'AI 교사 리포트', href: '/teacher-reports', icon: Bot },
-    { name: '의미적 검색', href: '/vector-search', icon: Search },
     // 학생 기능들도 교사가 사용할 수 있도록 추가
     { name: '할 일 목록', href: '/my/todos', icon: CheckSquare },
     { name: '메시지', href: '/my/messages', icon: Mail },

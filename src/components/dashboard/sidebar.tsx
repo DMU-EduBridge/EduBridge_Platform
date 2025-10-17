@@ -5,6 +5,7 @@ import { LogOut, Settings } from 'lucide-react';
 import { Session } from 'next-auth';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { memo, useMemo } from 'react';
 import { getAdminNav, getStudentNav, getTeacherNav } from './nav';
 
@@ -36,6 +37,14 @@ export const Sidebar = memo(function Sidebar({ session, sidebarOpen, onClose }: 
   const studentNav = useMemo(() => getStudentNav(), []);
   const teacherNav = useMemo(() => getTeacherNav(), []);
   const adminNav = useMemo(() => getAdminNav(), []);
+  const pathname = usePathname();
+
+  function linkClass(href: string) {
+    const isActive = pathname === href || pathname.startsWith(href + '/');
+    return `flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+      isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+    }`;
+  }
 
   return (
     <div
@@ -61,11 +70,7 @@ export const Sidebar = memo(function Sidebar({ session, sidebarOpen, onClose }: 
           {role === 'STUDENT' && (
             <>
               {studentNav.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                >
+                <Link key={item.name} href={item.href} className={linkClass(item.href)}>
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
                 </Link>
@@ -77,20 +82,13 @@ export const Sidebar = memo(function Sidebar({ session, sidebarOpen, onClose }: 
           {role === 'TEACHER' && (
             <>
               {teacherNav.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                >
+                <Link key={item.name} href={item.href} className={linkClass(item.href)}>
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
                 </Link>
               ))}
               <div className="my-4 border-t border-gray-200"></div>
-              <Link
-                href="/settings"
-                className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
-              >
+              <Link href="/settings" className={linkClass('/settings')}>
                 <Settings className="mr-3 h-5 w-5" />
                 설정
               </Link>
@@ -101,11 +99,7 @@ export const Sidebar = memo(function Sidebar({ session, sidebarOpen, onClose }: 
           {role === 'ADMIN' && (
             <>
               {teacherNav.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                >
+                <Link key={item.name} href={item.href} className={linkClass(item.href)}>
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
                 </Link>
@@ -117,11 +111,7 @@ export const Sidebar = memo(function Sidebar({ session, sidebarOpen, onClose }: 
                 </p>
               </div>
               {adminNav.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                >
+                <Link key={item.name} href={item.href} className={linkClass(item.href)}>
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
                 </Link>
