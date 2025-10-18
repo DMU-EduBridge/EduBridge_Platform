@@ -19,22 +19,51 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
+    const teacherId = session.user.id;
+
+    // 교사와 관계된 학생 ID 가져오기
+    const relatedStudents = await prisma.teacherStudent.findMany({
+      where: { teacherId },
+      select: { studentId: true },
+    });
+
+    // 학생 ID 목록 추출
+    const studentIds = relatedStudents.map((relation) => relation.studentId);
+
+    // 학생이 없으면 빈 통계 반환
+    if (studentIds.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          totalStudents: 0,
+          activeStudents: 0,
+          weeklyChange: 0,
+          averageProgress: 0,
+          averageScore: 0,
+        },
+      });
+    }
+
     const [totalStudents, activeStudents, weeklyChange] = await Promise.all([
       // 총 학생 수
       prisma.user.count({
-        where: { role: 'STUDENT' },
+        where: {
+          id: { in: studentIds },
+          role: 'STUDENT',
+        },
       }),
       // 활성 학생 수
       prisma.user.count({
         where: {
+          id: { in: studentIds },
           role: 'STUDENT',
           status: 'ACTIVE',
         },
       }),
       // 이번 주 신규 학생 수
-      prisma.user.count({
+      prisma.teacherStudent.count({
         where: {
-          role: 'STUDENT',
+          teacherId: teacherId,
           createdAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
           },
@@ -46,7 +75,7 @@ export async function GET(_request: NextRequest) {
     const progressData = await prisma.problemProgress.findMany({
       where: {
         user: {
-          role: 'STUDENT',
+          id: { in: studentIds },
         },
       },
       select: {
@@ -63,7 +92,7 @@ export async function GET(_request: NextRequest) {
     const scoreData = await prisma.attempt.findMany({
       where: {
         user: {
-          role: 'STUDENT',
+          id: { in: studentIds },
         },
       },
       select: {
@@ -84,7 +113,7 @@ export async function GET(_request: NextRequest) {
       averageScore: Math.round(averageScore),
     };
 
-    logger.info('학생 통계 조회 성공', { userId: session.user.id });
+    logger.info('학생 통계 조회 성공', { userId: teacherId });
     return NextResponse.json({ success: true, data: stats });
   } catch (error: any) {
     logger.error('학생 통계 조회 실패', undefined, { error: error.message });
