@@ -2,7 +2,6 @@ import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
 import { logger } from '@/lib/monitoring';
 import { GradeLevel, UserRole, UserStatus } from '@prisma/client';
-import { hash } from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -36,45 +35,62 @@ export async function POST(request: NextRequest) {
       where: { email: data.email },
     });
 
-    if (existingUser) {
+    if (!existingUser) {
       return NextResponse.json(
-        { success: false, error: '이미 등록된 이메일 주소입니다.' },
+        { success: false, error: '해당 이메일로 등록된 사용자가 없습니다.' },
+        { status: 404 },
+      );
+    }
+
+    if (existingUser.role !== UserRole.STUDENT) {
+      return NextResponse.json(
+        { success: false, error: '해당 사용자는 학생이 아닙니다.' },
+        { status: 400 },
+      );
+    }
+
+    // 이미 교사와 학생 관계가 등록되어 있는지 확인
+    const existingRelation = await prisma.teacherStudent.findUnique({
+      where: {
+        teacherId_studentId: {
+          teacherId: session.user.id,
+          studentId: existingUser.id,
+        },
+      },
+    });
+
+    if (existingRelation) {
+      return NextResponse.json(
+        { success: false, error: '이미 이 학생과 관계가 등록되어 있습니다.' },
         { status: 409 },
       );
     }
 
-    // 임시 비밀번호 생성 및 해싱
-    const temporaryPassword = Math.random().toString(36).slice(-8); // 8자리 랜덤 문자열
-    const hashedPassword = await hash(temporaryPassword, 10);
-
-    const newStudent = await prisma.user.create({
+    // 교사-학생 관계 저장
+    const teacherStudentRelation = await prisma.teacherStudent.create({
       data: {
-        name: data.name,
-        email: data.email,
-        password: hashedPassword,
-        role: UserRole.STUDENT,
-        status: UserStatus.ACTIVE,
-        gradeLevel: data.gradeLevel,
-        // TODO: 초대 메시지 처리 로직 추가 (예: 이메일 발송)
+        teacherId: session.user.id, // 현재 세션의 교사 ID
+        studentId: existingUser.id, // 새로 생성된 학생 ID
       },
     });
 
     logger.info('학생 초대 성공', {
       userId: session.user.id,
-      studentId: newStudent.id,
-      studentEmail: newStudent.email,
+      studentId: existingUser.id,
+      studentEmail: existingUser.email,
     });
 
     return NextResponse.json(
       {
         success: true,
         data: {
-          id: newStudent.id,
-          name: newStudent.name,
-          email: newStudent.email,
-          gradeLevel: newStudent.gradeLevel,
-          status: newStudent.status,
-          temporaryPassword: temporaryPassword, // 임시 비밀번호는 클라이언트에 반환하지 않도록 주의
+          teacherStudentRelation,
+          student: {
+            id: existingUser.id,
+            name: existingUser.name,
+            email: existingUser.email,
+            gradeLevel: existingUser.gradeLevel,
+          },
         },
       },
       { status: 201 },
