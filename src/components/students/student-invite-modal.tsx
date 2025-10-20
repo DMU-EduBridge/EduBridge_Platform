@@ -33,15 +33,19 @@ export function StudentInviteModal({ open, onOpenChange }: StudentInviteModalPro
     e.preventDefault();
     try {
       await inviteStudent.mutateAsync({ name, email, gradeLevel, message });
-      toast.success('학생 초대 요청이 성공적으로 전송되었습니다.');
+      toast.success('학생이 성공적으로 연결되었습니다.');
       onOpenChange(false);
       setName('');
       setEmail('');
       setGradeLevel('');
       setMessage('');
     } catch (error: any) {
-      toast.error('학생 초대 실패', {
-        description: error.message || '학생 초대 중 오류가 발생했습니다.',
+      const errorData = error?.response?.data || error;
+      const errorMessage = errorData?.error || error.message || '학생 연결 중 오류가 발생했습니다.';
+      const suggestion = errorData?.suggestion;
+
+      toast.error('학생 연결 실패', {
+        description: suggestion ? `${errorMessage}\n\n${suggestion}` : errorMessage,
       });
     }
   };
@@ -50,8 +54,14 @@ export function StudentInviteModal({ open, onOpenChange }: StudentInviteModalPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>학생 초대</DialogTitle>
-          <DialogDescription>새로운 학생을 EduBridge 플랫폼으로 초대합니다.</DialogDescription>
+          <DialogTitle>학생 연결</DialogTitle>
+          <DialogDescription>
+            이미 가입된 학생을 내 클래스에 연결합니다.
+            <br />
+            <span className="text-sm text-muted-foreground">
+              학생이 먼저 회원가입을 완료해야 합니다.
+            </span>
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
@@ -113,7 +123,7 @@ export function StudentInviteModal({ open, onOpenChange }: StudentInviteModalPro
           </div>
           <DialogFooter>
             <Button type="submit" disabled={inviteStudent.isPending}>
-              {inviteStudent.isPending ? '초대 중...' : '학생 초대'}
+              {inviteStudent.isPending ? '연결 중...' : '학생 연결'}
             </Button>
           </DialogFooter>
         </form>

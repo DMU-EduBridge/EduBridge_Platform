@@ -104,3 +104,84 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+/**
+ * 학생 연결 해제 (교사-학생 관계 삭제)
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 교사만 접근 가능
+    if (session.user.role !== 'TEACHER') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const studentId = searchParams.get('studentId');
+
+    if (!studentId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '학생 ID가 필요합니다.',
+          suggestion: '삭제할 학생의 ID를 제공해주세요.',
+        },
+        { status: 400 },
+      );
+    }
+
+    const teacherId = session.user.id;
+
+    // 교사-학생 관계 존재 확인
+    const existingRelation = await prisma.teacherStudent.findUnique({
+      where: {
+        teacherId_studentId: {
+          teacherId,
+          studentId,
+        },
+      },
+    });
+
+    if (!existingRelation) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '해당 학생과의 관계를 찾을 수 없습니다.',
+          suggestion: '이미 연결이 해제되었거나 존재하지 않는 학생입니다.',
+        },
+        { status: 404 },
+      );
+    }
+
+    // 교사-학생 관계 삭제
+    await prisma.teacherStudent.delete({
+      where: {
+        teacherId_studentId: {
+          teacherId,
+          studentId,
+        },
+      },
+    });
+
+    logger.info('학생 연결 해제 성공', {
+      userId: teacherId,
+      studentId,
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: '학생과의 연결이 해제되었습니다.',
+        data: { studentId },
+      },
+      { status: 200 },
+    );
+  } catch (error: any) {
+    logger.error('학생 연결 해제 실패', undefined, { error: error.message });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

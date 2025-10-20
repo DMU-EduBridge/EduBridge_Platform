@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useChat } from '@/hooks/ai/use-chat';
+import { useChatMessage } from '@/hooks/ai/use-chat-message';
 import type { ChatMessage } from '@/types/ai/chat';
 import { ArrowLeft, Send, Trash2 } from 'lucide-react';
 import { Session } from 'next-auth';
@@ -29,14 +29,17 @@ interface AIAssistantDetailClientProps {
   initialData: AIAssistantData | null;
 }
 
-export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClientProps) {
+export function AIAssistantDetailClient({ session, initialData }: AIAssistantDetailClientProps) {
   const router = useRouter();
   const [aiAssistantData] = useState<AIAssistantData | null>(initialData);
   const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Chat hook (real API)
-  const { state, sendMessage, setSession, reset } = useChat();
+  // Chat message hook (LLM REST)
+  const { send } = useChatMessage();
+
+  // 실시간 메시지 상태 관리 (유저/어시스턴트 대화)
+  const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
 
   // --- 채팅방(세션) 리스트 상태 (로컬 저장) ---
   interface ChatRoomItem {
@@ -59,18 +62,16 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
       if (parsed.length > 0) {
         const firstRoom = parsed[0] as ChatRoomItem;
         setActiveRoomId(firstRoom.id);
-        setSession(firstRoom.id);
       }
     } else {
       const first: ChatRoomItem = {
-        id: state.sessionId,
+        id: crypto.randomUUID(),
         title: '새 대화',
         updatedAt: new Date().toISOString(),
         lastMessage: '',
       };
       setRooms([first]);
       setActiveRoomId(first.id);
-      setSession(first.id);
       if (typeof window !== 'undefined')
         window.localStorage.setItem(LS_KEY, JSON.stringify([first]));
     }
@@ -80,8 +81,7 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
   // 방 선택
   const onSelectRoom = (id: string) => {
     setActiveRoomId(id);
-    setSession(id);
-    reset();
+    setLiveMessages([]);
   };
 
   // 새 대화
@@ -96,8 +96,7 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
     const next = [item, ...rooms];
     setRooms(next);
     setActiveRoomId(id);
-    setSession(id);
-    reset();
+    setLiveMessages([]);
     if (typeof window !== 'undefined') window.localStorage.setItem(LS_KEY, JSON.stringify(next));
   };
 
@@ -117,13 +116,12 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
           window.localStorage.setItem(LS_KEY, JSON.stringify(seed));
       }
       setActiveRoomId(fallback);
-      setSession(fallback);
-      reset();
+      setLiveMessages([]);
     }
   };
 
   // 현재 방 대화 비우기
-  const onClearMessages = () => reset();
+  const onClearMessages = () => setLiveMessages([]);
 
   // 스크롤 ref (훅은 항상 상단 호출)
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -135,8 +133,8 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
   // 메시지 변경 시 활성 방의 최근 메시지/시간 갱신 (훅은 조건 밖)
   useEffect(() => {
     if (!activeRoomId) return;
-    if (state.messages.length === 0) return;
-    const last = state.messages[state.messages.length - 1] as ChatMessage;
+    if (liveMessages.length === 0) return;
+    const last = liveMessages[liveMessages.length - 1] as ChatMessage;
     setRooms((prev) => {
       const next = prev.map((r) =>
         r.id === activeRoomId
@@ -147,7 +145,7 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.messages]);
+  }, [liveMessages]);
 
   // 새 질문 제출: 실제 LLM 호출
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,7 +153,22 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
     if (!currentInput.trim() || isLoading) return;
     setIsLoading(true);
     try {
-      await sendMessage(currentInput);
+      // 사용자 메시지 추가
+      const userMsg: ChatMessage = { role: 'user', content: currentInput.trim() };
+      setLiveMessages((prev) => [...prev, userMsg]);
+
+      // LLM 호출 (REST)
+      const res = await send.mutateAsync({
+        userId: session.user.id,
+        userMessage: currentInput.trim(),
+        history: [],
+      });
+
+      const aiContent: string = res?.ai_response ?? '';
+      if (aiContent) {
+        const aiMsg: ChatMessage = { role: 'assistant', content: aiContent };
+        setLiveMessages((prev) => [...prev, aiMsg]);
+      }
       // 방 제목/업데이트 갱신(첫 사용자 메시지를 제목으로)
       setRooms((prev) => {
         const title = currentInput.length > 30 ? `${currentInput.slice(0, 30)}…` : currentInput;
@@ -194,12 +207,12 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
   }, [filteredChats]);
 
   // 신규 메시지(실제 대화) 렌더용
-  const liveMessages: ChatMessage[] = state.messages;
+  const liveMsgs: ChatMessage[] = liveMessages;
 
   // 최종 표시 메시지: 과거(샘플) + 실시간
   const allMessages: ChatMessage[] = useMemo(
-    () => [...historyMessages, ...liveMessages],
-    [historyMessages, liveMessages],
+    () => [...historyMessages, ...liveMsgs],
+    [historyMessages, liveMsgs],
   );
 
   // 방 리스트 최신순 정렬
@@ -220,7 +233,7 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
     if (isLoading) return;
     if (inputRef.current) inputRef.current.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeRoomId, state.pending]);
+  }, [activeRoomId]);
 
   // 데이터 로딩 화면(훅 선언 뒤에 조건부 리턴)
   if (!aiAssistantData) {
@@ -325,7 +338,7 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
                   size="sm"
                   variant="outline"
                   onClick={onClearMessages}
-                  disabled={state.messages.length === 0}
+                  disabled={liveMessages.length === 0}
                 >
                   비우기
                 </Button>
@@ -351,7 +364,7 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
                 ))}
 
                 {/* 타이핑 인디케이터 */}
-                {state.pending && (
+                {send.isPending && (
                   <div className="flex justify-start">
                     <div className="max-w-3xl rounded-2xl bg-gray-100 px-4 py-3 text-gray-500">
                       <p className="text-sm">응답 생성 중…</p>
@@ -389,10 +402,10 @@ export function AIAssistantDetailClient({ initialData }: AIAssistantDetailClient
                   />
                   <Button
                     type="submit"
-                    disabled={!currentInput.trim() || isLoading || state.pending}
+                    disabled={!currentInput.trim() || isLoading || send.isPending}
                     className="flex items-center gap-2"
                   >
-                    {isLoading || state.pending ? (
+                    {isLoading || send.isPending ? (
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                     ) : (
                       <Send className="h-4 w-4" />

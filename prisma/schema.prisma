@@ -27,6 +27,7 @@ model User {
   passwordResetExpires DateTime?
   aiServerSyncs        AIServerSync[]
   attempts             Attempt[]
+  chatSessions         ChatSession[]
   classMemberships     ClassMember[]
   createdClasses       Class[]             @relation("ClassCreator")
   assignedProblems     ProblemAssignment[] @relation("ProblemAssigner")
@@ -36,15 +37,12 @@ model User {
   reviewedProblems     Problem[]           @relation("ProblemReviewer")
   searchQueries        SearchQuery[]
   teacherReports       TeacherReport[]
+  teachers             TeacherStudent[]    @relation("StudentToTeacher")
+  students             TeacherStudent[]    @relation("TeacherToStudent")
   textbooks            Textbook[]
   todos                Todo[]
   preferences          UserPreferences?
-  chatSessions        ChatSession[]
 
-  // TeacherToStudent 관계
-  students        TeacherStudent[]  @relation("TeacherToStudent")
-  // StudentToTeacher 관계
-  teachers        TeacherStudent[]  @relation("StudentToTeacher")
   @@index([role])
   @@index([status])
   @@index([deletedAt])
@@ -53,14 +51,13 @@ model User {
 }
 
 model TeacherStudent {
-  id         String  @id @default(cuid())
-  teacherId  String
-  studentId  String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  teacher    User    @relation("TeacherToStudent", fields: [teacherId], references: [id])
-  student    User    @relation("StudentToTeacher", fields: [studentId], references: [id])
+  id        String   @id @default(cuid())
+  teacherId String
+  studentId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  student   User     @relation("StudentToTeacher", fields: [studentId], references: [id])
+  teacher   User     @relation("TeacherToStudent", fields: [teacherId], references: [id])
 
   @@unique([teacherId, studentId])
   @@map("teacher_students")
@@ -93,15 +90,15 @@ model Class {
 }
 
 model ClassMember {
-  id       String         @id @default(cuid())
+  id       String          @id @default(cuid())
   classId  String
   userId   String
   role     ClassMemberRole @default(STUDENT)
-  joinedAt DateTime       @default(now())
+  joinedAt DateTime        @default(now())
   leftAt   DateTime?
-  isActive Boolean        @default(true)
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  class    Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  isActive Boolean         @default(true)
+  class    Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([classId, userId])
   @@index([classId])
@@ -112,16 +109,16 @@ model ClassMember {
 }
 
 model UserPreferences {
-  id                  String           @id @default(cuid())
-  userId              String           @unique
+  id                  String            @id @default(cuid())
+  userId              String            @unique
   preferredDifficulty ProblemDifficulty @default(MEDIUM)
   learningStyle       LearningStyle
   studyTime           Int?
   interests           String
-  emailNotifications  Boolean          @default(true)
-  pushNotifications   Boolean          @default(true)
-  weeklyReport        Boolean          @default(true)
-  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailNotifications  Boolean           @default(true)
+  pushNotifications   Boolean           @default(true)
+  weeklyReport        Boolean           @default(true)
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_preferences")
@@ -192,8 +189,8 @@ model Problem {
   materialProblems LearningMaterialProblem[]
   progressEntries  ProblemProgress[]
   creator          User?                     @relation("ProblemCreator", fields: [createdBy], references: [id])
-  textbook         Textbook?                 @relation(fields: [textbookId], references: [id])
   reviewer         User?                     @relation("ProblemReviewer", fields: [reviewedBy], references: [id])
+  textbook         Textbook?                 @relation(fields: [textbookId], references: [id])
 
   @@index([subject])
   @@index([difficulty])
@@ -235,8 +232,8 @@ model TeacherReport {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   reportAnalyses   ReportAnalysis[]
-  user             User             @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   class            Class?           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user             User             @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([createdBy])
   @@index([classId])
@@ -276,8 +273,8 @@ model ProblemProgress {
   lastAccessed     DateTime         @default(now())
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  learningMaterial LearningMaterial @relation(fields: [studyId], references: [id], onDelete: Cascade)
   problem          Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  learningMaterial LearningMaterial @relation(fields: [studyId], references: [id], onDelete: Cascade)
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, studyId, problemId, attemptNumber])
@@ -303,8 +300,8 @@ model Attempt {
   timeSpent        Int               @default(0)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  learningMaterial LearningMaterial? @relation(fields: [studyId], references: [id], onDelete: Cascade)
   problem          Problem           @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  learningMaterial LearningMaterial? @relation(fields: [studyId], references: [id], onDelete: Cascade)
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, problemId])
@@ -322,7 +319,7 @@ model ProblemAssignment {
   status         AssignmentStatus @default(DRAFT)
   classId        String?
   studentId      String?
-  problemIds     Json             // Array of problem IDs
+  problemIds     Json
   dueDate        DateTime?
   instructions   String?
   metadata       Json?
@@ -343,17 +340,17 @@ model ProblemAssignment {
 }
 
 model Todo {
-  id          String     @id @default(cuid())
+  id          String        @id @default(cuid())
   userId      String
   text        String
-  completed   Boolean    @default(false)
-  priority    TodoPriority @default(MEDIUM)
+  completed   Boolean       @default(false)
+  priority    TodoPriority  @default(MEDIUM)
   category    TodoCategory?
   description String?
   dueDate     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, completed])
   @@map("todos")
@@ -489,6 +486,50 @@ model AIServerSync {
   @@index([status])
   @@index([startTime])
   @@map("ai_server_sync")
+}
+
+model ChatSession {
+  id            String        @id @default(cuid())
+  userId        String
+  title         String        @default("새 대화")
+  lastMessageAt DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+  messages      ChatMessage[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deletedAt])
+  @@index([lastMessageAt])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id                    String         @id @default(cuid())
+  sessionId             String
+  role                  ChatRole
+  content               String
+  usageTokensPrompt     Int?
+  usageTokensCompletion Int?
+  usageTokensTotal      Int?
+  createdAt             DateTime       @default(now())
+  citations             ChatCitation[]
+  session               ChatSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
+}
+
+model ChatCitation {
+  id        String      @id @default(cuid())
+  messageId String
+  title     String
+  url       String?
+  page      Int?
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("chat_citations")
 }
 
 enum UserRole {
@@ -651,55 +692,10 @@ enum TodoCategory {
   OTHER
 }
 
-// --- AI Chat (Sessions/Messages) ---
 enum ChatRole {
   USER
   ASSISTANT
   SYSTEM
-}
-
-model ChatSession {
-  id            String       @id @default(cuid())
-  userId        String
-  title         String       @default("새 대화")
-  lastMessageAt DateTime     @default(now())
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  deletedAt     DateTime?
-  messages      ChatMessage[]
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, deletedAt])
-  @@index([lastMessageAt])
-  @@map("chat_sessions")
-}
-
-model ChatMessage {
-  id                   String      @id @default(cuid())
-  sessionId            String
-  role                 ChatRole
-  content              String
-  usageTokensPrompt    Int?
-  usageTokensCompletion Int?
-  usageTokensTotal     Int?
-  createdAt            DateTime    @default(now())
-  session              ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  citations            ChatCitation[]
-
-  @@index([sessionId, createdAt])
-  @@map("chat_messages")
-}
-
-model ChatCitation {
-  id        String      @id @default(cuid())
-  messageId String
-  title     String
-  url       String?
-  page      Int?
-  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-
-  @@index([messageId])
-  @@map("chat_citations")
 }
 
 enum TextbookStatus {

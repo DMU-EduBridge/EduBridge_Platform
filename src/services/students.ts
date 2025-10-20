@@ -25,5 +25,5 @@ export const studentsService = {
   inviteStudent: (data: { name: string; email: string; gradeLevel: string; message?: string }) =>
     api.post('/students/invite', data).then((res) => res.data),
 
-  deleteStudent: (id: string) => api.delete(`/students/${id}`).then((res) => res.data),
+  deleteStudent: (id: string) => api.delete(`/students?studentId=${id}`).then((res) => res.data),
 };

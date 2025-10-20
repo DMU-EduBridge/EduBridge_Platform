@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useStudents } from '@/hooks/students';
+import { useStudentMutations } from '@/hooks/students/use-student-mutations';
 import { Student } from '@/types/domain/student';
 import {
   Award,
@@ -16,11 +17,13 @@ import {
   MessageCircle,
   Plus,
   Search,
+  Trash2,
   TrendingUp,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
 // 하드코딩된 데이터는 이제 API에서 가져옵니다
 
@@ -59,7 +62,26 @@ export default function StudentsPage() {
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
   });
 
+  const { deleteStudent } = useStudentMutations();
+
   const students = studentsQuery.data?.data?.students || [];
+
+  const handleDeleteStudent = async (studentId: string, studentName: string) => {
+    if (
+      confirm(
+        `정말로 ${studentName} 학생과의 연결을 해제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`,
+      )
+    ) {
+      try {
+        await deleteStudent.mutateAsync(studentId);
+        toast.success('학생과의 연결이 해제되었습니다.');
+      } catch (error: any) {
+        toast.error('학생 연결 해제 실패', {
+          description: error.message || '학생 연결 해제 중 오류가 발생했습니다.',
+        });
+      }
+    }
+  };
   // @ts-ignore - TypeScript strict mode issue
   const stats = statsQuery.data?.data ?? {
     totalStudents: 0,
@@ -332,6 +354,19 @@ export default function StudentsPage() {
                       리포트 보기
                     </Button>
                   </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => handleDeleteStudent(student.id, student.name)}
+                    disabled={deleteStudent.isPending}
+                  >
+                    {deleteStudent.isPending ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -346,7 +381,7 @@ export default function StudentsPage() {
               <p className="mb-4 text-gray-600">검색 조건에 맞는 학생이 없습니다.</p>
               <Button onClick={() => setInviteModalOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                학생 초대하기
+                학생 연결하기
               </Button>
             </CardContent>
           </Card>

@@ -1,7 +1,7 @@
 import { authOptions } from '@/lib/core/auth';
 import { prisma } from '@/lib/core/prisma';
 import { logger } from '@/lib/monitoring';
-import { GradeLevel, UserRole, UserStatus } from '@prisma/client';
+import { GradeLevel, UserRole } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -37,14 +37,22 @@ export async function POST(request: NextRequest) {
 
     if (!existingUser) {
       return NextResponse.json(
-        { success: false, error: '해당 이메일로 등록된 사용자가 없습니다.' },
+        {
+          success: false,
+          error: '해당 이메일로 등록된 사용자가 없습니다.',
+          suggestion: '학생이 먼저 회원가입을 완료한 후 다시 시도해주세요.',
+        },
         { status: 404 },
       );
     }
 
     if (existingUser.role !== UserRole.STUDENT) {
       return NextResponse.json(
-        { success: false, error: '해당 사용자는 학생이 아닙니다.' },
+        {
+          success: false,
+          error: '해당 사용자는 학생이 아닙니다.',
+          suggestion: '학생 계정으로 가입된 이메일 주소를 입력해주세요.',
+        },
         { status: 400 },
       );
     }
@@ -61,7 +69,11 @@ export async function POST(request: NextRequest) {
 
     if (existingRelation) {
       return NextResponse.json(
-        { success: false, error: '이미 이 학생과 관계가 등록되어 있습니다.' },
+        {
+          success: false,
+          error: '이미 이 학생과 관계가 등록되어 있습니다.',
+          suggestion: '다른 학생의 이메일 주소를 입력하거나, 이미 연결된 학생 목록을 확인해주세요.',
+        },
         { status: 409 },
       );
     }
@@ -74,7 +86,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    logger.info('학생 초대 성공', {
+    logger.info('학생 연결 성공', {
       userId: session.user.id,
       studentId: existingUser.id,
       studentEmail: existingUser.email,
