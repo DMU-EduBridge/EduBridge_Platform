@@ -12,15 +12,26 @@ import { ReportStatus } from '@prisma/client';
 
 export class TeacherReportService {
   /**
-   * 교사의 리포트 목록 조회
+   * 교사의 리포트 목록 조회 (담당 학생들의 리포트 포함)
    */
   async getTeacherReports(
     teacherId: string,
     filters: ReportFilters = {},
   ): Promise<TeacherReport[]> {
     try {
+      // 선생님이 담당하는 학생들의 ID 목록 조회
+      const teacherStudents = await prisma.teacherStudent.findMany({
+        where: { teacherId },
+        select: { studentId: true },
+      });
+      const studentIds = teacherStudents.map((ts) => ts.studentId);
+
+      // 선생님이 생성한 리포트 또는 담당 학생들이 생성한 리포트 조회
       const whereClause: any = {
-        createdBy: teacherId,
+        OR: [
+          { createdBy: teacherId }, // 선생님이 직접 생성한 리포트
+          ...(studentIds.length > 0 ? [{ createdBy: { in: studentIds } }] : []), // 담당 학생들이 생성한 리포트
+        ],
       };
 
       if (filters.classId) {
@@ -54,6 +65,7 @@ export class TeacherReportService {
               id: true,
               name: true,
               email: true,
+              role: true,
             },
           },
         },
@@ -70,14 +82,73 @@ export class TeacherReportService {
   }
 
   /**
-   * 특정 리포트 조회
+   * 학생의 리포트 목록 조회 (본인이 생성한 리포트만)
    */
-  async getReportById(reportId: string, teacherId: string): Promise<TeacherReport | null> {
+  async getStudentReports(
+    studentId: string,
+    filters: ReportFilters = {},
+  ): Promise<TeacherReport[]> {
+    try {
+      const whereClause: any = {
+        createdBy: studentId, // 학생이 직접 생성한 리포트만
+      };
+
+      if (filters.classId) {
+        whereClause.classId = filters.classId;
+      }
+      if (filters.reportType) {
+        whereClause.reportType = filters.reportType;
+      }
+      if (filters.status) {
+        whereClause.status = filters.status;
+      }
+      if (filters.startDate || filters.endDate) {
+        whereClause.createdAt = {};
+        if (filters.startDate) whereClause.createdAt.gte = filters.startDate;
+        if (filters.endDate) whereClause.createdAt.lte = filters.endDate;
+      }
+
+      const reports = await prisma.teacherReport.findMany({
+        where: whereClause,
+        include: {
+          class: {
+            select: {
+              id: true,
+              name: true,
+              subject: true,
+              gradeLevel: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return reports as TeacherReport[];
+    } catch (error) {
+      logger.error('Failed to get student reports', { studentId, filters, error });
+      throw new Error('리포트 목록을 불러오는데 실패했습니다.');
+    }
+  }
+
+  /**
+   * 학생의 특정 리포트 조회 (본인이 생성한 리포트만)
+   */
+  async getStudentReportById(reportId: string, studentId: string): Promise<TeacherReport | null> {
     try {
       const report = await prisma.teacherReport.findFirst({
         where: {
           id: reportId,
-          createdBy: teacherId,
+          createdBy: studentId, // 학생이 직접 생성한 리포트만
         },
         include: {
           class: {
@@ -93,6 +164,59 @@ export class TeacherReportService {
               id: true,
               name: true,
               email: true,
+              role: true,
+            },
+          },
+          reportAnalyses: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+        },
+      });
+
+      return report as TeacherReport | null;
+    } catch (error) {
+      logger.error('Failed to get student report by id', { reportId, studentId, error });
+      throw new Error('리포트를 불러오는데 실패했습니다.');
+    }
+  }
+
+  /**
+   * 특정 리포트 조회 (담당 학생의 리포트 포함)
+   */
+  async getReportById(reportId: string, teacherId: string): Promise<TeacherReport | null> {
+    try {
+      // 선생님이 담당하는 학생들의 ID 목록 조회
+      const teacherStudents = await prisma.teacherStudent.findMany({
+        where: { teacherId },
+        select: { studentId: true },
+      });
+      const studentIds = teacherStudents.map((ts) => ts.studentId);
+
+      const report = await prisma.teacherReport.findFirst({
+        where: {
+          id: reportId,
+          OR: [
+            { createdBy: teacherId }, // 선생님이 직접 생성한 리포트
+            ...(studentIds.length > 0 ? [{ createdBy: { in: studentIds } }] : []), // 담당 학생들이 생성한 리포트
+          ],
+        },
+        include: {
+          class: {
+            select: {
+              id: true,
+              name: true,
+              subject: true,
+              gradeLevel: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
             },
           },
           reportAnalyses: {
@@ -357,19 +481,36 @@ export class TeacherReportService {
   }
 
   /**
-   * 리포트 통계 조회
+   * 리포트 통계 조회 (담당 학생들의 리포트 포함)
    */
   async getReportStats(teacherId: string): Promise<ReportStats> {
     try {
+      // 선생님이 담당하는 학생들의 ID 목록 조회
+      const teacherStudents = await prisma.teacherStudent.findMany({
+        where: { teacherId },
+        select: { studentId: true },
+      });
+      const studentIds = teacherStudents.map((ts) => ts.studentId);
+
       const reports = await prisma.teacherReport.findMany({
         where: {
-          createdBy: teacherId,
+          OR: [
+            { createdBy: teacherId }, // 선생님이 직접 생성한 리포트
+            ...(studentIds.length > 0 ? [{ createdBy: { in: studentIds } }] : []), // 담당 학생들이 생성한 리포트
+          ],
         },
         include: {
           class: {
             select: {
               id: true,
               name: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
             },
           },
         },

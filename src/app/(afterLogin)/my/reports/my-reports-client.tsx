@@ -1,48 +1,18 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useReports } from '@/hooks/reports';
-import { Report } from '@/types/domain/report';
-import {
-  AlertTriangle,
-  BookOpen,
-  Calendar,
-  CheckCircle,
-  Download,
-  Target,
-  TrendingUp,
-  User,
-} from 'lucide-react';
+import { useStudentReports } from '@/hooks/teacher-reports/use-student-reports';
+import { TeacherReport } from '@/types/domain/teacher-report';
+import { Download, FileText } from 'lucide-react';
 import { Session } from 'next-auth';
+import Link from 'next/link';
 import { useState } from 'react';
 
-interface ReportStats {
-  totalReports: number;
-  completedReports: number;
-  weeklyChange: number;
-  completionRate: number;
-  averageScore: number;
-}
-
 const typeLabels = {
-  MONTHLY: '월간 리포트',
-  INDIVIDUAL: '개별 리포트',
-  SUBJECT: '과목별 리포트',
-  WEEKLY: '주간 리포트',
-};
-
-const statusColors = {
-  COMPLETED: 'bg-green-100 text-green-800',
-  IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
-  PENDING: 'bg-gray-100 text-gray-800',
-};
-
-const statusLabels = {
-  COMPLETED: '완료',
-  IN_PROGRESS: '진행 중',
-  PENDING: '대기 중',
+  PROGRESS_REPORT: '진도 리포트',
+  PERFORMANCE_ANALYSIS: '성과 분석',
+  CLASS_SUMMARY: '클래스 요약',
+  STUDENT_INSIGHTS: '학생 인사이트',
 };
 
 interface MyReportsClientProps {
@@ -55,271 +25,153 @@ export function MyReportsClient({ session }: MyReportsClientProps) {
 
   // 학생의 경우 자신의 리포트만 필터링
   const {
-    reports: reportsQuery,
-    stats: statsQuery,
-    download: downloadMutation,
-  } = useReports({
-    type: selectedType !== 'all' ? selectedType : undefined,
+    data: reportsResponse,
+    isLoading,
+    error,
+  } = useStudentReports({
+    reportType: selectedType !== 'all' ? selectedType : undefined,
     status: selectedStatus !== 'all' ? selectedStatus : undefined,
-    // 학생인 경우 자신의 ID로 필터링
-    studentId: session?.user?.role === 'STUDENT' ? session.user.id : undefined,
   });
 
-  const reports = reportsQuery.data?.reports || [];
-  const stats: ReportStats = (statsQuery.data as ReportStats) || {
-    totalReports: 0,
-    completedReports: 0,
-    weeklyChange: 0,
-    completionRate: 0,
-    averageScore: 0,
-  };
+  const reports = reportsResponse?.data || [];
 
   const handleDownload = (reportId: string) => {
-    downloadMutation.mutate(reportId as string);
+    // TODO: 다운로드 기능 구현
+    console.log('Download report:', reportId);
   };
 
   return (
     <div className="space-y-6 p-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">내 학습 리포트</h1>
-          <p className="mt-2 text-gray-600">
-            나의 학습 성과를 분석한 개인화된 리포트를 확인하세요.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            전체 다운로드
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">마이 리포트</h1>
+        <p className="mt-2 text-gray-600">
+          나의 학습을 AI가 분석해 더 나은 학습 방식을 추천 할 수 있습니다.
+        </p>
       </div>
 
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">총 리포트</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : stats?.totalReports || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.weeklyChange ? `+${stats.weeklyChange} 이번 주` : '로딩 중...'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">완료된 리포트</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : stats?.completedReports || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.completionRate ? `${stats.completionRate}% 완료율` : '로딩 중...'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">평균 점수</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : `${stats?.averageScore || 0}점`}
-            </div>
-            <p className="text-xs text-muted-foreground">전체 평균</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">완료율</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statsQuery.isLoading ? '...' : `${stats?.completionRate || 0}%`}
-            </div>
-            <p className="text-xs text-muted-foreground">학습 완료율</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 필터 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>리포트 필터</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
+      {/* 리포트 필터 */}
+      <div className="rounded-lg border bg-white p-4">
+        <h3 className="mb-4 font-semibold text-gray-900">리포트 필터</h3>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">모든 유형</label>
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-md border border-gray-300 px-3 py-1 text-sm"
             >
               <option value="all">모든 유형</option>
-              <option value="MONTHLY">월간 리포트</option>
-              <option value="INDIVIDUAL">개별 리포트</option>
-              <option value="SUBJECT">과목별 리포트</option>
-              <option value="WEEKLY">주간 리포트</option>
+              <option value="PROGRESS_REPORT">진도 리포트</option>
+              <option value="PERFORMANCE_ANALYSIS">성과 분석</option>
+              <option value="CLASS_SUMMARY">클래스 요약</option>
+              <option value="STUDENT_INSIGHTS">학생 인사이트</option>
             </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">모든 상태</label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="rounded-md border border-gray-300 px-3 py-1 text-sm"
             >
               <option value="all">모든 상태</option>
+              <option value="DRAFT">초안</option>
+              <option value="GENERATING">생성 중</option>
               <option value="COMPLETED">완료</option>
-              <option value="IN_PROGRESS">진행 중</option>
-              <option value="PENDING">대기 중</option>
+              <option value="FAILED">실패</option>
             </select>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex-1">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg
+                  className="h-4 w-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="리포트 검색..."
+                className="w-full rounded-md border border-gray-300 py-1 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 리포트 목록 */}
-      <div className="space-y-6">
-        {reportsQuery.isLoading ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-              <p className="text-gray-600">리포트 목록을 불러오는 중...</p>
-            </CardContent>
-          </Card>
-        ) : reportsQuery.error ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <p className="text-red-600">리포트 목록을 불러오는데 실패했습니다.</p>
-            </CardContent>
-          </Card>
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="rounded-lg border bg-white p-8 text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+            <p className="text-gray-600">리포트 목록을 불러오는 중...</p>
+          </div>
+        ) : error ? (
+          <div className="rounded-lg border bg-white p-8 text-center">
+            <p className="text-red-600">리포트 목록을 불러오는데 실패했습니다.</p>
+          </div>
+        ) : reports.length === 0 ? (
+          <div className="rounded-lg border bg-white p-8 text-center">
+            <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">아직 리포트가 없습니다</h3>
+            <p className="mb-4 text-gray-600">첫 번째 학습 리포트를 생성해보세요.</p>
+          </div>
         ) : (
-          reports.map((report: Report) => (
-            <Card key={report.id} className="transition-shadow hover:shadow-md">
-              <CardHeader>
-                <div className="flex items-start justify-between">
+          reports.map((report: TeacherReport) => {
+            const reportDate = new Date(report.createdAt);
+            const year = reportDate.getFullYear();
+            const month = reportDate.getMonth() + 1;
+
+            return (
+              <div
+                key={report.id}
+                className="flex items-center justify-between rounded-lg border bg-white p-4 hover:bg-gray-50"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                    <FileText className="h-6 w-6 text-blue-600" />
+                  </div>
                   <div>
-                    <CardTitle className="text-xl">{report.title}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {typeLabels[report.type as keyof typeof typeLabels]} • {report.period}
-                    </CardDescription>
+                    <h3 className="font-semibold text-gray-900">
+                      {year}년 {month}월 리포트
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {typeLabels[report.reportType as keyof typeof typeLabels]} •{' '}
+                      {report.class?.name || '전체'}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={statusColors[report.status as keyof typeof statusColors]}>
-                      {statusLabels[report.status as keyof typeof statusLabels]}
-                    </Badge>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link href={`/my/reports/${report.id}`}>
+                    <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      미리보기
                     </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* 기본 통계 */}
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="rounded bg-gray-50 p-3 text-center">
-                    <div className="text-lg font-semibold text-gray-900">{report.students}</div>
-                    <div className="text-sm text-gray-600">분석 대상</div>
-                  </div>
-                  <div className="rounded bg-gray-50 p-3 text-center">
-                    <div className="text-lg font-semibold text-gray-900">
-                      {report.totalProblems}
-                    </div>
-                    <div className="text-sm text-gray-600">총 문제 수</div>
-                  </div>
-                  <div className="rounded bg-gray-50 p-3 text-center">
-                    <div className="text-lg font-semibold text-gray-900">
-                      {report.averageScore}점
-                    </div>
-                    <div className="text-sm text-gray-600">평균 점수</div>
-                  </div>
-                  <div className="rounded bg-gray-50 p-3 text-center">
-                    <div className="text-lg font-semibold text-gray-900">
-                      {report.completionRate}%
-                    </div>
-                    <div className="text-sm text-gray-600">완료율</div>
-                  </div>
-                </div>
-
-                {/* 인사이트 */}
-                <div>
-                  <h4 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                    주요 인사이트
-                  </h4>
-                  <div className="space-y-2">
-                    {report.insights?.map((insight: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2 rounded bg-blue-50 p-2">
-                        <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600" />
-                        <span className="text-sm text-gray-700">{insight}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 개선 제안 */}
-                <div>
-                  <h4 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
-                    <Target className="h-4 w-4 text-green-600" />
-                    개선 제안
-                  </h4>
-                  <div className="space-y-2">
-                    {report.recommendations?.map((recommendation: string, index: number) => (
-                      <div key={index} className="flex items-start gap-2 rounded bg-green-50 p-2">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-                        <span className="text-sm text-gray-700">{recommendation}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 액션 버튼 */}
-                <div className="flex gap-2 border-t pt-4">
-                  <Button variant="outline" size="sm">
-                    <Calendar className="mr-1 h-4 w-4" />
-                    상세 보기
-                  </Button>
+                  </Link>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleDownload(report.id)}
-                    disabled={downloadMutation.isPending}
+                    className="flex items-center gap-2"
                   >
-                    <Download className="mr-1 h-4 w-4" />
-                    {downloadMutation.isPending ? '다운로드 중...' : 'PDF 다운로드'}
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <User className="mr-1 h-4 w-4" />
-                    선생님과 공유
+                    <Download className="h-4 w-4" />
+                    리포트 다운로드
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              </div>
+            );
+          })
         )}
       </div>
-
-      {!reportsQuery.isLoading && !reportsQuery.error && reports.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">리포트가 없습니다</h3>
-            <p className="mb-4 text-gray-600">
-              아직 생성된 리포트가 없습니다. 학습을 진행하면 리포트가 생성됩니다.
-            </p>
-            <Button>
-              <BookOpen className="mr-2 h-4 w-4" />
-              학습 시작하기
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
