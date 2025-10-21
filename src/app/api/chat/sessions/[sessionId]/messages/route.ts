@@ -1,6 +1,5 @@
 import { authOptions } from '@/lib/core/auth';
 import { chatService } from '@/server/services/chat/chat.service';
-import { aiLLMService } from '@/services/ai-llm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -33,42 +32,46 @@ export async function POST(
       createdAt: m.createdAt,
     }));
 
-    // 프로덕션 모드에서는 실제 AI 서비스 사용
-    try {
-      const aiResponse = await aiLLMService.chatMessage({
-        userId: session.user.id,
-        userMessage: message,
-        history,
-      });
-
-      const aiMessage = aiResponse.ai_response || '죄송합니다. 응답을 생성할 수 없습니다.';
-
-      // AI 응답을 데이터베이스에 저장
-      await chatService.addMessage(params.sessionId, aiMessage, 'ASSISTANT');
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          userMessage: message,
-          aiResponse: aiMessage,
-        },
-      });
-    } catch (aiError) {
-      console.error('AI 응답 생성 실패:', aiError);
-
-      // AI 응답 실패 시 기본 응답 저장
-      const fallbackMessage =
-        '죄송합니다. 현재 AI 서비스에 문제가 있습니다. 잠시 후 다시 시도해주세요.';
-      await chatService.addMessage(params.sessionId, fallbackMessage, 'ASSISTANT');
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          userMessage: message,
-          aiResponse: fallbackMessage,
-        },
-      });
+    // 실제 LLM 서버 호출
+    const fastApiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL;
+    if (!fastApiUrl) {
+      throw new Error('LLM server URL not configured');
     }
+
+    const upstreamUrl = `${fastApiUrl.replace(/\/$/, '')}/chat/message`;
+
+    const res = await fetch(upstreamUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': session.user.id,
+      },
+      body: JSON.stringify({
+        user_id: session.user.id,
+        user_message: message,
+        history,
+      }),
+    });
+
+    let aiMessage = '죄송합니다. 응답을 생성할 수 없습니다.';
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      aiMessage = data.ai_response || aiMessage;
+    } else {
+      console.error('LLM 서버 응답 실패:', res.status, await res.text().catch(() => ''));
+    }
+
+    // AI 응답을 데이터베이스에 저장
+    await chatService.addMessage(params.sessionId, aiMessage, 'ASSISTANT');
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        userMessage: message,
+        aiResponse: aiMessage,
+      },
+    });
   } catch (error) {
     console.error('채팅 메시지 처리 실패:', error);
     return NextResponse.json({ success: false, error: '메시지 전송 실패' }, { status: 500 });

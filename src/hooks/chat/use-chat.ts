@@ -26,9 +26,9 @@ export interface ChatSessionsResponse {
 }
 
 // 채팅 세션 목록 조회
-export function useChatSessions() {
+export function useChatSessions(userId?: string) {
   return useQuery<ChatSessionsResponse>({
-    queryKey: ['chat-sessions'],
+    queryKey: ['chat-sessions', userId],
     queryFn: async () => {
       const response = await fetch('/api/chat/sessions');
       if (!response.ok) {
@@ -37,6 +37,7 @@ export function useChatSessions() {
       const data = await response.json();
       return data.data;
     },
+    enabled: !!userId,
   });
 }
 
