@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server';
 /**
  * 학생의 특정 리포트 조회
  */
-export async function GET(request: NextRequest, { params }: { params: { reportId: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: { reportId: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

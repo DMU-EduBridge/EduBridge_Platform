@@ -1,62 +1,55 @@
 import { authOptions } from '@/lib/core/auth';
 import { chatService } from '@/server/services/chat/chat.service';
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-// 특정 채팅 세션 조회
 export async function GET(
-  req: NextRequest,
+  _req: Request,
   { params }: { params: { sessionId: string } },
 ): Promise<NextResponse> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    const sessionData = await chatService.getUserChatSessions(session.user.id);
+    const targetSession = sessionData.find((s) => s.id === params.sessionId);
+
+    if (!targetSession) {
+      return NextResponse.json({ success: false, error: 'Session not found' }, { status: 404 });
     }
 
-    const chatSession = await chatService.getChatSession(params.sessionId, session.user.id);
-
-    if (!chatSession) {
-      return NextResponse.json(
-        { success: false, error: '채팅 세션을 찾을 수 없습니다' },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: chatSession,
-    });
+    return NextResponse.json({ success: true, data: { session: targetSession } });
   } catch (error) {
     console.error('채팅 세션 조회 실패:', error);
     return NextResponse.json({ success: false, error: '채팅 세션 조회 실패' }, { status: 500 });
   }
 }
 
-// 채팅 세션 삭제
 export async function DELETE(
-  req: NextRequest,
+  _req: Request,
   { params }: { params: { sessionId: string } },
 ): Promise<NextResponse> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    // Ensure the user owns the session before deleting
+    const sessionData = await chatService.getUserChatSessions(session.user.id);
+    const targetSession = sessionData.find((s) => s.id === params.sessionId);
 
-    const deleted = await chatService.deleteChatSession(params.sessionId, session.user.id);
-
-    if (!deleted) {
+    if (!targetSession) {
       return NextResponse.json(
-        { success: false, error: '채팅 세션을 찾을 수 없습니다' },
+        { success: false, error: 'Session not found or unauthorized' },
         { status: 404 },
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: '채팅 세션이 삭제되었습니다',
-    });
+    await chatService.deleteChatSession(params.sessionId, session.user.id);
+    return NextResponse.json({ success: true, data: null }, { status: 200 });
   } catch (error) {
     console.error('채팅 세션 삭제 실패:', error);
     return NextResponse.json({ success: false, error: '채팅 세션 삭제 실패' }, { status: 500 });

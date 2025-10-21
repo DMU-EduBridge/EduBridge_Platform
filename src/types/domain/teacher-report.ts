@@ -29,6 +29,7 @@ export interface TeacherReport {
     id: string;
     name: string;
     email: string;
+    role: string;
   };
 }
 
@@ -104,10 +105,10 @@ export interface ReportStats {
 }
 
 export interface ReportFilters {
-  classId?: string;
-  reportType?: string;
-  status?: string;
-  startDate?: Date;
-  endDate?: Date;
-  createdBy?: string;
+  classId?: string | undefined;
+  reportType?: string | undefined;
+  status?: string | undefined;
+  startDate?: Date | undefined;
+  endDate?: Date | undefined;
+  createdBy?: string | undefined;
 }

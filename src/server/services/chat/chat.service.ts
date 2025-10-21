@@ -10,7 +10,7 @@ export interface ChatSessionData {
   messages: {
     id: string;
     content: string;
-    role: 'USER' | 'ASSISTANT';
+    role: 'USER' | 'ASSISTANT' | 'SYSTEM';
     createdAt: Date;
   }[];
 }
@@ -177,7 +177,9 @@ export const chatService = {
       const dayCounts = sessions.reduce(
         (acc, session) => {
           const day = session.createdAt.toISOString().split('T')[0];
-          acc[day] = (acc[day] || 0) + 1;
+          if (day) {
+            acc[day] = (acc[day] || 0) + 1;
+          }
           return acc;
         },
         {} as Record<string, number>,

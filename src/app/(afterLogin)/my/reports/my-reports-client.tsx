@@ -19,7 +19,7 @@ interface MyReportsClientProps {
   session: Session;
 }
 
-export function MyReportsClient({ session }: MyReportsClientProps) {
+export function MyReportsClient({ session: _session }: MyReportsClientProps) {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
