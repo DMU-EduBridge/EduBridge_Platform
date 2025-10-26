@@ -5,18 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useProblems } from '@/hooks/problems';
+import type { Problem } from '@/types/domain/problem';
 import { useState } from 'react';
 
-export type ProblemSolveViewModel = {
-  id: string;
-  title: string;
-  description: string | null;
-  type: string;
-  options: string[];
-  correctAnswer: string;
-  explanation: string | null;
-  hints: string[];
-};
+// 도메인 타입 재사용
+export type ProblemSolveViewModel = Problem;
 
 export default function ProblemSolveClient({ problem }: { problem: ProblemSolveViewModel }) {
   const [selected, setSelected] = useState('');
@@ -176,7 +169,7 @@ export default function ProblemSolveClient({ problem }: { problem: ProblemSolveV
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {problem.hints.map((hint, index) => (
+              {problem.hints.map((hint: string, index: number) => (
                 <div key={index} className="rounded-lg border border-blue-200 bg-blue-50 p-3">
                   <span className="text-blue-800">{hint}</span>
                 </div>

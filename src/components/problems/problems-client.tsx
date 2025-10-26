@@ -48,7 +48,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 
 // 과목명을 한글로 변환하는 함수
 const getSubjectLabel = (subject: string): string => {
@@ -143,7 +143,7 @@ function ProblemsError({ error, onRetry }: { error: Error; onRetry: () => void }
 }
 
 // Edit Problem Modal Component
-function EditProblemModal({
+const EditProblemModal = memo(function EditProblemModal({
   problem,
   isOpen,
   onClose,
@@ -332,9 +332,9 @@ function EditProblemModal({
       </DialogContent>
     </Dialog>
   );
-}
+});
 
-export default function ProblemsClient() {
+export default memo(function ProblemsClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
@@ -362,38 +362,44 @@ export default function ProblemsClient() {
     limit: pageSize,
   });
 
-  const problems = problemsQuery.data?.problems || [];
-  const totalCount = problemsQuery.data?.total || 0;
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const problems = useMemo(
+    () => problemsQuery.data?.problems || [],
+    [problemsQuery.data?.problems],
+  );
+  const totalCount = useMemo(() => problemsQuery.data?.total || 0, [problemsQuery.data?.total]);
+  const totalPages = useMemo(() => Math.ceil(totalCount / pageSize), [totalCount, pageSize]);
   const stats = statsQuery.data;
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
-  };
+  }, []);
 
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value);
     setCurrentPage(1); // 검색 시 첫 페이지로 이동
-  };
+  }, []);
 
-  const handleFilterChange = (subject: string, difficulty: string, creationType?: string) => {
-    setSelectedSubject(subject);
-    setSelectedDifficulty(difficulty);
-    if (creationType) {
-      setCreationType(creationType);
-    }
-    setCurrentPage(1); // 필터 변경 시 첫 페이지로 이동
-  };
+  const handleFilterChange = useCallback(
+    (subject: string, difficulty: string, creationType?: string) => {
+      setSelectedSubject(subject);
+      setSelectedDifficulty(difficulty);
+      if (creationType) {
+        setCreationType(creationType);
+      }
+      setCurrentPage(1); // 필터 변경 시 첫 페이지로 이동
+    },
+    [],
+  );
 
-  const handleEdit = (problem: Problem) => {
+  const handleEdit = useCallback((problem: Problem) => {
     setEditingProblem(problem);
     setEditModalOpen(true);
-  };
+  }, []);
 
-  const handleDelete = (problemId: string) => {
+  const handleDelete = useCallback((problemId: string) => {
     setDeletingProblemId(problemId);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
   const confirmDelete = async () => {
     if (!deletingProblemId) return;
@@ -407,20 +413,26 @@ export default function ProblemsClient() {
     }
   };
 
-  const handleSaveEdit = async (updatedProblem: Partial<Problem>) => {
-    if (!editingProblem) return;
+  const handleSaveEdit = useCallback(
+    async (updatedProblem: Partial<Problem>) => {
+      if (!editingProblem) return;
 
-    try {
-      await updateMutation.mutateAsync({
-        id: editingProblem.id,
-        data: updatedProblem,
-      });
-      setEditModalOpen(false);
-      setEditingProblem(null);
-    } catch (error) {
-      console.error('문제 수정 실패:', error);
-    }
-  };
+      try {
+        await updateMutation.mutateAsync({
+          id: editingProblem.id,
+          data: {
+            ...updatedProblem,
+            description: updatedProblem.description ?? undefined,
+          } as any,
+        });
+        setEditModalOpen(false);
+        setEditingProblem(null);
+      } catch (error) {
+        console.error('문제 수정 실패:', error);
+      }
+    },
+    [editingProblem, updateMutation],
+  );
 
   return (
     <div className="space-y-6">
@@ -744,4 +756,4 @@ export default function ProblemsClient() {
       />
     </div>
   );
-}
+});

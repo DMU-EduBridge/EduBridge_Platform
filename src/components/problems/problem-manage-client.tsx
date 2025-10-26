@@ -8,34 +8,14 @@ import {
   getProblemDifficultyConfig,
   getProblemStatusConfig,
   getProblemTypeConfig,
+  type Problem,
 } from '@/types/domain/problem';
 import { ArrowLeft, BarChart3, Edit, Eye, Settings, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { memo, useState } from 'react';
 
-interface ProblemManageViewModel {
-  id: string;
-  title: string;
-  description: string | null;
-  content: string;
-  type: string;
-  difficulty: string;
-  subject: string;
-  gradeLevel: string | null;
-  unit: string | null;
-  options: string[];
-  correctAnswer: string;
-  explanation: string | null;
-  hints: string[];
-  tags: string[];
-  points: number;
-  timeLimit: number | null;
-  isActive: boolean;
-  isAIGenerated: boolean;
-  reviewStatus: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// 도메인 타입 재사용
+type ProblemManageViewModel = Problem;
 
 interface ProblemStats {
   totalAttempts: number;
@@ -61,7 +41,7 @@ const ProblemManageClient = memo(function ProblemManageClient({
   const [showPreview, setShowPreview] = useState(false);
 
   const difficultyConfig = getProblemDifficultyConfig(problem.difficulty);
-  const statusConfig = getProblemStatusConfig(problem.isActive ? 'ACTIVE' : 'DRAFT');
+  const statusConfig = getProblemStatusConfig(problem.status || 'DRAFT');
   const typeConfig = getProblemTypeConfig(problem.type);
 
   const getReviewStatusColor = (status: string): string => {
@@ -215,7 +195,7 @@ const ProblemManageClient = memo(function ProblemManageClient({
                 <div>
                   <h4 className="font-medium text-gray-900">힌트</h4>
                   <div className="mt-2 space-y-2">
-                    {problem.hints.map((hint, index) => (
+                    {problem.hints.map((hint: string, index: number) => (
                       <div
                         key={index}
                         className="rounded-lg border border-yellow-200 bg-yellow-50 p-3"
@@ -228,11 +208,11 @@ const ProblemManageClient = memo(function ProblemManageClient({
               )}
 
               {/* 태그 */}
-              {problem.tags.length > 0 && (
+              {problem.tags && problem.tags.length > 0 && (
                 <div>
                   <h4 className="font-medium text-gray-900">태그</h4>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {problem.tags.map((tag, index) => (
+                    {problem.tags.map((tag: string, index: number) => (
                       <Badge key={index} variant="outline">
                         {tag}
                       </Badge>
@@ -354,8 +334,8 @@ const ProblemManageClient = memo(function ProblemManageClient({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">검토 상태</span>
-                <Badge className={getReviewStatusColor(problem.reviewStatus)}>
-                  {getReviewStatusLabel(problem.reviewStatus)}
+                <Badge className={getReviewStatusColor(problem.reviewStatus || 'PENDING')}>
+                  {getReviewStatusLabel(problem.reviewStatus || 'PENDING')}
                 </Badge>
               </div>
             </CardContent>
@@ -367,8 +347,14 @@ const ProblemManageClient = memo(function ProblemManageClient({
               <CardTitle>메타 정보</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-gray-600">
-              <div>생성일: {new Date(problem.createdAt).toLocaleDateString()}</div>
-              <div>수정일: {new Date(problem.updatedAt).toLocaleDateString()}</div>
+              <div>
+                생성일:{' '}
+                {problem.createdAt ? new Date(problem.createdAt).toLocaleDateString() : 'N/A'}
+              </div>
+              <div>
+                수정일:{' '}
+                {problem.updatedAt ? new Date(problem.updatedAt).toLocaleDateString() : 'N/A'}
+              </div>
               {problem.gradeLevel && <div>학년: {problem.gradeLevel}</div>}
               {problem.unit && <div>단원: {problem.unit}</div>}
             </CardContent>
@@ -443,7 +429,7 @@ const ProblemManageClient = memo(function ProblemManageClient({
               <div>
                 <h4 className="mb-3 font-medium text-gray-900">힌트</h4>
                 <div className="space-y-2">
-                  {problem.hints.map((hint, index) => (
+                  {problem.hints.map((hint: string, index: number) => (
                     <div key={index} className="rounded-lg border border-blue-200 bg-blue-50 p-3">
                       <span className="text-blue-800">{hint}</span>
                     </div>
