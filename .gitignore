@@ -41,3 +41,4 @@ public/uploads/
 # .env
 .cursor/
 tsconfig.tsbuildinfo
+.env\n.env.local
