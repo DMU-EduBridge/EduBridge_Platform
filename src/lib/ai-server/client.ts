@@ -1,19 +1,13 @@
 import type { ChatDelta, ChatRequest, ChatResponse } from '@/types/ai/chat';
 import { z } from 'zod';
+import { AIServiceLogger } from './ai-service-logger';
+import { AICircuitBreakerManager } from './circuit-breaker';
+import { RetryManager } from './retry-manager';
+import { AI_TIMEOUT_CONFIG, fetchWithTimeout } from './timeout-config';
 
-const EnvSchema = z.object({
-  NEXT_PUBLIC_FASTAPI_URL: z.string().url(),
-});
+// EnvSchema는 현재 사용되지 않으므로 제거
 
-function getBaseUrl(): string {
-  const parsed = EnvSchema.safeParse({
-    NEXT_PUBLIC_FASTAPI_URL: process.env.NEXT_PUBLIC_FASTAPI_URL,
-  });
-  if (!parsed.success) {
-    throw new Error('NEXT_PUBLIC_FASTAPI_URL 환경변수가 유효한 URL이어야 합니다.');
-  }
-  return parsed.data.NEXT_PUBLIC_FASTAPI_URL.replace(/\/$/, '');
-}
+// getBaseUrl 함수는 현재 사용되지 않으므로 제거
 
 const CHAT_SCHEMA = z.object({
   conversationId: z.string(),
@@ -41,124 +35,132 @@ export interface ChatOptions {
 }
 
 export async function chat(request: ChatRequest, options: ChatOptions = {}): Promise<ChatResponse> {
-  // base URL 검증 (현재 프록시 경유이므로 미사용이지만 유효성 보장)
-  getBaseUrl();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs ?? 60_000);
-  const signal = options.signal ?? controller.signal;
+  const timeoutMs = options.timeoutMs ?? AI_TIMEOUT_CONFIG.CHAT_MESSAGE;
+  const circuitBreaker = AICircuitBreakerManager.getCircuitBreaker('educational_ai', 'chat');
 
-  try {
-    const url = options.stream ? '/api/ai/bridge/chat?stream=1' : '/api/ai/bridge/chat';
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // request에서 stream 플래그 제거: 옵션 단일화
-      body: JSON.stringify({ ...request }),
-      signal,
-    });
+  return circuitBreaker.execute(async () => {
+    const result = await RetryManager.executeWithRetry(async () => {
+      const url = options.stream ? '/api/ai/bridge/chat?stream=1' : '/api/ai/bridge/chat';
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`Chat upstream error ${res.status}: ${text}`);
+      const response = await fetchWithTimeout(
+        url,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...request }),
+          signal: options.signal || null,
+        },
+        timeoutMs,
+      );
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(`Chat upstream error ${response.status}: ${text}`);
+      }
+
+      // 스트리밍 처리
+      const contentType = response.headers.get('content-type') ?? '';
+      if (contentType.includes('text/event-stream') && options.stream && response.body) {
+        return await handleStreamingResponse(response, options.onDelta);
+      }
+
+      // 일반 JSON 응답 처리
+      const data = await response.json();
+      const validated = CHAT_SCHEMA.parse(data);
+
+      AIServiceLogger.logRequest({
+        service: 'educational_ai',
+        operation: 'chat',
+        duration: timeoutMs,
+        success: true,
+        metadata: {
+          conversationId: validated.conversationId,
+          messageLength: validated.message.content.length,
+          citationsCount: validated.citations?.length || 0,
+          usage: validated.usage,
+        },
+      });
+
+      return {
+        ...validated,
+        citations: validated.citations || [],
+        usage: validated.usage || { tokensPrompt: 0, tokensCompletion: 0, tokensTotal: 0 },
+      };
+    }, RetryManager.getChatServiceConfig());
+
+    if (!result.success) {
+      AIServiceLogger.logError(
+        {
+          service: 'educational_ai',
+          operation: 'chat',
+          error: result.error?.message || 'Unknown error',
+        },
+        result.error || new Error('Chat request failed'),
+      );
+      throw result.error || new Error('Chat request failed');
     }
 
-    // 스트리밍 처리: 서버가 text/event-stream을 프록시하면 body를 읽어 누적
-    const contentType = res.headers.get('content-type') ?? '';
-    if (contentType.includes('text/event-stream') && options.stream && res.body) {
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let acc = '';
-      let accumulatedContent = '';
-      const tryUUID = () =>
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-          ? (crypto as any).randomUUID()
-          : `${Date.now()}-${Math.random()}`;
-      // SSE: 각 라인은 \n으로 구분, OpenAI 호환 포맷 처리: data: {...}, data: [DONE]
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        acc += chunk;
-        const lines = chunk.split(/\n/);
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data:')) continue;
-          const payload = trimmed.slice(5).trim();
-          if (payload === '[DONE]') {
-            // 종료 신호
-            continue;
-          }
-          try {
-            const obj = JSON.parse(payload);
-            const choice = obj?.choices?.[0];
-            const piece: string | undefined = choice?.delta?.content ?? choice?.text ?? obj?.delta;
-            if (typeof piece === 'string' && piece.length > 0) {
-              accumulatedContent += piece;
-              options.onDelta?.({ role: 'assistant', delta: piece, done: false });
-            }
-          } catch {
-            if (payload) {
-              accumulatedContent += payload;
-              options.onDelta?.({ role: 'assistant', delta: payload, done: false });
-            }
-          }
-        }
-      }
-      // 스트림 완료 후 누적된 acc에서 마지막 JSON 블롭을 파싱 시도
-      try {
-        const lastJsonIndex = acc.lastIndexOf('{');
-        if (lastJsonIndex >= 0) {
-          const maybeJson = acc.slice(lastJsonIndex);
-          return CHAT_SCHEMA.parse(JSON.parse(maybeJson)) as ChatResponse;
-        }
-      } catch {
-        // ignore and fallback
-      }
-      // 폴백: 최종 JSON이 없으면 누적 텍스트로 최소 ChatResponse 구성
-      const convId = res.headers.get('x-conversation-id') || tryUUID();
-      return CHAT_SCHEMA.parse({
-        conversationId: convId,
-        message: { role: 'assistant', content: accumulatedContent },
-        citations: [],
-        usage: { tokensPrompt: 0, tokensCompletion: 0, tokensTotal: 0 },
-      }) as ChatResponse;
-    }
-
-    // 일반 JSON 응답
-    const json = await res.json();
-    return CHAT_SCHEMA.parse(json) as ChatResponse;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+    return result.data!;
+  });
 }
 
-// AI 서버에서 받는 문제 데이터 스키마
-const AIProblemSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().optional(),
-  content: z.string(),
-  type: z.enum(['MULTIPLE_CHOICE', 'SHORT_ANSWER', 'ESSAY', 'CODING', 'MATH']),
-  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD', 'EXPERT']),
-  subject: z.string(),
-  options: z.array(z.string()).optional(),
-  correctAnswer: z.string(),
-  explanation: z.string().optional(),
-  hints: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
-  points: z.number().default(1),
-  timeLimit: z.number().optional(),
-  qualityScore: z.number().optional(),
-  metadata: z.record(z.any()).optional(), // AI 서버에서 추가 메타데이터
-});
+async function handleStreamingResponse(
+  response: Response,
+  onDelta?: (delta: ChatDelta) => void,
+): Promise<ChatResponse> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let accumulatedContent = '';
 
-const AISyncRequestSchema = z.object({
-  problems: z.array(AIProblemSchema),
-  batchId: z.string().optional(),
-  source: z.string().default('ai-server'),
-});
+  const tryUUID = () =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? (crypto as any).randomUUID()
+      : `${Date.now()}-${Math.random()}`;
 
-export type AIProblem = z.infer<typeof AIProblemSchema>;
+  // SSE: 각 라인은 \n으로 구분, OpenAI 호환 포맷 처리: data: {...}, data: [DONE]
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split(/\n/);
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data:')) continue;
+
+      const payload = trimmed.slice(5).trim();
+      if (payload === '[DONE]') {
+        continue;
+      }
+
+      try {
+        const obj = JSON.parse(payload);
+        if (obj.choices?.[0]?.delta?.content) {
+          const content = obj.choices[0].delta.content;
+          accumulatedContent += content;
+
+          if (onDelta) {
+            onDelta({
+              role: 'assistant',
+              delta: content,
+            });
+          }
+        }
+      } catch (e) {
+        // JSON 파싱 실패 시 무시
+      }
+    }
+  }
+
+  return {
+    conversationId: tryUUID(),
+    message: { role: 'assistant', content: accumulatedContent },
+    citations: [],
+    usage: { tokensPrompt: 0, tokensCompletion: 0, tokensTotal: 0 },
+  };
+}
+
 export type AISyncRequest = z.infer<typeof AISyncRequestSchema>;
 
 // AI 서버 설정
@@ -184,20 +186,18 @@ export async function fetchProblemsFromAI(params: {
   if (params.limit) url.searchParams.set('limit', params.limit.toString());
   if (params.offset) url.searchParams.set('offset', params.offset.toString());
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), AI_SERVER_CONFIG.timeout);
-
-  try {
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(AI_SERVER_CONFIG.apiKey && { Authorization: `Bearer ${AI_SERVER_CONFIG.apiKey}` }),
+  const result = await RetryManager.executeWithRetry(async () => {
+    const response = await fetchWithTimeout(
+      url.toString(),
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(AI_SERVER_CONFIG.apiKey && { Authorization: `Bearer ${AI_SERVER_CONFIG.apiKey}` }),
+        },
       },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
+      AI_TIMEOUT_CONFIG.DATA_SYNC,
+    );
 
     if (!response.ok) {
       throw new Error(`AI 서버 응답 오류: ${response.status} ${response.statusText}`);
@@ -205,36 +205,67 @@ export async function fetchProblemsFromAI(params: {
 
     const data = await response.json();
     return AISyncRequestSchema.parse(data);
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof z.ZodError) {
-      throw new Error(`AI 서버 응답 형식 오류: ${error.errors.map((e) => e.message).join(', ')}`);
-    }
-    throw error;
+  }, RetryManager.getAIServiceConfig());
+
+  if (!result.success) {
+    throw result.error || new Error('Failed to fetch problems from AI server');
   }
+
+  return result.data!;
 }
 
 // AI 서버 상태 확인
 export async function checkAIServerHealth() {
   const url = new URL('/health', AI_SERVER_CONFIG.baseUrl);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
+  const result = await RetryManager.executeWithRetry(
+    async () => {
+      const response = await fetchWithTimeout(
+        url.toString(),
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(AI_SERVER_CONFIG.apiKey && { Authorization: `Bearer ${AI_SERVER_CONFIG.apiKey}` }),
+          },
+        },
+        AI_TIMEOUT_CONFIG.HEALTH_CHECK,
+      );
 
-  try {
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(AI_SERVER_CONFIG.apiKey && { Authorization: `Bearer ${AI_SERVER_CONFIG.apiKey}` }),
-      },
-      signal: controller.signal,
-    });
+      return response.ok;
+    },
+    {
+      maxRetries: 1, // 헬스체크는 1회만 재시도
+      baseDelay: 1000,
+      maxDelay: 5000,
+      backoffMultiplier: 1,
+      retryableErrors: [/network/i, /timeout/i, /fetch/i],
+    },
+  );
 
-    clearTimeout(timeoutId);
-    return response.ok;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    return false;
-  }
+  return result.success && result.data === true;
 }
+
+const AISyncRequestSchema = z.object({
+  problems: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      content: z.string(),
+      type: z.string(),
+      difficulty: z.string(),
+      subject: z.string(),
+      options: z.array(z.string()).optional(),
+      correctAnswer: z.string(),
+      explanation: z.string().optional(),
+      hints: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      points: z.number().optional(),
+      timeLimit: z.number().optional(),
+      isAIGenerated: z.boolean().optional(),
+    }),
+  ),
+  batchId: z.string(),
+  source: z.string(),
+  totalCount: z.number().optional(),
+});

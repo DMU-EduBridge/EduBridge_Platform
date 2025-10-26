@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/core/prisma';
 import { logger } from '@/lib/monitoring';
-import { AIProblem, checkAIServerHealth, fetchProblemsFromAI } from './client';
+import { checkAIServerHealth, fetchProblemsFromAI } from './client';
 
 export class ProblemSyncService {
   /**
@@ -50,7 +50,7 @@ export class ProblemSyncService {
   /**
    * 배치로 문제들을 동기화
    */
-  private async batchSyncProblems(problems: AIProblem[]) {
+  private async batchSyncProblems(problems: any[]) {
     const results = {
       synced: 0,
       updated: 0,
@@ -80,7 +80,7 @@ export class ProblemSyncService {
   /**
    * 단일 문제 동기화
    */
-  private async syncSingleProblem(aiProblem: AIProblem) {
+  private async syncSingleProblem(aiProblem: any) {
     const existingProblem = await prisma.problem.findUnique({
       where: { id: aiProblem.id },
     });
