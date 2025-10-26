@@ -9,17 +9,7 @@ import {
   useDeleteChatSession,
   useSendMessage,
 } from '@/hooks/chat/use-chat';
-import {
-  ArrowLeft,
-  Bot,
-  Clock,
-  MessageSquare,
-  Plus,
-  Send,
-  Sparkles,
-  Trash2,
-  User,
-} from 'lucide-react';
+import { ArrowLeft, Bot, Clock, MessageSquare, Plus, Send, Trash2, User } from 'lucide-react';
 import { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -121,14 +111,18 @@ export function AIAssistantDetailClient({ session }: AIAssistantDetailClientProp
       {/* 사이드바 - 채팅 세션 목록 */}
       <div className="flex w-80 flex-col border-r border-gray-200/50 bg-white/80 shadow-lg backdrop-blur-sm">
         {/* 헤더 */}
-        <div className="flex-shrink-0 border-b   border-gray-200/50 bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+        <div className="flex-shrink-0 border-b border-gray-200/50 bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+          {/* 메인 헤더 영역 */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-lg font-bold text-white">AI 대화</h2>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="text-white hover:bg-white/20"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              뒤로가기
+            </Button>{' '}
             <Button
               onClick={handleNewSession}
               disabled={createSession.isPending}
@@ -141,7 +135,7 @@ export function AIAssistantDetailClient({ session }: AIAssistantDetailClientProp
 
           {/* 통계 정보 */}
           {chatData?.stats && (
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg bg-white/10 p-2 text-center">
                 <div className="font-semibold text-white">{chatData.stats.totalChats}</div>
                 <div className="text-xs text-blue-100">총 대화</div>
@@ -221,28 +215,6 @@ export function AIAssistantDetailClient({ session }: AIAssistantDetailClientProp
       {/* 메인 채팅 영역 */}
       <div className="flex flex-1 flex-col">
         {/* 채팅 헤더 */}
-        <div className="flex-shrink-0 border-b border-gray-200/50 bg-white/80 p-6 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="mr-4 hover:bg-gray-100"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              뒤로가기
-            </Button>
-            <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-purple-600">
-                <Bot className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">AI 어시스턴트</h1>
-                <p className="text-sm text-gray-500">AI와 대화하며 학습을 도와받으세요</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* 메시지 영역 */}
         <div className="flex-1 flex-grow overflow-y-auto bg-gradient-to-b from-transparent to-gray-50/30 p-6">

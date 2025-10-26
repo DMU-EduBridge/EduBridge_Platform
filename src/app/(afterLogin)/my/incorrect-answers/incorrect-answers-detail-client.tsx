@@ -10,9 +10,8 @@ import { Session } from 'next-auth';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-// 타입 정의
+// 도메인 타입 재사용
 type Problem = IncorrectProblem;
-
 type IncorrectAnswerNoteItem = IncorrectAnswerItem;
 
 interface IncorrectAnswersDetailClientProps {

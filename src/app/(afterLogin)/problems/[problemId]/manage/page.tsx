@@ -87,7 +87,6 @@ export default async function ProblemManagePage({ params }: { params: { problemI
           options: problem.options ?? [], // nullable → 배열 기본값
           hints: problem.hints ?? [], // nullable → 배열 기본값
           tags: problem.tags ?? [], // nullable → 배열 기본값
-          isActive: Boolean(problem.status === 'ACTIVE'),
           isAIGenerated: problem.isAIGenerated ?? false,
           reviewStatus: problem.reviewStatus ?? ('PENDING' as ReviewStatus),
           gradeLevel: problem.gradeLevel ?? null,

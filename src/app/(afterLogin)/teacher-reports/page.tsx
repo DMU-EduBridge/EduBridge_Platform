@@ -3,7 +3,6 @@
 import { ReportCard } from '@/components/teacher-reports/report-card';
 import { ReportForm } from '@/components/teacher-reports/report-form';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useClasses } from '@/hooks/classes/use-classes';
 import { useTeacherReportMutations } from '@/hooks/teacher-reports/use-teacher-report-mutations';
 import { useTeacherReportStats } from '@/hooks/teacher-reports/use-teacher-report-stats';
@@ -79,158 +78,163 @@ export default function TeacherReportsPage() {
 
   if (showCreateForm) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">새 리포트 생성</h1>
-            <p className="mt-2 text-gray-600">AI 기반 학습 분석 리포트를 생성하세요</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">새 리포트 생성</h1>
+                <p className="mt-1 text-xs text-gray-600">AI 기반 학습 분석 리포트를 생성하세요</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setShowCreateForm(false)}>
+                목록으로 돌아가기
+              </Button>
+            </div>
           </div>
-          <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-            목록으로 돌아가기
-          </Button>
         </div>
-        <ReportForm
-          onSubmit={handleCreateReport}
-          onCancel={() => setShowCreateForm(false)}
-          isLoading={createReport.isPending}
-          availableClasses={availableClasses}
-        />
+        <div className="px-6 py-4">
+          <ReportForm
+            onSubmit={handleCreateReport}
+            onCancel={() => setShowCreateForm(false)}
+            isLoading={createReport.isPending}
+            availableClasses={availableClasses}
+          />
+        </div>
       </div>
     );
   }
 
   if (editingReport) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">리포트 수정</h1>
-            <p className="mt-2 text-gray-600">리포트 정보를 수정하세요</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">리포트 수정</h1>
+                <p className="mt-1 text-xs text-gray-600">리포트 정보를 수정하세요</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setEditingReport(null)}>
+                목록으로 돌아가기
+              </Button>
+            </div>
           </div>
-          <Button variant="outline" onClick={() => setEditingReport(null)}>
-            목록으로 돌아가기
-          </Button>
         </div>
-        <ReportForm
-          initialData={editingReport}
-          onSubmit={handleUpdateReport}
-          onCancel={() => setEditingReport(null)}
-          isLoading={updateReport.isPending}
-          availableClasses={availableClasses}
-        />
+        <div className="px-6 py-4">
+          <ReportForm
+            initialData={editingReport}
+            onSubmit={handleUpdateReport}
+            onCancel={() => setEditingReport(null)}
+            isLoading={updateReport.isPending}
+            availableClasses={availableClasses}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">AI 교사 리포트</h1>
-          <p className="mt-2 text-gray-600">
-            AI가 분석한 학생들의 학습 현황과 개선 방안을 확인하세요.
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* 고정 헤더 */}
+      <div className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">AI 교사 리포트</h1>
+              <p className="mt-1 text-xs text-gray-600">
+                AI가 분석한 학생들의 학습 현황과 개선 방안을 확인하세요.
+              </p>
+            </div>
+            <Button onClick={() => setShowCreateForm(true)} size="sm">
+              <Plus className="mr-1 h-4 w-4" />새 리포트 생성
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />새 리포트 생성
-        </Button>
       </div>
 
-      {/* 통계 카드 */}
-      {stats && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">총 리포트</p>
-                  <p className="text-2xl font-bold">{stats.totalReports}개</p>
+      {/* 문서 본문 */}
+      <div className="px-6 py-4">
+        <div className="space-y-4">
+          {/* 통계 정보 */}
+          {stats && (
+            <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div className="text-center">
+                  <div className="text-xs font-medium text-gray-500">총 리포트</div>
+                  <div className="text-lg font-semibold text-gray-900">{stats.totalReports}개</div>
+                  <FileText className="mx-auto mt-1 h-4 w-4 text-blue-600" />
                 </div>
-                <FileText className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">완료된 리포트</p>
-                  <p className="text-2xl font-bold">{stats.completedReports}개</p>
+                <div className="text-center">
+                  <div className="text-xs font-medium text-gray-500">완료된 리포트</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {stats.completedReports}개
+                  </div>
+                  <BarChart3 className="mx-auto mt-1 h-4 w-4 text-green-600" />
                 </div>
-                <BarChart3 className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">평균 생성 시간</p>
-                  <p className="text-2xl font-bold">
+                <div className="text-center">
+                  <div className="text-xs font-medium text-gray-500">평균 생성 시간</div>
+                  <div className="text-lg font-semibold text-gray-900">
                     {Math.round(stats.averageGenerationTime / 1000)}초
-                  </p>
+                  </div>
+                  <Clock className="mx-auto mt-1 h-4 w-4 text-orange-600" />
                 </div>
-                <Clock className="h-8 w-8 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">총 비용</p>
-                  <p className="text-2xl font-bold">${stats.totalCost.toFixed(4)}</p>
+                <div className="text-center">
+                  <div className="text-xs font-medium text-gray-500">총 비용</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    ${stats.totalCost.toFixed(4)}
+                  </div>
+                  <DollarSign className="mx-auto mt-1 h-4 w-4 text-purple-600" />
                 </div>
-                <DollarSign className="h-8 w-8 text-purple-600" />
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* 리포트 목록 */}
-      {isLoading ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-            <p className="text-gray-600">리포트 목록을 불러오는 중...</p>
-          </CardContent>
-        </Card>
-      ) : error ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <p className="text-red-600">리포트 목록을 불러오는데 실패했습니다.</p>
-            <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-              다시 시도
-            </Button>
-          </CardContent>
-        </Card>
-      ) : reports.length === 0 ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">아직 리포트가 없습니다</h3>
-            <p className="mb-4 text-gray-600">첫 번째 AI 리포트를 생성해보세요.</p>
-            <Button onClick={() => setShowCreateForm(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              리포트 생성하기
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {reports.map((report) => (
-            <ReportCard
-              key={report.id}
-              report={report}
-              onEdit={setEditingReport}
-              onDelete={handleDeleteReport}
-              onGenerate={handleGenerateReport}
-            />
-          ))}
+          {/* 리포트 목록 */}
+          {isLoading ? (
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="p-8 text-center">
+                <div className="mx-auto mb-3 h-6 w-6 animate-spin rounded-full border-b-2 border-blue-600"></div>
+                <p className="text-sm text-gray-600">리포트 목록을 불러오는 중...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="p-8 text-center">
+                <p className="mb-3 text-sm text-red-600">리포트 목록을 불러오는데 실패했습니다.</p>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                  다시 시도
+                </Button>
+              </div>
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="p-8 text-center">
+                <FileText className="mx-auto mb-3 h-8 w-8 text-gray-400" />
+                <h3 className="mb-2 text-base font-semibold text-gray-900">
+                  아직 리포트가 없습니다
+                </h3>
+                <p className="mb-3 text-sm text-gray-600">첫 번째 AI 리포트를 생성해보세요.</p>
+                <Button onClick={() => setShowCreateForm(true)} size="sm">
+                  <Plus className="mr-1 h-4 w-4" />
+                  리포트 생성하기
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {reports.map((report) => (
+                <ReportCard
+                  key={report.id}
+                  report={report}
+                  onEdit={setEditingReport}
+                  onDelete={handleDeleteReport}
+                  onGenerate={handleGenerateReport}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

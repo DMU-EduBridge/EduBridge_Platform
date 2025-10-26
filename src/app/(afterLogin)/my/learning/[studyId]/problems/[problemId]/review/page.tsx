@@ -85,6 +85,7 @@ export default async function StudyProblemReviewPage({
         problem={{
           id: problem.id,
           title: problem.title,
+          content: problem.description ?? '',
           description: problem.description ?? null,
           type: problem.type,
           options: problem.options, // 서버에서 이미 파싱된 배열
@@ -93,6 +94,7 @@ export default async function StudyProblemReviewPage({
           hints: problem.hints, // 서버에서 이미 파싱된 배열
           subject: problem.subject,
           difficulty: problem.difficulty,
+          points: problem.points ?? 1,
         }}
         userAnswer={attempt?.selected ?? null}
         isCorrect={attempt?.isCorrect ?? false}

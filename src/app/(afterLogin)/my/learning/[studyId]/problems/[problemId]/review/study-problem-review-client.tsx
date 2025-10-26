@@ -3,7 +3,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ProblemDifficulty, ProblemType } from '@prisma/client';
+import {
+  getProblemDifficultyConfig,
+  getProblemTypeConfig,
+  type Problem,
+} from '@/types/domain/problem';
 import {
   ArrowLeft,
   BookOpen,
@@ -16,18 +20,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { memo } from 'react';
 
-interface ProblemViewModel {
-  id: string;
-  title: string;
-  description: string | null;
-  type: ProblemType;
-  options: string[];
-  correctAnswer: string;
-  explanation: string | null;
-  hints: string[];
-  subject: string;
-  difficulty: ProblemDifficulty;
-}
+// 도메인 타입 재사용
+type ProblemViewModel = Problem;
 
 interface StudyProblemReviewClientProps {
   studyId: string;
@@ -45,34 +39,6 @@ const StudyProblemReviewClient = memo(function StudyProblemReviewClient({
   attemptedAt,
 }: StudyProblemReviewClientProps) {
   const router = useRouter();
-
-  const getDifficultyColor = (difficulty: ProblemDifficulty): string => {
-    switch (difficulty) {
-      case 'EASY':
-        return 'bg-green-100 text-green-800';
-      case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'HARD':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getTypeLabel = (type: ProblemType): string => {
-    switch (type) {
-      case 'MULTIPLE_CHOICE':
-        return '객관식';
-      case 'SHORT_ANSWER':
-        return '단답형';
-      case 'ESSAY':
-        return '서술형';
-      case 'TRUE_FALSE':
-        return '참/거짓';
-      default:
-        return type;
-    }
-  };
 
   return (
     <div className="container">
@@ -99,8 +65,10 @@ const StudyProblemReviewClient = memo(function StudyProblemReviewClient({
             <CardTitle className="text-xl font-semibold text-gray-900">{problem.title}</CardTitle>
             <div className="flex gap-2">
               <Badge variant="outline">{problem.subject}</Badge>
-              <Badge className={getDifficultyColor(problem.difficulty)}>{problem.difficulty}</Badge>
-              <Badge variant="secondary">{getTypeLabel(problem.type)}</Badge>
+              <Badge className={getProblemDifficultyConfig(problem.difficulty).color}>
+                {getProblemDifficultyConfig(problem.difficulty).label}
+              </Badge>
+              <Badge variant="secondary">{getProblemTypeConfig(problem.type).label}</Badge>
             </div>
           </div>
         </CardHeader>
@@ -189,7 +157,7 @@ const StudyProblemReviewClient = memo(function StudyProblemReviewClient({
                 <div>
                   <h4 className="mb-2 font-medium text-gray-900">힌트:</h4>
                   <div className="space-y-2">
-                    {problem.hints.map((hint, index) => (
+                    {problem.hints.map((hint: string, index: number) => (
                       <div key={index} className="rounded-lg border border-blue-200 bg-blue-50 p-3">
                         <span className="text-blue-800">{hint}</span>
                       </div>

@@ -2,7 +2,6 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,16 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TeacherReport } from '@/types/domain/teacher-report';
-import {
-  Calendar,
-  Clock,
-  DollarSign,
-  Edit,
-  FileText,
-  MoreHorizontal,
-  Play,
-  Trash2,
-} from 'lucide-react';
+import { Calendar, Edit, MoreHorizontal, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -82,31 +72,29 @@ export function ReportCard({ report, onEdit, onDelete, onGenerate }: ReportCardP
   };
 
   return (
-    <Card className="group relative overflow-hidden border-0 bg-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div className="group rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md">
       {/* 상태별 색상 바 */}
       <div
-        className={`h-1 w-full ${
+        className={`h-1 w-full rounded-t-lg ${
           report.status === 'COMPLETED'
-            ? 'bg-gradient-to-r from-green-500 to-green-600'
+            ? 'bg-green-500'
             : report.status === 'GENERATING'
-              ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+              ? 'bg-blue-500'
               : report.status === 'DRAFT'
-                ? 'bg-gradient-to-r from-gray-400 to-gray-500'
-                : 'bg-gradient-to-r from-red-500 to-red-600'
+                ? 'bg-gray-400'
+                : 'bg-red-500'
         }`}
       ></div>
 
-      <CardHeader className="pb-4">
+      <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-xl font-bold text-gray-900 transition-colors group-hover:text-blue-600">
-              {report.title}
-            </CardTitle>
-            <CardDescription className="mt-2 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900">{report.title}</h3>
+            <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
               <Badge variant="secondary" className="text-xs">
                 {getReportTypeLabel(report.reportType)}
               </Badge>
-              {report.class && <span className="text-sm text-gray-500">• {report.class.name}</span>}
+              {report.class && <span>• {report.class.name}</span>}
               {report.user && (
                 <span
                   className={`rounded-full px-2 py-1 text-xs ${
@@ -118,9 +106,9 @@ export function ReportCard({ report, onEdit, onDelete, onGenerate }: ReportCardP
                   {report.user.role === 'TEACHER' ? '교사' : '학생'}: {report.user.name}
                 </span>
               )}
-            </CardDescription>
+            </div>
             {report.content && (
-              <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-gray-600">
+              <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-600">
                 {report.content.substring(0, 120)}...
               </p>
             )}
@@ -157,98 +145,84 @@ export function ReportCard({ report, onEdit, onDelete, onGenerate }: ReportCardP
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* 상태 및 메타데이터 */}
-        <div className="flex items-center justify-between">
-          <Badge
-            className={`px-3 py-1 text-xs font-medium ${
-              report.status === 'COMPLETED'
-                ? 'border-green-200 bg-green-100 text-green-700'
-                : report.status === 'GENERATING'
-                  ? 'border-blue-200 bg-blue-100 text-blue-700'
-                  : report.status === 'DRAFT'
-                    ? 'border-gray-200 bg-gray-100 text-gray-700'
-                    : 'border-red-200 bg-red-100 text-red-700'
-            }`}
-          >
-            {getStatusLabel(report.status)}
-          </Badge>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <Calendar className="h-3 w-3" />
-            {new Date(report.createdAt).toLocaleDateString()}
-          </div>
-        </div>
 
-        {/* 통계 정보 */}
-        {report.status === 'COMPLETED' && (
-          <div className="grid grid-cols-3 gap-4">
-            {report.generationTimeMs && (
-              <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-                <div className="rounded-full bg-blue-100 p-2">
-                  <Clock className="h-3 w-3 text-blue-600" />
-                </div>
-                <div>
+        <div className="mt-4 space-y-3">
+          {/* 상태 및 메타데이터 */}
+          <div className="flex items-center justify-between">
+            <Badge
+              className={`px-2 py-1 text-xs font-medium ${
+                report.status === 'COMPLETED'
+                  ? 'bg-green-100 text-green-800'
+                  : report.status === 'GENERATING'
+                    ? 'bg-blue-100 text-blue-800'
+                    : report.status === 'DRAFT'
+                      ? 'bg-gray-100 text-gray-800'
+                      : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {getStatusLabel(report.status)}
+            </Badge>
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <Calendar className="h-3 w-3" />
+              {new Date(report.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+
+          {/* 통계 정보 */}
+          {report.status === 'COMPLETED' && (
+            <div className="grid grid-cols-3 gap-2">
+              {report.generationTimeMs && (
+                <div className="rounded-lg bg-gray-50 p-2 text-center">
+                  <div className="text-xs font-medium text-gray-500">생성 시간</div>
                   <div className="text-sm font-semibold text-gray-900">
                     {Math.round(report.generationTimeMs / 1000)}초
                   </div>
-                  <div className="text-xs text-gray-500">생성 시간</div>
                 </div>
-              </div>
-            )}
-            {report.tokenUsage && (
-              <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-                <div className="rounded-full bg-green-100 p-2">
-                  <FileText className="h-3 w-3 text-green-600" />
-                </div>
-                <div>
+              )}
+              {report.tokenUsage && (
+                <div className="rounded-lg bg-gray-50 p-2 text-center">
+                  <div className="text-xs font-medium text-gray-500">토큰</div>
                   <div className="text-sm font-semibold text-gray-900">
                     {report.tokenUsage.toLocaleString()}
                   </div>
-                  <div className="text-xs text-gray-500">토큰</div>
                 </div>
-              </div>
-            )}
-            {report.costUsd && (
-              <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-                <div className="rounded-full bg-purple-100 p-2">
-                  <DollarSign className="h-3 w-3 text-purple-600" />
-                </div>
-                <div>
+              )}
+              {report.costUsd && (
+                <div className="rounded-lg bg-gray-50 p-2 text-center">
+                  <div className="text-xs font-medium text-gray-500">비용</div>
                   <div className="text-sm font-semibold text-gray-900">
                     ${report.costUsd.toFixed(4)}
                   </div>
-                  <div className="text-xs text-gray-500">비용</div>
                 </div>
-              </div>
+              )}
+            </div>
+          )}
+
+          {/* 액션 버튼 */}
+          <div className="flex gap-2">
+            <Link href={`/teacher-reports/${report.id}`} className="flex-1">
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+              >
+                리포트 보기
+              </Button>
+            </Link>
+            {report.status === 'DRAFT' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerate}
+                className="border-blue-200 text-blue-600 hover:bg-blue-50"
+              >
+                <Play className="mr-1 h-3 w-3" />
+                생성
+              </Button>
             )}
           </div>
-        )}
-
-        {/* 액션 버튼 */}
-        <div className="flex gap-3 pt-2">
-          <Link href={`/teacher-reports/${report.id}`} className="flex-1">
-            <Button
-              variant="default"
-              size="sm"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md hover:from-blue-700 hover:to-purple-700"
-            >
-              리포트 보기
-            </Button>
-          </Link>
-          {report.status === 'DRAFT' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleGenerate}
-              className="border-blue-200 text-blue-600 hover:bg-blue-50"
-            >
-              <Play className="mr-1 h-3 w-3" />
-              생성
-            </Button>
-          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
