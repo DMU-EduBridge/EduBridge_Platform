@@ -36,6 +36,12 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/types/**/*.ts", "src/lib/ai-server/**/*.ts"],
+      "rules": {
+        "no-unused-vars": "off"
+      }
     }
   ]
 }
