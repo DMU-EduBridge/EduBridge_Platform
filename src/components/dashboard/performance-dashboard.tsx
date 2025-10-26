@@ -9,18 +9,20 @@ import {
 } from '@/lib/performance-monitoring';
 import { cn } from '@/lib/utils';
 import { AlertTriangle, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 
 interface PerformanceDashboardProps {
   className?: string;
 }
 
-export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
+export const PerformanceDashboard = memo(function PerformanceDashboard({
+  className,
+}: PerformanceDashboardProps) {
   const { report, isMonitoring } = usePerformanceMonitoring();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const data = getPerformanceDashboardData();
@@ -28,15 +30,9 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
     } finally {
       setIsRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    refreshData();
-    const interval = setInterval(refreshData, 30000); // 30초마다 업데이트
-    return () => clearInterval(interval);
   }, []);
 
-  const getRatingColor = (rating: string) => {
+  const getRatingColor = useCallback((rating: string) => {
     switch (rating) {
       case 'good':
         return 'bg-green-100 text-green-800 border-green-200';
@@ -47,9 +43,9 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
-  };
+  }, []);
 
-  const getRatingIcon = (rating: string) => {
+  const getRatingIcon = useCallback((rating: string) => {
     switch (rating) {
       case 'good':
         return <CheckCircle className="h-4 w-4" />;
@@ -60,7 +56,13 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
       default:
         return null;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    refreshData();
+    const interval = setInterval(refreshData, 30000); // 30초마다 업데이트
+    return () => clearInterval(interval);
+  }, [refreshData]);
 
   if (!isMonitoring) {
     return (
@@ -264,4 +266,4 @@ export function PerformanceDashboard({ className }: PerformanceDashboardProps) {
       </Card>
     </div>
   );
-}
+});

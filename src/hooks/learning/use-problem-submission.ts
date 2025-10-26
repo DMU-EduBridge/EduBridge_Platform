@@ -1,17 +1,26 @@
+import type { Problem } from '@/types/domain/problem';
 import { useCallback, useRef, useState } from 'react';
-
-interface Problem {
-  id: string;
-  title: string;
-  correctAnswer: string;
-  points: number;
-  options: string[];
-}
 
 interface UseProblemSubmissionProps {
   problem?: Problem | undefined;
   activeAttemptNumber: number;
-  addCompletedProblem: (data: any) => Promise<any>;
+  addCompletedProblem: (data: {
+    problemId: string;
+    answer: {
+      isCorrect: boolean;
+      selectedAnswer: string;
+      correctAnswer: string;
+      problemTitle: string;
+      completedAt: string;
+    };
+    attemptNumber: number;
+    startTime?: string;
+    timeSpent?: number;
+    forceNewAttempt?: boolean;
+  }) => Promise<{
+    success: boolean;
+    message: string;
+  }>;
   onSubmissionComplete?: (isCorrect: boolean) => void;
 }
 

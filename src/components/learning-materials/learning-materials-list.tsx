@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useLearningMaterials } from '@/hooks/learning';
 import { BookOpen, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 
-export default function LearningMaterialsList() {
+export default memo(function LearningMaterialsList() {
   const [search, setSearch] = useState('');
   const [subject, setSubject] = useState('');
   const [difficulty, setDifficulty] = useState('');
@@ -15,19 +15,25 @@ export default function LearningMaterialsList() {
   const [page, setPage] = useState(1);
   const limit = 10;
 
-  const query = {
-    ...(search ? { search } : {}),
-    ...(subject ? { subject } : {}),
-    ...(status ? { status } : {}),
-    page,
-    limit,
-  };
+  const query = useMemo(
+    () => ({
+      ...(search ? { search } : {}),
+      ...(subject ? { subject } : {}),
+      ...(status ? { status } : {}),
+      page,
+      limit,
+    }),
+    [search, subject, status, page, limit],
+  );
 
   const { materials } = useLearningMaterials(query);
 
   const items = useMemo(() => materials.data?.materials || [], [materials.data?.materials]);
-  const total = materials.data?.total || 0;
-  const totalPages = materials.data?.pagination?.totalPages || 1;
+  const total = useMemo(() => materials.data?.total || 0, [materials.data?.total]);
+  const totalPages = useMemo(
+    () => materials.data?.pagination?.totalPages || 1,
+    [materials.data?.pagination?.totalPages],
+  );
 
   const displayItems = items;
 
@@ -43,6 +49,31 @@ export default function LearningMaterialsList() {
     () => displayItems.reduce((sum: number, m: any) => sum + (m.problemCount || 0), 0),
     [displayItems],
   );
+
+  // 필터 핸들러들은 현재 사용되지 않음
+  // const _handleSearchChange = useCallback((value: string) => {
+  //   setSearch(value);
+  //   setPage(1);
+  // }, []);
+
+  // const _handleSubjectChange = useCallback((value: string) => {
+  //   setSubject(value);
+  //   setPage(1);
+  // }, []);
+
+  // const _handleDifficultyChange = useCallback((value: string) => {
+  //   setDifficulty(value);
+  //   setPage(1);
+  // }, []);
+
+  // const _handleStatusChange = useCallback((value: string) => {
+  //   setStatus(value);
+  //   setPage(1);
+  // }, []);
+
+  // const _handlePageChange = useCallback((newPage: number) => {
+  //   setPage(newPage);
+  // }, []);
 
   return (
     <div className="space-y-6">
@@ -203,4 +234,4 @@ export default function LearningMaterialsList() {
       </Card>
     </div>
   );
-}
+});

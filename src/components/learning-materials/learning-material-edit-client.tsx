@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import type { Problem } from '@/types/domain/problem';
 import { ArrowLeft, Plus, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -23,18 +24,6 @@ interface LearningMaterial {
   status: string;
   createdAt: string;
   updatedAt: string;
-}
-
-interface Problem {
-  id: string;
-  title: string;
-  content: string;
-  type: string;
-  difficulty: string;
-  subject: string;
-  points: number;
-  isActive: boolean;
-  createdAt: string;
 }
 
 interface LearningMaterialEditClientProps {
