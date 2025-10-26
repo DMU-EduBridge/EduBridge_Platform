@@ -888,13 +888,11 @@ export default function DemoPage() {
                               <SelectValue placeholder="단원을 선택하세요" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="일차함수">일차함수</SelectItem>
+                              <SelectItem value="실수와 그 계산">실수와 그 계산</SelectItem>
+                              <SelectItem value="이차방정식">이차방정식</SelectItem>
                               <SelectItem value="이차함수">이차함수</SelectItem>
-                              <SelectItem value="삼각함수">삼각함수</SelectItem>
-                              <SelectItem value="지수함수">지수함수</SelectItem>
-                              <SelectItem value="로그함수">로그함수</SelectItem>
-                              <SelectItem value="수열">수열</SelectItem>
-                              <SelectItem value="확률">확률</SelectItem>
+                              <SelectItem value="삼각비">삼각비</SelectItem>
+                              <SelectItem value="원의 성질">원의 성질</SelectItem>
                               <SelectItem value="통계">통계</SelectItem>
                             </SelectContent>
                           </Select>
