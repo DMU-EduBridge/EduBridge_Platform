@@ -26,8 +26,8 @@ export interface ChatUsage {
 export interface ChatCitation {
   id: string;
   title: string;
-  page?: number;
-  url?: string;
+  page?: number | undefined;
+  url?: string | undefined;
 }
 
 export interface ChatResponse {
