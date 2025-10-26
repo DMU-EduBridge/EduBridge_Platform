@@ -40,17 +40,21 @@ export async function POST(
 
     const upstreamUrl = `${fastApiUrl.replace(/\/$/, '')}/chat/message`;
 
+    const requestBody = {
+      user_id: session.user.id,
+      user_message: message,
+      history,
+    };
+
+    console.log('LLM 서버로 전송하는 데이터:', JSON.stringify(requestBody, null, 2));
+
     const res = await fetch(upstreamUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-user-id': session.user.id,
       },
-      body: JSON.stringify({
-        user_id: session.user.id,
-        user_message: message,
-        history,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     let aiMessage = '죄송합니다. 응답을 생성할 수 없습니다.';
@@ -59,7 +63,14 @@ export async function POST(
       const data = await res.json().catch(() => ({}));
       aiMessage = data.ai_response || aiMessage;
     } else {
-      console.error('LLM 서버 응답 실패:', res.status, await res.text().catch(() => ''));
+      const errorText = await res.text().catch(() => '');
+      console.error('LLM 서버 응답 실패:', {
+        status: res.status,
+        statusText: res.statusText,
+        error: errorText,
+        url: upstreamUrl,
+        requestBody: requestBody,
+      });
     }
 
     // AI 응답을 데이터베이스에 저장
