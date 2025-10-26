@@ -1,3 +1,4 @@
+import { problemFactory } from '@/lib/patterns/factory-pattern';
 import { ProblemGenerationSchema } from '@/lib/validation/schemas';
 import { z } from 'zod';
 
@@ -7,22 +8,25 @@ export class ProblemGenerationService {
     // 현재는 시뮬레이션 데이터
     const { subject, difficulty, count } = data;
 
-    const questions = Array.from({ length: count }, (_, i) => ({
-      id: `generated_${Date.now()}_${i}`,
-      title: `${subject} ${difficulty} 문제 ${i + 1}`,
+    const llmProblems = Array.from({ length: count }, (_, i) => ({
+      question: `${subject} ${difficulty} 문제 ${i + 1}`,
       content: `${subject} 과목의 ${difficulty} 난이도 문제입니다.`,
       type: 'MULTIPLE_CHOICE' as const,
       difficulty,
       subject,
       options: ['A', 'B', 'C', 'D'],
-      correctAnswer: 'A',
+      correct_answer: 0,
       explanation: '정답 해설입니다.',
-      qualityScore: 0.8,
-      isValid: true,
+      hint: '힌트입니다.',
     }));
 
+    // Factory Pattern을 사용하여 문제 생성
+    const problems = problemFactory.createBatch(
+      llmProblems.map((llmData) => problemFactory.createFromLLM(llmData)),
+    );
+
     return {
-      questions,
+      problems,
       totalGenerated: count,
       successRate: 1.0,
       processingTime: 2000,

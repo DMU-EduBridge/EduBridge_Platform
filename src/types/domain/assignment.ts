@@ -118,3 +118,14 @@ export interface UpdateClassMemberRequest {
 // ===== Aliases for backward compatibility in hooks =====
 export type CreateProblemAssignmentRequest = CreateAssignmentRequest;
 export type UpdateProblemAssignmentRequest = UpdateAssignmentRequest;
+
+// ===== Problem Assignment Query Params =====
+export interface ProblemAssignmentQueryParams {
+  page?: number;
+  limit?: number;
+  classId?: string;
+  problemId?: string;
+  assignedBy?: string;
+  isActive?: boolean;
+  dueDate?: Date;
+}

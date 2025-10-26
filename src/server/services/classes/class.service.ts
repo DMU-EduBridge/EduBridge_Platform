@@ -559,11 +559,28 @@ export class ClassService {
         throw new Error('멤버를 추가할 권한이 없습니다.');
       }
 
+      // userId가 이메일인 경우 실제 사용자 ID를 찾기
+      let targetUserId = data.userId;
+
+      // 이메일 형식인지 확인 (간단한 이메일 패턴 체크)
+      if (data.userId.includes('@')) {
+        const user = await prisma.user.findUnique({
+          where: { email: data.userId },
+          select: { id: true },
+        });
+
+        if (!user) {
+          throw new Error('해당 이메일의 사용자를 찾을 수 없습니다.');
+        }
+
+        targetUserId = user.id;
+      }
+
       // 이미 멤버인지 확인
       const existingMember = await prisma.classMember.findFirst({
         where: {
           classId,
-          userId: data.userId,
+          userId: targetUserId,
         },
       });
 
@@ -586,7 +603,7 @@ export class ClassService {
       await prisma.classMember.create({
         data: {
           classId,
-          userId: data.userId,
+          userId: targetUserId,
           role: (data.role ?? 'STUDENT') as $Enums.ClassMemberRole,
         },
       });

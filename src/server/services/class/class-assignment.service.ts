@@ -1,30 +1,11 @@
 import { prisma } from '../../../lib/core/prisma';
 import { logger } from '../../../lib/monitoring';
-import type { ProblemAssignment } from '../../../types/domain/assignment';
-
-type ProblemAssignmentQueryParams = {
-  page?: number;
-  limit?: number;
-  classId?: string;
-  problemId?: string;
-  assignedBy?: string;
-  isActive?: boolean;
-  dueDate?: Date;
-};
-
-type CreateProblemAssignmentRequest = {
-  classId: string;
-  problemId: string;
-  dueDate?: Date;
-  instructions?: string;
-  isActive?: boolean;
-};
-
-type UpdateProblemAssignmentRequest = {
-  dueDate?: Date;
-  instructions?: string;
-  isActive?: boolean;
-};
+import type {
+  CreateProblemAssignmentRequest,
+  ProblemAssignment,
+  ProblemAssignmentQueryParams,
+  UpdateProblemAssignmentRequest,
+} from '../../../types/domain/assignment';
 
 export class ClassAssignmentService {
   /**
@@ -106,9 +87,9 @@ export class ClassAssignmentService {
       // 중복 과제 확인
       const existingAssignment = await prisma.problemAssignment.findFirst({
         where: {
-          classId: data.classId,
+          ...(data.classId && { classId: data.classId }),
           // 배열 포함 여부는 스키마에 따라 다름: JSON 배열이면 array_contains 사용, Prisma Array이면 has 사용
-          problemIds: { array_contains: [data.problemId] } as any,
+          problemIds: { array_contains: [data.problemIds[0]] } as any,
         },
       });
 
@@ -119,8 +100,8 @@ export class ClassAssignmentService {
       const newAssignment = await prisma.problemAssignment.create({
         data: {
           title: 'Assignment',
-          classId: data.classId,
-          problemIds: [data.problemId],
+          classId: data.classId ?? null,
+          problemIds: data.problemIds,
           assignedBy,
           assignedAt: new Date(),
           dueDate: data.dueDate ?? null,
@@ -131,7 +112,7 @@ export class ClassAssignmentService {
       logger.info('과제 추가 성공', {
         assignmentId: newAssignment.id,
         classId: data.classId,
-        problemId: data.problemId,
+        problemIds: data.problemIds,
       });
       return newAssignment as unknown as ProblemAssignment;
     } catch (error) {
@@ -162,7 +143,6 @@ export class ClassAssignmentService {
         data: {
           ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
           ...(data.instructions !== undefined && { instructions: data.instructions }),
-          ...(data.isActive !== undefined && { isActive: data.isActive }),
         },
       });
 
