@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Users, Brain, Zap } from 'lucide-react';
+import { ArrowRight, Brain, BookOpen, BarChart3, MessageCircle } from 'lucide-react';
 
 export function Hero() {
   return (
@@ -11,14 +11,13 @@ export function Hero() {
           <h1 className="mb-6 text-4xl font-bold text-gray-900 md:text-6xl">
             AI로 연결되는
             <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              교육의 미래
+              스마트 학습 플랫폼
             </span>
           </h1>
 
           {/* 서브헤드라인 */}
           <p className="mx-auto mb-8 max-w-3xl text-xl leading-relaxed text-gray-600">
-            선생님과 학생을 AI가 스마트하게 연결하고, 개인화된 학습 경험과 진로 상담을 통해 혁신적인
-            교육 성과를 만들어가세요.
+            AI 기반 문제 생성, 학습 로그 분석, 리포트 자동 생성으로 교육의 모든 과정을 효율적으로 지원합니다.
           </p>
 
           {/* CTA 버튼들 */}
@@ -30,32 +29,35 @@ export function Hero() {
               </Link>
             </Button>
             <Button variant="outline" size="lg" className="px-8 py-4 text-lg" asChild>
-              <Link href="/demo">데모 체험하기</Link>
+              <Link href="/login">로그인</Link>
             </Button>
           </div>
 
-          {/* 통계 */}
-          <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-3">
+          {/* 핵심 기능 아이콘 */}
+          <div className="mx-auto grid max-w-4xl grid-cols-2 gap-8 md:grid-cols-4">
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Brain className="h-8 w-8 text-blue-600" />
               </div>
-              <h3 className="mb-2 text-2xl font-bold text-gray-900">2,500+</h3>
-              <p className="text-gray-600">활성 학습자</p>
+              <h3 className="mb-2 text-lg font-bold text-gray-900">AI 문제 생성</h3>
             </div>
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100">
-                <Brain className="h-8 w-8 text-purple-600" />
+                <BookOpen className="h-8 w-8 text-purple-600" />
               </div>
-              <h3 className="mb-2 text-2xl font-bold text-gray-900">15,000+</h3>
-              <p className="text-gray-600">학습 문제</p>
+              <h3 className="mb-2 text-lg font-bold text-gray-900">스마트 학습</h3>
             </div>
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <Zap className="h-8 w-8 text-green-600" />
+                <BarChart3 className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="mb-2 text-2xl font-bold text-gray-900">98%</h3>
-              <p className="text-gray-600">학습 만족도</p>
+              <h3 className="mb-2 text-lg font-bold text-gray-900">학습 리포트</h3>
+            </div>
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100">
+                <MessageCircle className="h-8 w-8 text-orange-600" />
+              </div>
+              <h3 className="mb-2 text-lg font-bold text-gray-900">AI 도우미</h3>
             </div>
           </div>
         </div>
