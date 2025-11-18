@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import type { StudyItem, StudyLevel } from '@/types/domain/learning';
 import { getStudyLevelConfig } from '@/types/domain/learning';
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 function LevelBadge({ level }: { level: StudyLevel }) {
   const config = getStudyLevelConfig(level);
@@ -22,10 +23,11 @@ export type StudyCardProps = {
   item: StudyItem;
   onStart?: (id: string) => void;
   onReview?: (id: string) => void;
-  onAiHelp?: () => void;
+  onDelete?: (id: string) => void;
+  isDeleting?: boolean;
 };
 
-export function StudyCard({ item, onStart, onReview, onAiHelp }: StudyCardProps) {
+export function StudyCard({ item, onStart, onReview, onDelete, isDeleting }: StudyCardProps) {
   return (
     <Card className="relative rounded-xl border border-slate-200 p-8 transition-colors hover:border-slate-300">
       <div className="absolute right-6 top-8">
@@ -46,7 +48,7 @@ export function StudyCard({ item, onStart, onReview, onAiHelp }: StudyCardProps)
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className={cn('mt-6 grid grid-cols-1 gap-3', onDelete ? 'md:grid-cols-3' : 'md:grid-cols-2')}>
         <Button
           onClick={() => onStart?.(item.id)}
           className="h-12 rounded-md bg-blue-600 text-sm font-semibold text-white transition-colors hover:bg-blue-700 md:text-base"
@@ -61,13 +63,16 @@ export function StudyCard({ item, onStart, onReview, onAiHelp }: StudyCardProps)
         >
           오답체크
         </Button>
-        <Button
-          onClick={() => onAiHelp?.()}
-          className="h-12 rounded-md bg-purple-600 text-sm font-semibold text-white transition-colors hover:bg-purple-700 md:text-base"
-          aria-label={`${item.title} AI 도움 받기`}
-        >
-          AI 도움 받기
-        </Button>
+        {onDelete && (
+          <Button
+            onClick={() => onDelete(item.id)}
+            className="h-12 rounded-md border border-red-200 bg-white text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 md:text-base"
+            aria-label={`${item.title} 삭제`}
+            disabled={isDeleting}
+          >
+            {isDeleting ? '삭제 중...' : '삭제'}
+          </Button>
+        )}
       </div>
     </Card>
   );

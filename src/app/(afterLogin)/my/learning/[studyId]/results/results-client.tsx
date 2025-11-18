@@ -11,8 +11,9 @@ import {
 } from '@/lib/utils/learning-utils';
 import type { LearningStatus, ResultsClientProps } from '@/types/learning';
 import { CheckCircle, Home, RotateCcw, XCircle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * 학습 결과 페이지 클라이언트 컴포넌트
@@ -24,10 +25,16 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
   const router = useRouter();
   const searchParams = useSearchParams();
   const cameFromWrongOnly = parseWrongOnlyParam(searchParams);
+  const queryClient = useQueryClient();
 
   // API에서 학습 완료 상태 가져오기
   const [learningStatus, setLearningStatus] = useState<LearningStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [reportStatus, setReportStatus] = useState<'idle' | 'pending' | 'success' | 'exists' | 'error'>(
+    'idle',
+  );
+  const [reportError, setReportError] = useState<string | null>(null);
+  const reportRequestedRef = useRef(false);
 
   useEffect(() => {
     const fetchLearningStatus = async () => {
@@ -73,6 +80,54 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
     }
   }, [learningStatus?.attemptNumber]);
 
+  const triggerReportGeneration = useCallback(
+    async (manual = false) => {
+      if (!manual && reportRequestedRef.current) {
+        return;
+      }
+
+      reportRequestedRef.current = true;
+
+      setReportError(null);
+      setReportStatus('pending');
+
+      try {
+        const response = await fetch('/api/my/reports/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ studyId }),
+        });
+
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || !result?.success) {
+          throw new Error(result?.error || 'AI 리포트 생성에 실패했습니다.');
+        }
+
+        setReportStatus(result.data?.alreadyExists ? 'exists' : 'success');
+        queryClient.invalidateQueries({ queryKey: ['student-reports'], exact: false });
+      } catch (error) {
+        setReportStatus('error');
+        const message =
+          error instanceof Error ? error.message : 'AI 리포트 생성에 실패했습니다.';
+        setReportError(message);
+
+        if (!manual) {
+          reportRequestedRef.current = false;
+        }
+      }
+    },
+    [studyId, queryClient],
+  );
+
+  useEffect(() => {
+    if (learningStatus?.isCompleted && !reportRequestedRef.current) {
+      void triggerReportGeneration(false);
+    }
+  }, [learningStatus?.isCompleted, triggerReportGeneration]);
+
   console.log('learningStatus', learningStatus);
   console.log('correctAnswers', correctAnswers);
   console.log('wrongAnswers', wrongAnswers);
@@ -114,7 +169,7 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={handleBackToLearning} className="px-4 py-2">
             <Home className="mr-2 h-4 w-4" />
@@ -123,6 +178,26 @@ export default function ResultsClient({ studyId, problems, learningMaterial }: R
           <h1 className="text-2xl font-bold text-gray-800">학습 결과</h1>
           <span className="text-sm text-gray-500">{currentAttemptNumber}번째 시도 완료</span>
         </div>
+        {learningStatus?.isCompleted && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600">
+              {reportStatus === 'pending' && 'AI 리포트를 생성하는 중입니다...'}
+              {reportStatus === 'success' &&
+                'AI 리포트가 생성되어 마이 리포트에서 확인할 수 있습니다.'}
+              {reportStatus === 'exists' && '이 학습에 대한 AI 리포트가 이미 생성되었습니다.'}
+              {reportStatus === 'error' && (reportError || 'AI 리포트 생성에 실패했습니다.')}
+              {reportStatus === 'idle' && 'AI 리포트를 준비 중입니다.'}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => triggerReportGeneration(true)}
+              disabled={reportStatus === 'pending'}
+            >
+              {reportStatus === 'pending' ? '생성 중...' : 'AI 리포트 다시 생성'}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}

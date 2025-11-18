@@ -5,7 +5,11 @@ import type { Problem } from '@/types/domain/problem';
 import type { LearningMaterial } from '@/types/learning';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import ResultsClient from './results-client';
+import dynamic from 'next/dynamic';
+
+const ResultsClient = dynamic(() => import('./results-client'), {
+  ssr: false,
+});
 
 interface ResultsPageProps {
   params: {

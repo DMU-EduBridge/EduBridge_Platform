@@ -3,10 +3,11 @@
 import { Button } from '@/components/ui/button';
 import { useStudentReports } from '@/hooks/teacher-reports/use-student-reports';
 import { TeacherReport } from '@/types/domain/teacher-report';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Trash2 } from 'lucide-react';
 import { Session } from 'next-auth';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const typeLabels = {
   PROGRESS_REPORT: '진도 리포트',
@@ -22,6 +23,9 @@ interface MyReportsClientProps {
 export function MyReportsClient({ session: _session }: MyReportsClientProps) {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // 학생의 경우 자신의 리포트만 필터링
   const {
@@ -38,6 +42,31 @@ export function MyReportsClient({ session: _session }: MyReportsClientProps) {
   const handleDownload = (reportId: string) => {
     // TODO: 다운로드 기능 구현
     console.log('Download report:', reportId);
+  };
+
+  const handleDelete = async (reportId: string) => {
+    if (!reportId) return;
+    if (!window.confirm('이 리포트를 삭제하시겠습니까? 삭제 후에는 복구할 수 없습니다.')) {
+      return;
+    }
+    setDeleteError(null);
+    setDeletingId(reportId);
+    try {
+      const response = await fetch(`/api/my/reports/${encodeURIComponent(reportId)}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.success === false) {
+        const message = result?.error || '리포트 삭제에 실패했습니다.';
+        throw new Error(message);
+      }
+      queryClient.invalidateQueries({ queryKey: ['student-reports'], exact: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '리포트 삭제 중 오류가 발생했습니다.';
+      setDeleteError(message);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -110,6 +139,11 @@ export function MyReportsClient({ session: _session }: MyReportsClientProps) {
       </div>
 
       {/* 리포트 목록 */}
+      {deleteError && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {deleteError}
+        </div>
+      )}
       <div className="space-y-4">
         {isLoading ? (
           <div className="rounded-lg border bg-white p-8 text-center">
@@ -149,6 +183,16 @@ export function MyReportsClient({ session: _session }: MyReportsClientProps) {
                       {typeLabels[report.reportType as keyof typeof typeLabels]} •{' '}
                       {report.class?.name || '전체'}
                     </p>
+                    <p className="text-xs text-gray-400">
+                      생성일:{' '}
+                      {new Date(report.createdAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -165,6 +209,16 @@ export function MyReportsClient({ session: _session }: MyReportsClientProps) {
                   >
                     <Download className="h-4 w-4" />
                     리포트 다운로드
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(report.id)}
+                    disabled={deletingId === report.id}
+                    className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deletingId === report.id ? '삭제 중...' : '삭제'}
                   </Button>
                 </div>
               </div>
