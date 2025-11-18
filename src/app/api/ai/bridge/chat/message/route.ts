@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const EnvSchema = z.object({ NEXT_PUBLIC_FASTAPI_URL: z.string().url() });
+const EnvSchema = z.object({ NEXT_PUBLIC_FASTAPI_URL: z.string().url().optional() });
 
 const ChatMessageReqSchema = z.object({
   user_id: z.string().min(1).optional(),
@@ -28,17 +28,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
     const isDev = process.env.NODE_ENV !== 'production';
 
-    if (!env.success) {
-      logger.error('Environment configuration error', undefined, {
-        error: 'NEXT_PUBLIC_FASTAPI_URL not configured',
-        userId: session.user.id,
-      });
-      return NextResponse.json(
-        { success: false, error: 'LLM server URL not configured' },
-        { status: 500 },
-      );
-    }
-
     const body = await req.json().catch(() => null);
     const parsed = ChatMessageReqSchema.safeParse(body ?? {});
     if (!parsed.success) {
@@ -49,7 +38,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ success: false, error: 'Bad Request' }, { status: 400 });
     }
 
-    const base = env.data.NEXT_PUBLIC_FASTAPI_URL.replace(/\/$/, '');
+    const base = (env.data?.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000').replace(/\/$/, '');
     const upstreamUrl = `${base}/chat/message`;
 
     const result = await RetryManager.executeWithRetry(async () => {

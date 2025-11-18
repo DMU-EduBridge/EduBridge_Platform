@@ -33,12 +33,9 @@ export async function POST(
     }));
 
     // 실제 LLM 서버 호출
-    const fastApiUrl = process.env.NEXT_PUBLIC_FASTAPI_URL;
-    if (!fastApiUrl) {
-      throw new Error('LLM server URL not configured');
-    }
-
-    const upstreamUrl = `${fastApiUrl.replace(/\/$/, '')}/chat/message`;
+    const fastApiUrl =
+      process.env.NEXT_PUBLIC_FASTAPI_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+    const upstreamUrl = `${fastApiUrl}/chat/message`;
 
     const requestBody = {
       user_id: session.user.id,
